@@ -1,0 +1,161 @@
+package com.garagefinder.controller;
+
+import com.garagefinder.model.Garage;
+import com.garagefinder.model.Mechanic;
+import com.garagefinder.model.User;
+import com.garagefinder.repository.GarageRepository;
+import com.garagefinder.repository.MechanicRepository;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/mechanics")
+public class MechanicController {
+
+    @Autowired
+    private MechanicRepository mechanicRepository;
+
+    @Autowired
+    private GarageRepository garageRepository;
+
+    // Get mechanics for the logged-in owner's garage
+    @GetMapping
+    public ResponseEntity<?> getMyMechanics(@RequestParam(required = false) Long garageId, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"GARAGE_OWNER".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        List<Garage> garages = garageRepository.findByUserId(user.getId());
+        if (garages.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        if (garageId != null) {
+            Optional<Garage> targetGarage = garages.stream().filter(g -> g.getId().equals(garageId)).findFirst();
+            if (targetGarage.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+            }
+            List<Mechanic> mechanics = mechanicRepository.findByGarageId(garageId);
+            return ResponseEntity.ok(mechanics);
+        } else {
+            List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+            List<Mechanic> mechanics = mechanicRepository.findByGarageIdIn(garageIds);
+            return ResponseEntity.ok(mechanics);
+        }
+    }
+
+    // Get available mechanics for a specific garage (can be called by owners or admins)
+    @GetMapping("/available")
+    public ResponseEntity<?> getAvailableMechanics(@RequestParam Long garageId, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        List<Mechanic> mechanics = mechanicRepository.findByGarageIdAndStatus(garageId, "AVAILABLE");
+        return ResponseEntity.ok(mechanics);
+    }
+
+    // Add a mechanic
+    @PostMapping
+    public ResponseEntity<?> addMechanic(@RequestBody Map<String, Object> payload, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"GARAGE_OWNER".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        if (!payload.containsKey("garageId") || payload.get("garageId") == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "garageId is required"));
+        }
+        Long garageId = Long.parseLong(payload.get("garageId").toString());
+        Optional<Garage> garageOpt = garageRepository.findById(garageId);
+        if (garageOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Garage profile not found"));
+        }
+        if (!garageOpt.get().getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        }
+
+        String name = payload.get("name") != null ? payload.get("name").toString() : null;
+        String phone = payload.get("phone") != null ? payload.get("phone").toString() : null;
+        String specialization = payload.get("specialization") != null ? payload.get("specialization").toString() : null;
+        String status = payload.containsKey("status") && payload.get("status") != null ? payload.get("status").toString() : "AVAILABLE";
+
+        if (name == null || name.trim().isEmpty() || phone == null || phone.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Name and Phone are required"));
+        }
+
+        Mechanic mechanic = new Mechanic(garageOpt.get(), name, phone, specialization, status);
+        mechanicRepository.save(mechanic);
+
+        return ResponseEntity.ok(Map.of("message", "Mechanic added successfully"));
+    }
+
+    // Update a mechanic
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateMechanic(@PathVariable Long id, @RequestBody Map<String, Object> payload, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"GARAGE_OWNER".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        Optional<Mechanic> mechanicOpt = mechanicRepository.findById(id);
+        if (mechanicOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Mechanic mechanic = mechanicOpt.get();
+        if (!mechanic.getGarage().getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        }
+
+        String name = payload.get("name") != null ? payload.get("name").toString() : null;
+        String phone = payload.get("phone") != null ? payload.get("phone").toString() : null;
+        String specialization = payload.get("specialization") != null ? payload.get("specialization").toString() : null;
+        String status = payload.get("status") != null ? payload.get("status").toString() : null;
+
+        if (name == null || name.trim().isEmpty() || phone == null || phone.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Name and Phone are required"));
+        }
+
+        mechanic.setName(name);
+        mechanic.setPhone(phone);
+        mechanic.setSpecialization(specialization);
+        if (status != null) {
+            mechanic.setStatus(status);
+        }
+
+        mechanicRepository.save(mechanic);
+        return ResponseEntity.ok(Map.of("message", "Mechanic updated successfully"));
+    }
+
+    // Delete a mechanic
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteMechanic(@PathVariable Long id, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"GARAGE_OWNER".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        Optional<Mechanic> mechanicOpt = mechanicRepository.findById(id);
+        if (mechanicOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Mechanic mechanic = mechanicOpt.get();
+        if (!mechanic.getGarage().getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        }
+
+        mechanicRepository.delete(mechanic);
+        return ResponseEntity.ok(Map.of("message", "Mechanic deleted successfully"));
+    }
+}

@@ -1,0 +1,95 @@
+/* variables.css - Core Design Tokens and Base Styles */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    /* Color Palette */
+    --bg-dark: #0b0f19;
+    --bg-card: rgba(17, 24, 39, 0.7);
+    --bg-card-hover: rgba(26, 36, 56, 0.9);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+
+    /* Theme Glow Colors */
+    --color-primary: #00f2fe;
+    --color-primary-rgb: 0, 242, 254;
+    --color-primary-grad: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    
+    --color-customer: #3b82f6;
+    --color-customer-grad: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+    
+    --color-garage: #10b981;
+    --color-garage-grad: linear-gradient(135deg, #047857 0%, #10b981 100%);
+    
+    --color-admin: #8b5cf6;
+    --color-admin-grad: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+    
+    --color-emergency: #ef4444;
+    --color-emergency-grad: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+    
+    --color-warning: #f59e0b;
+    --color-warning-grad: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+    
+    /* Layout & Styling */
+    --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-glow: 0 0 20px rgba(0, 242, 254, 0.2);
+    --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(79, 172, 254, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+/* Glassmorphism Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.01);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary-grad);
+}
+
+.text-gradient {
+    background: var(--color-primary-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-emergency {
+    background: var(--color-emergency-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.blur-background {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
