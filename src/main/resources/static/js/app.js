@@ -458,14 +458,16 @@
                 }
             };
 
+            // Load parts immediately so search doesn't hang on geolocation prompt/errors
+            performSearch(null, null);
+
+            // Optionally retrieve coordinates in the background to refine sorting by distance
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => performSearch(pos.coords.latitude, pos.coords.longitude),
-                    () => performSearch(null, null),
-                    { timeout: 5000 }
+                    () => {}, // Silently fail on block/timeout
+                    { timeout: 3000 }
                 );
-            } else {
-                performSearch(null, null);
             }
         },
 
