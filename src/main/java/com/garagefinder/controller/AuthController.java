@@ -71,6 +71,11 @@ public class AuthController {
             User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "GARAGE_OWNER", true);
             userRepository.save(user);
             return ResponseEntity.ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
+        } else if ("SHOP_OWNER".equalsIgnoreCase(role)) {
+            // Spare Part seller
+            User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "SHOP_OWNER", true);
+            userRepository.save(user);
+            return ResponseEntity.ok(Map.of("message", "Shop owner account created. Please sign in to register your spare part shop."));
         } else {
             // Default: customer
             User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);

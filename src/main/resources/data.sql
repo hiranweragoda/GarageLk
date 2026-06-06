@@ -117,3 +117,50 @@ ON DUPLICATE KEY UPDATE star_rating=star_rating;
 INSERT INTO reviews (id, customer_id, garage_id, booking_id, star_rating, comment, created_at)
 VALUES (3, 1, 3, 3, 5, 'Best wheel alignment in Galle! Very precise computerised balancing. My car drives perfectly straight now.', '2026-05-02 10:00:00')
 ON DUPLICATE KEY UPDATE star_rating=star_rating;
+
+
+-- 7. Insert Spare Part Shop Owners (password: password123)
+INSERT INTO users (id, username, password, email, phone, role, is_active) 
+VALUES (8, 'colomboparts', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'colomboparts@gmail.com', '0779988776', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE username=username;
+
+INSERT INTO users (id, username, password, email, phone, role, is_active) 
+VALUES (9, 'kandyparts', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'kandyparts@gmail.com', '0778877665', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE username=username;
+
+
+-- 8. Insert Spare Part Shops
+INSERT INTO spare_part_shops (id, user_id, shop_name, owner_name, description, address, city, district, status, latitude, longitude, phone, email)
+VALUES (1, 8, 'Colombo Auto Spares', 'Sunil Jayawardena', 'All kinds of Japanese car spare parts, genuine body parts, engines, and accessories.', '50, Panchikawatta Road, Borella', 'Colombo', 'Colombo', 'APPROVED', 6.9298, 79.8665, '0112334455', 'colomboparts@gmail.com')
+ON DUPLICATE KEY UPDATE shop_name=shop_name;
+
+INSERT INTO spare_part_shops (id, user_id, shop_name, owner_name, description, address, city, district, status, latitude, longitude, phone, email)
+VALUES (2, 9, 'Kandy Auto Spares', 'Nihal Kularatne', 'Retail and wholesale distributor of high quality automotive filters, brake pads, side mirrors, and electrical parts.', '12, Peradeniya Road', 'Kandy', 'Kandy', 'APPROVED', 7.2889, 80.6120, '0812334455', 'kandyparts@gmail.com')
+ON DUPLICATE KEY UPDATE shop_name=shop_name;
+
+
+-- 9. Insert Spare Parts
+INSERT INTO spare_parts (id, shop_id, part_name, vehicle_model, vehicle_year, price, quantity, status)
+VALUES (1, 1, 'Brake Pad', 'Toyota Prius', 2015, 12000.00, 10, 'IN_STOCK')
+ON DUPLICATE KEY UPDATE price=price;
+
+INSERT INTO spare_parts (id, shop_id, part_name, vehicle_model, vehicle_year, price, quantity, status)
+VALUES (2, 2, 'Brake Pad', 'Toyota Prius', 2015, 11500.00, 5, 'IN_STOCK')
+ON DUPLICATE KEY UPDATE price=price;
+
+INSERT INTO spare_parts (id, shop_id, part_name, vehicle_model, vehicle_year, price, quantity, status)
+VALUES (3, 1, 'Alternator', 'Toyota Prius', 2015, 35000.00, 2, 'IN_STOCK')
+ON DUPLICATE KEY UPDATE price=price;
+
+INSERT INTO spare_parts (id, shop_id, part_name, vehicle_model, vehicle_year, price, quantity, status)
+VALUES (4, 2, 'Alternator', 'Honda Vezel', 2016, 42000.00, 3, 'IN_STOCK')
+ON DUPLICATE KEY UPDATE price=price;
+
+INSERT INTO spare_parts (id, shop_id, part_name, vehicle_model, vehicle_year, price, quantity, status)
+VALUES (5, 1, 'Side Mirror', 'Honda Vezel', 2016, 18000.00, 4, 'IN_STOCK')
+ON DUPLICATE KEY UPDATE price=price;
+
+INSERT INTO spare_parts (id, shop_id, part_name, vehicle_model, vehicle_year, price, quantity, status)
+VALUES (6, 2, 'Side Mirror', 'Toyota Prius', 2015, 16500.00, 6, 'IN_STOCK')
+ON DUPLICATE KEY UPDATE price=price;
+

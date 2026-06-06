@@ -65,6 +65,12 @@
                         <a href="dashboard.html" class="dropdown-item" id="nav-dropdown-my-garages"><i class="fa-solid fa-warehouse"></i> My Garages</a>
                         <a href="#" class="dropdown-item" onclick="window.GarageLK.handleLogout(event)"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</a>
                     `;
+                } else if (this.currentUser.role === 'SHOP_OWNER') {
+                    dropdownHtml = `
+                        <a href="dashboard.html" class="dropdown-item"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+                        <a href="dashboard.html" class="dropdown-item" id="nav-dropdown-my-shops"><i class="fa-solid fa-store"></i> My Shops</a>
+                        <a href="#" class="dropdown-item" onclick="window.GarageLK.handleLogout(event)"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</a>
+                    `;
                 } else {
                     dropdownHtml = `
                         <a href="dashboard.html" class="dropdown-item"><i class="fa-solid fa-gauge"></i> Dashboard</a>
@@ -85,7 +91,7 @@
                     </div>
                 `;
 
-                // Add "My Garages" link to nav-links if role is GARAGE_OWNER
+                // Add "My Garages" or "My Shops" link to nav-links
                 const navLinks = document.querySelector('.nav-links');
                 if (this.currentUser.role === 'GARAGE_OWNER') {
                     if (navLinks && !document.getElementById('nav-my-garages')) {
@@ -103,10 +109,34 @@
                             navLinks.appendChild(myGaragesLink);
                         }
                     }
+                    const myShopsLink = document.getElementById('nav-my-shops');
+                    if (myShopsLink) myShopsLink.remove();
+                } else if (this.currentUser.role === 'SHOP_OWNER') {
+                    if (navLinks && !document.getElementById('nav-my-shops')) {
+                        const myShopsLink = document.createElement('a');
+                        myShopsLink.href = 'dashboard.html';
+                        myShopsLink.className = 'nav-link';
+                        myShopsLink.id = 'nav-my-shops';
+                        myShopsLink.innerHTML = '<i class="fa-solid fa-store"></i> My Shops';
+
+                        // Insert it before the "Dashboard" link
+                        const dashboardLink = document.getElementById('nav-dashboard');
+                        if (dashboardLink) {
+                            navLinks.insertBefore(myShopsLink, dashboardLink);
+                        } else {
+                            navLinks.appendChild(myShopsLink);
+                        }
+                    }
+                    const myGaragesLink = document.getElementById('nav-my-garages');
+                    if (myGaragesLink) myGaragesLink.remove();
                 } else {
                     const myGaragesLink = document.getElementById('nav-my-garages');
                     if (myGaragesLink) {
                         myGaragesLink.remove();
+                    }
+                    const myShopsLink = document.getElementById('nav-my-shops');
+                    if (myShopsLink) {
+                        myShopsLink.remove();
                     }
                 }
             } else {
@@ -114,11 +144,10 @@
                     <a href="auth.html" class="btn btn-outline" id="btn-login-nav">Sign In</a>
                     <a href="auth.html?tab=signup" class="btn btn-primary" id="btn-signup-nav">Get Started</a>
                 `;
-                // Remove nav-my-garages if present (logged out)
                 const myGaragesLink = document.getElementById('nav-my-garages');
-                if (myGaragesLink) {
-                    myGaragesLink.remove();
-                }
+                if (myGaragesLink) myGaragesLink.remove();
+                const myShopsLink = document.getElementById('nav-my-shops');
+                if (myShopsLink) myShopsLink.remove();
             }
         },
 
@@ -162,13 +191,18 @@
             document.getElementById('signup-role').value = role;
             const btnCustomer = document.getElementById('toggle-role-customer');
             const btnOwner = document.getElementById('toggle-role-owner');
+            const btnShop = document.getElementById('toggle-role-shop');
+
+            btnCustomer.classList.remove('active');
+            btnOwner.classList.remove('active');
+            if (btnShop) btnShop.classList.remove('active');
 
             if (role === 'CUSTOMER') {
                 btnCustomer.classList.add('active');
-                btnOwner.classList.remove('active');
-            } else {
+            } else if (role === 'OWNER' || role === 'GARAGE_OWNER') {
                 btnOwner.classList.add('active');
-                btnCustomer.classList.remove('active');
+            } else if (role === 'SHOP_OWNER') {
+                if (btnShop) btnShop.classList.add('active');
             }
         },
 
@@ -239,7 +273,7 @@
             await this.checkAuth();
             this.initMap();
 
-            // Set search listeners
+            // Set search listeners for garages
             const btnSearch = document.getElementById('btn-search');
             if (btnSearch) {
                 btnSearch.addEventListener('click', () => this.loadGarages());
@@ -252,10 +286,186 @@
                 });
             }
 
+            // Set search listeners for spare parts
+            const searchPartName = document.getElementById('search-part-name');
+            const searchPartModel = document.getElementById('search-part-model');
+            const searchPartYear = document.getElementById('search-part-year');
+
+            const handlePartEnter = (e) => {
+                if (e.key === 'Enter') this.loadSpareParts();
+            };
+
+            if (searchPartName) searchPartName.addEventListener('keypress', handlePartEnter);
+            if (searchPartModel) searchPartModel.addEventListener('keypress', handlePartEnter);
+            if (searchPartYear) searchPartYear.addEventListener('keypress', handlePartEnter);
+
             this.loadGarages();
 
             if (this.currentUser && this.currentUser.role === 'CUSTOMER') {
                 this.loadHomepageActiveBreakdown();
+            }
+        },
+
+        setSearchMode(mode) {
+            const btnGarage = document.getElementById('mode-garage');
+            const btnParts = document.getElementById('mode-parts');
+            const containerGarage = document.getElementById('garage-search-container');
+            const containerParts = document.getElementById('parts-search-container');
+
+            if (mode === 'garage') {
+                if (btnGarage) btnGarage.className = 'btn btn-primary';
+                if (btnParts) btnParts.className = 'btn btn-outline';
+                if (containerGarage) containerGarage.style.display = 'flex';
+                if (containerParts) containerParts.style.display = 'none';
+                this.loadGarages();
+            } else if (mode === 'parts') {
+                if (btnGarage) btnGarage.className = 'btn btn-outline';
+                if (btnParts) btnParts.className = 'btn btn-primary';
+                if (containerGarage) containerGarage.style.display = 'none';
+                if (containerParts) containerParts.style.display = 'flex';
+                this.loadSpareParts();
+            }
+        },
+
+        async loadSpareParts() {
+            const partName = document.getElementById('search-part-name').value.trim();
+            const vehicleModel = document.getElementById('search-part-model').value.trim();
+            const vehicleYear = document.getElementById('search-part-year').value.trim();
+            const city = document.getElementById('search-part-city').value;
+
+            const container = document.getElementById('garages-container');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div style="text-align:center; padding: 3rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary); margin-bottom: 1rem;"></i>
+                    <p>Searching parts marketplace...</p>
+                </div>
+            `;
+
+            // Clear previous map markers
+            if (this.markers) {
+                this.markers.forEach(m => this.map.removeLayer(m));
+            }
+            this.markers = [];
+
+            const performSearch = async (latitude, longitude) => {
+                try {
+                    let url = '/api/spare-parts/search';
+                    const params = [];
+                    if (partName) params.push(`partName=${encodeURIComponent(partName)}`);
+                    if (vehicleModel) params.push(`vehicleModel=${encodeURIComponent(vehicleModel)}`);
+                    if (vehicleYear) params.push(`vehicleYear=${encodeURIComponent(vehicleYear)}`);
+                    if (city) params.push(`city=${encodeURIComponent(city)}`);
+                    if (latitude) params.push(`lat=${latitude}`);
+                    if (longitude) params.push(`lng=${longitude}`);
+                    
+                    if (params.length > 0) url += '?' + params.join('&');
+
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error("Failed to load parts");
+                    const parts = await res.json();
+
+                    if (parts.length === 0) {
+                        container.innerHTML = `
+                            <div style="text-align:center; padding: 3rem; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius:var(--radius-md);">
+                                <i class="fa-solid fa-circle-info fa-2x" style="margin-bottom:1rem;"></i>
+                                <p>No matching spare parts in stock found.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    container.innerHTML = '';
+                    const mapPoints = [];
+                    const renderedShopIds = new Set();
+
+                    parts.forEach(p => {
+                        const shop = p.shop;
+                        const card = document.createElement('div');
+                        card.className = 'garage-card';
+                        
+                        const distText = (latitude && longitude && p.distance !== undefined) 
+                            ? ` (${p.distance.toFixed(1)} km away)` 
+                            : '';
+
+                        card.innerHTML = `
+                            <img src="${shop.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400'}" class="garage-card-img" alt="${shop.shopName}">
+                            <div class="garage-card-content">
+                                <div>
+                                    <div class="garage-header">
+                                        <h3 class="garage-title" style="color:var(--primary); font-size:1.15rem; font-weight:700; margin:0;">${p.partName}</h3>
+                                        <div style="font-size:1.2rem; font-weight:800; color:var(--accent);">${p.price.toLocaleString('en-LK', { style: 'currency', currency: 'LKR' })}</div>
+                                    </div>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px; margin-top:4px;">
+                                        <strong>Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear})<br>
+                                        <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-approved' : 'badge-pending'}">${p.quantity} Available</span>
+                                    </p>
+                                    <hr style="border:0; border-top:1px solid var(--border-color); margin:8px 0;">
+                                    <div class="garage-address" style="margin-top:4px;">
+                                        <i class="fa-solid fa-store"></i> <strong>${shop.shopName}</strong>${distText}
+                                    </div>
+                                    <div class="garage-address">
+                                        <i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}
+                                    </div>
+                                </div>
+                                <div class="garage-footer" style="margin-top:auto; padding-top:8px;">
+                                    <span class="garage-phone"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</span>
+                                    <a href="tel:${shop.phone}" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.85rem;"><i class="fa-solid fa-phone"></i> Call Shop</a>
+                                </div>
+                            </div>
+                        `;
+
+                        card.addEventListener('click', () => {
+                            if (shop.latitude && shop.longitude) {
+                                this.map.setView([shop.latitude, shop.longitude], 13);
+                            }
+                        });
+
+                        container.appendChild(card);
+
+                        if (shop.latitude && shop.longitude && !renderedShopIds.has(shop.id)) {
+                            renderedShopIds.add(shop.id);
+                            const marker = L.marker([shop.latitude, shop.longitude]).addTo(this.map);
+                            marker.bindPopup(`
+                                <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 180px;">
+                                    <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading);">${shop.shopName}</h4>
+                                    <p style="font-size:0.8rem; margin-bottom:6px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}</p>
+                                    <p style="font-size:0.8rem; margin-bottom:8px; color:var(--primary); font-weight:600;"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</p>
+                                    <div style="font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--border-color); padding-top:4px;">
+                                        Stocking: <strong>${p.partName}</strong> for ${p.vehicleModel}
+                                    </div>
+                                </div>
+                            `);
+                            this.markers.push(marker);
+                            mapPoints.push([shop.latitude, shop.longitude]);
+                        }
+                    });
+
+                    if (mapPoints.length > 0) {
+                        const bounds = L.latLngBounds(mapPoints);
+                        this.map.fitBounds(bounds, { padding: [50, 50] });
+                    }
+
+                } catch (err) {
+                    console.error("Error searching spare parts:", err);
+                    container.innerHTML = `
+                        <div style="text-align:center; padding: 3rem; color: var(--danger);">
+                            <i class="fa-solid fa-circle-exclamation fa-2x" style="margin-bottom:1rem;"></i>
+                            <p>Error loading spare parts. Please try again.</p>
+                        </div>
+                    `;
+                }
+            };
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => performSearch(pos.coords.latitude, pos.coords.longitude),
+                    () => performSearch(null, null),
+                    { timeout: 5000 }
+                );
+            } else {
+                performSearch(null, null);
             }
         },
 
@@ -753,6 +963,10 @@
                 if (editGarageId) {
                     this.openEditGarageModal(editGarageId);
                 }
+            } else if (role === 'SHOP_OWNER') {
+                this.switchDashboardTab('shop-my-shops');
+                await this.loadShopMyShops();
+                this.loadShopInventoryDropdown();
             } else if (role === 'ADMIN') {
                 this.switchDashboardTab('admin-approvals');
                 this.loadAdminApprovals();
@@ -804,6 +1018,19 @@
                     </button>
                     <button class="sidebar-btn" id="side-owner-analytics" onclick="window.GarageLK.switchDashboardTab('owner-analytics')">
                         <i class="fa-solid fa-chart-line"></i> Analytics Overview
+                    </button>
+                `;
+            } else if (role === 'SHOP_OWNER') {
+                html = `
+                    <div style="padding: 1rem; text-align: center; border-bottom:1px solid var(--border-color); margin-bottom:1rem;">
+                        <h4 style="font-weight:700;">Seller Panel</h4>
+                        <span style="font-size:0.75rem; color:var(--secondary);">Spare Parts Shop</span>
+                    </div>
+                    <button class="sidebar-btn" id="side-shop-my-shops" onclick="window.GarageLK.switchDashboardTab('shop-my-shops')">
+                        <i class="fa-solid fa-store"></i> My Shops
+                    </button>
+                    <button class="sidebar-btn" id="side-shop-inventory" onclick="window.GarageLK.switchDashboardTab('shop-inventory'); window.GarageLK.loadShopInventoryDropdown();">
+                        <i class="fa-solid fa-gears"></i> Manage Inventory
                     </button>
                 `;
             } else if (role === 'ADMIN') {
@@ -1213,6 +1440,81 @@
                                 </div>
                             `;
                             approvedList.appendChild(item);
+                        });
+                    }
+                }
+
+                // 3. Shop Approvals List
+                const shopList = document.getElementById('admin-shop-approvals-list');
+                if (shopList) {
+                    shopList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading pending shops...</p>';
+                    const shopRes = await fetch('/api/shops/all');
+                    if (shopRes.ok) {
+                        const allShops = await shopRes.json();
+                        const pendingShops = allShops.filter(s => s.status === 'PENDING_APPROVAL' || s.status === 'PENDING');
+                        
+                        if (pendingShops.length === 0) {
+                            shopList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No shops currently pending approval.</p>';
+                        } else {
+                            shopList.innerHTML = '';
+                            pendingShops.forEach(s => {
+                                const item = document.createElement('div');
+                                item.className = 'table-item';
+                                item.innerHTML = `
+                                    <div style="display:flex; gap:1.25rem; align-items:center;">
+                                        <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                        <div>
+                                            <h4 style="font-weight:700; margin-bottom:2px;">${s.name}</h4>
+                                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                                <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
+                                            </p>
+                                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; gap:0.5rem;">
+                                        <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                            onclick="window.GarageLK.handleApproveShop(${s.id})" unique-id="approve-shop-${s.id}">
+                                            <i class="fa-solid fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-outline btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                            onclick="window.GarageLK.handleRejectShop(${s.id})" unique-id="reject-shop-${s.id}">
+                                            Reject
+                                        </button>
+                                    </div>
+                                `;
+                                shopList.appendChild(item);
+                            });
+                        }
+
+                        // Append approved shops to approvedList
+                        const approvedShops = allShops.filter(s => s.status === 'APPROVED');
+                        approvedShops.forEach(s => {
+                            const item = document.createElement('div');
+                            item.className = 'table-item';
+                            item.innerHTML = `
+                                <div style="display:flex; gap:1.25rem; align-items:center;">
+                                    <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                    <div>
+                                        <h4 style="font-weight:700; margin-bottom:2px;">${s.name} (Spare Part Shop)</h4>
+                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                            <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
+                                        </p>
+                                        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                        onclick="window.GarageLK.handleCancelShop(${s.id})" unique-id="cancel-shop-${s.id}">
+                                        Cancel Approval
+                                    </button>
+                                </div>
+                            `;
+                            if (approvedList) {
+                                if (approvedList.innerHTML.includes('No approved garages')) {
+                                    approvedList.innerHTML = '';
+                                }
+                                approvedList.appendChild(item);
+                            }
                         });
                     }
                 }
@@ -2199,6 +2501,9 @@
                 const garagesRes = await fetch('/api/garages/all');
                 const garages = await garagesRes.json();
 
+                const shopsRes = await fetch('/api/shops/all');
+                const shops = await shopsRes.ok ? await shopsRes.json() : [];
+
                 const bookingsRes = await fetch('/api/bookings/my'); // Admin gets all bookings
                 const bookings = await bookingsRes.json();
 
@@ -2207,6 +2512,10 @@
 
                 // Compute counts
                 document.getElementById('admin-stat-garages').textContent = garages.length;
+                const shopStatEl = document.getElementById('admin-stat-shops');
+                if (shopStatEl) {
+                    shopStatEl.textContent = shops.length;
+                }
                 document.getElementById('admin-stat-bookings').textContent = bookings.length;
 
                 const activeBreakdowns = breakdowns.filter(b => b.status !== 'COMPLETED').length;
@@ -2216,6 +2525,9 @@
                 userIds.add(1); userIds.add(2); userIds.add(3); // standard seeds
                 bookings.forEach(b => userIds.add(b.user.id));
                 garages.forEach(g => userIds.add(g.owner.id));
+                shops.forEach(s => {
+                    if (s.user) userIds.add(s.user.id);
+                });
                 document.getElementById('admin-stat-users').textContent = userIds.size;
 
                 // Render breakdowns list
@@ -2417,6 +2729,14 @@
                 'edit-garage-image-preview',
                 'edit-garage-image'
             );
+            this.setupDragAndDrop(
+                'shop-image-zone',
+                'shop-image-file',
+                'shop-image-placeholder',
+                'shop-image-preview-container',
+                'shop-image-preview',
+                'shop-image'
+            );
         },
 
         setupDragAndDrop(zoneId, fileInputId, placeholderId, previewContainerId, previewImgId, hiddenInputId) {
@@ -2509,6 +2829,413 @@
 
             const data = await res.json();
             return data.imageUrl;
+        },
+
+        // --- SPARE PART SHOPS & INVENTORY CONTROLLERS ---
+        openAddShopModal() {
+            document.getElementById('edit-shop-id').value = '';
+            document.getElementById('shop-name').value = '';
+            document.getElementById('shop-desc').value = '';
+            document.getElementById('shop-address').value = '';
+            document.getElementById('shop-city').value = 'Colombo';
+            document.getElementById('shop-phone').value = '';
+            document.getElementById('shop-email').value = '';
+            document.getElementById('shop-image').value = '';
+            document.getElementById('shop-lat').value = '';
+            document.getElementById('shop-lng').value = '';
+
+            this.removeSelectedImage(null, 'shop-image-file', 'shop-image-placeholder', 'shop-image-preview-container', 'shop-image');
+            const submitBtn = document.getElementById('shop-submit-btn');
+            if (submitBtn) submitBtn.textContent = 'Submit Request';
+            this.openModal('modal-add-shop');
+        },
+
+        openEditShopModal(id) {
+            const s = this.ownerShops.find(x => x.id == id);
+            if (!s) return;
+
+            document.getElementById('edit-shop-id').value = s.id;
+            document.getElementById('shop-name').value = s.shopName;
+            document.getElementById('shop-desc').value = s.description;
+            document.getElementById('shop-address').value = s.address;
+            document.getElementById('shop-city').value = s.city;
+            document.getElementById('shop-phone').value = s.phone || '';
+            document.getElementById('shop-email').value = s.email || '';
+            document.getElementById('shop-image').value = s.imageUrl || '';
+            document.getElementById('shop-lat').value = s.latitude || '';
+            document.getElementById('shop-lng').value = s.longitude || '';
+
+            const placeholder = document.getElementById('shop-image-placeholder');
+            const previewContainer = document.getElementById('shop-image-preview-container');
+            const previewImg = document.getElementById('shop-image-preview');
+            const fileInput = document.getElementById('shop-image-file');
+
+            if (fileInput) fileInput.value = '';
+
+            if (s.imageUrl) {
+                if (previewImg) previewImg.src = s.imageUrl;
+                if (placeholder) placeholder.style.display = 'none';
+                if (previewContainer) previewContainer.style.display = 'block';
+            } else {
+                if (placeholder) placeholder.style.display = 'flex';
+                if (previewContainer) previewContainer.style.display = 'none';
+            }
+
+            const submitBtn = document.getElementById('shop-submit-btn');
+            if (submitBtn) submitBtn.textContent = 'Save Changes';
+            this.openModal('modal-add-shop');
+        },
+
+        async handleAddShop(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-shop-id').value;
+            const name = document.getElementById('shop-name').value.trim();
+            const description = document.getElementById('shop-desc').value.trim();
+            const address = document.getElementById('shop-address').value.trim();
+            const city = document.getElementById('shop-city').value;
+            const phone = document.getElementById('shop-phone').value.trim();
+            const email = document.getElementById('shop-email').value.trim();
+            
+            const fileInput = document.getElementById('shop-image-file');
+            let imageUrl = document.getElementById('shop-image').value.trim();
+
+            try {
+                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                    this.showToast('Uploading shop image...', 'info');
+                    imageUrl = await this.uploadFile(fileInput.files[0]);
+                } else if (!imageUrl) {
+                    this.showToast('Shop image is required.', 'error');
+                    return;
+                }
+
+                const latitude = parseFloat(document.getElementById('shop-lat').value);
+                const longitude = parseFloat(document.getElementById('shop-lng').value);
+
+                if (isNaN(latitude) || isNaN(longitude)) {
+                    this.showToast('Please select shop coordinates on the map.', 'error');
+                    return;
+                }
+
+                let url = '/api/shops';
+                let method = 'POST';
+                if (editId) {
+                    url = `/api/shops/${editId}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name, description, address, city, phone, email, imageUrl, latitude, longitude
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    this.showToast(editId ? 'Shop profile updated successfully! Pending admin approval.' : 'Spare Part Shop registered successfully! Pending admin approval.', 'success');
+                    this.closeModal('modal-add-shop');
+                    this.removeSelectedImage(null, 'shop-image-file', 'shop-image-placeholder', 'shop-image-preview-container', 'shop-image');
+                    await this.loadShopMyShops();
+                    this.loadShopInventoryDropdown();
+                } else {
+                    this.showToast(data.message || 'Operation failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error processing shop registration:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        toggleShopStatusDisplay(id, button) {
+            const badge = document.getElementById(`shop-status-badge-${id}`);
+            if (badge) {
+                if (badge.style.display === 'none') {
+                    badge.style.display = 'inline-block';
+                    button.textContent = 'Hide Status';
+                } else {
+                    badge.style.display = 'none';
+                    button.textContent = 'Show Status';
+                }
+            }
+        },
+
+        async loadShopMyShops() {
+            const list = document.getElementById('shop-my-shops-list');
+            if (!list) return;
+            list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading shops...</p>';
+
+            try {
+                const res = await fetch('/api/shops/my');
+                const shops = await res.json();
+                if (!res.ok) throw new Error();
+
+                this.ownerShops = shops;
+
+                if (shops.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have not registered any spare part shops yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                shops.forEach(s => {
+                    const item = document.createElement('div');
+                    item.className = 'table-item';
+
+                    let badgeClass = 'badge-pending';
+                    if (s.status === 'APPROVED') {
+                        badgeClass = 'badge-completed';
+                    } else if (s.status === 'REJECTED') {
+                        badgeClass = 'badge-danger';
+                    }
+
+                    item.innerHTML = `
+                        <div style="display:flex; gap:1rem; align-items:center;">
+                            <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=150'}" style="width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);">
+                            <div>
+                                <h4 style="font-weight:700;">${s.shopName}</h4>
+                                <p style="font-size:0.85rem; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}</p>
+                            </div>
+                        </div>
+                        <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                            <span class="badge ${badgeClass}" id="shop-status-badge-${s.id}" style="display:none;">${s.status}</span>
+                            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                                <button class="btn btn-outline" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.toggleShopStatusDisplay('${s.id}', this)" unique-id="toggle-shop-status-btn-${s.id}">
+                                    Show Status
+                                </button>
+                                <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.openEditShopModal(${s.id})" unique-id="edit-shop-btn-${s.id}">
+                                    Edit
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+
+            } catch (err) {
+                console.error("Error loading owner shops:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading shops.</p>';
+            }
+        },
+
+        loadShopInventoryDropdown() {
+            const select = document.getElementById('shop-inventory-select');
+            const btnAddPart = document.getElementById('btn-add-part');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">-- Choose Shop --</option>';
+            if (this.ownerShops && this.ownerShops.length > 0) {
+                this.ownerShops.forEach(s => {
+                    const suffix = s.status === 'APPROVED' ? '' : ` (${s.status})`;
+                    select.innerHTML += `<option value="${s.id}">${s.shopName}${suffix}</option>`;
+                });
+            }
+
+            if (btnAddPart) btnAddPart.style.display = 'none';
+            this.loadShopInventory();
+        },
+
+        async loadShopInventory() {
+            const shopId = document.getElementById('shop-inventory-select').value;
+            const list = document.getElementById('shop-inventory-list');
+            const btnAddPart = document.getElementById('btn-add-part');
+
+            if (!list) return;
+
+            if (!shopId) {
+                list.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:2rem;">Please select a shop to manage inventory.</p>';
+                if (btnAddPart) btnAddPart.style.display = 'none';
+                return;
+            }
+
+            if (btnAddPart) btnAddPart.style.display = 'inline-block';
+            list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading inventory...</p>';
+
+            try {
+                const res = await fetch(`/api/shops/${shopId}/parts`);
+                if (!res.ok) throw new Error();
+                const parts = await res.json();
+                this.currentInventory = parts;
+
+                if (parts.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No spare parts in this shop\'s inventory yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                parts.forEach(p => {
+                    const item = document.createElement('div');
+                    item.className = 'table-item';
+
+                    item.innerHTML = `
+                        <div style="flex:1;">
+                            <h4 style="font-weight:700;">${p.partName}</h4>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px;">
+                                <strong>Vehicle Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear}) &bull; 
+                                <strong>Price:</strong> LKR ${p.price.toFixed(2)} &bull; 
+                                <strong>Stock:</strong> ${p.quantity} units
+                            </p>
+                        </div>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.openEditPartModal(${p.id})" unique-id="edit-part-btn-${p.id}">
+                                Edit
+                            </button>
+                            <button class="btn btn-outline btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.handleDeletePart(${p.id})" unique-id="delete-part-btn-${p.id}">
+                                Delete
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                console.error("Error loading shop inventory:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading inventory.</p>';
+            }
+        },
+
+        openAddPartModal() {
+            document.getElementById('part-id').value = '';
+            document.getElementById('part-name').value = '';
+            document.getElementById('part-vehicle-model').value = '';
+            document.getElementById('part-vehicle-year').value = '';
+            document.getElementById('part-price').value = '';
+            document.getElementById('part-quantity').value = '';
+
+            const titleEl = document.getElementById('modal-part-title');
+            if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-gears"></i> Add Spare Part';
+            this.openModal('modal-add-part');
+        },
+
+        openEditPartModal(id) {
+            const p = this.currentInventory.find(x => x.id == id);
+            if (!p) return;
+
+            document.getElementById('part-id').value = p.id;
+            document.getElementById('part-name').value = p.partName;
+            document.getElementById('part-vehicle-model').value = p.vehicleModel;
+            document.getElementById('part-vehicle-year').value = p.vehicleYear;
+            document.getElementById('part-price').value = p.price;
+            document.getElementById('part-quantity').value = p.quantity;
+
+            const titleEl = document.getElementById('modal-part-title');
+            if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-gears"></i> Edit Spare Part';
+            this.openModal('modal-add-part');
+        },
+
+        async submitPartForm(e) {
+            e.preventDefault();
+            const shopId = document.getElementById('shop-inventory-select').value;
+            if (!shopId) return;
+
+            const partId = document.getElementById('part-id').value;
+            const partName = document.getElementById('part-name').value.trim();
+            const vehicleModel = document.getElementById('part-vehicle-model').value.trim();
+            const vehicleYear = parseInt(document.getElementById('part-vehicle-year').value);
+            const price = parseFloat(document.getElementById('part-price').value);
+            const quantity = parseInt(document.getElementById('part-quantity').value);
+
+            try {
+                const res = await fetch(`/api/shops/${shopId}/parts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: partId ? parseInt(partId) : null,
+                        partName, vehicleModel, vehicleYear, price, quantity
+                    })
+                });
+
+                if (res.ok) {
+                    this.showToast('Spare part saved successfully', 'success');
+                    this.closeModal('modal-add-part');
+                    this.loadShopInventory();
+                } else {
+                    const errData = await res.json();
+                    this.showToast(errData.message || 'Failed to save spare part', 'error');
+                }
+            } catch (err) {
+                console.error("Error saving spare part:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async handleDeletePart(id) {
+            const shopId = document.getElementById('shop-inventory-select').value;
+            if (!shopId) return;
+
+            if (!confirm('Are you sure you want to delete this spare part from stock?')) return;
+
+            try {
+                const res = await fetch(`/api/shops/${shopId}/parts/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    this.showToast('Spare part deleted successfully', 'success');
+                    this.loadShopInventory();
+                } else {
+                    const errData = await res.json();
+                    this.showToast(errData.message || 'Deletion failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error deleting spare part:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async handleApproveShop(id) {
+            try {
+                const res = await fetch(`/api/shops/${id}/approve`, {
+                    method: 'POST'
+                });
+
+                if (res.ok) {
+                    this.showToast('Shop approved successfully!', 'success');
+                    this.loadAdminApprovals();
+                } else {
+                    this.showToast('Approval failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error approving shop:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async handleRejectShop(id) {
+            if (!confirm('Are you sure you want to reject this shop?')) return;
+            try {
+                const res = await fetch(`/api/shops/${id}/reject`, {
+                    method: 'POST'
+                });
+
+                if (res.ok) {
+                    this.showToast('Shop rejected successfully!', 'info');
+                    this.loadAdminApprovals();
+                } else {
+                    this.showToast('Action failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error rejecting shop:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async handleCancelShop(id) {
+            if (!confirm('Are you sure you want to cancel the approval for this shop?')) return;
+            try {
+                const res = await fetch(`/api/shops/${id}/reject`, {
+                    method: 'POST'
+                });
+
+                if (res.ok) {
+                    this.showToast('Shop approval cancelled successfully!', 'info');
+                    this.loadAdminApprovals();
+                } else {
+                    this.showToast('Action failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error cancelling shop approval:", err);
+                this.showToast('Connection error', 'error');
+            }
         },
 
         // --- THEME / MODE CONTROLLER ---

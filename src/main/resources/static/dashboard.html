@@ -217,12 +217,56 @@
                     </div>
                 </section>
 
-                <!-- ADMIN: Pending Approvals Panel -->
-                <section id="section-admin-approvals" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-clipboard-check"></i> Garage Registration Approvals</h2>
+                <!-- SHOP OWNER: My Shops Panel -->
+                <section id="section-shop-my-shops" class="dashboard-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1.8rem;"><i class="fa-solid fa-store"></i> My Spare Part Shops</h2>
+                        <button class="btn btn-primary" onclick="window.GarageLK.openAddShopModal()" unique-id="add-shop-btn">
+                            <i class="fa-solid fa-plus"></i> Register Shop
+                        </button>
+                    </div>
+                    <div class="data-table-container">
+                        <div class="table-list" id="shop-my-shops-list">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SHOP OWNER: Manage Inventory Panel -->
+                <section id="section-shop-inventory" class="dashboard-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1.8rem;"><i class="fa-solid fa-gears"></i> Manage Inventory</h2>
+                        <div class="form-group" style="margin-bottom:0; display:flex; align-items:center; gap:0.75rem;">
+                            <label style="margin-bottom:0;">Select Shop:</label>
+                            <select id="shop-inventory-select" class="form-control" onchange="window.GarageLK.loadShopInventory()" style="width:200px; padding:0.5rem;" unique-id="shop-inventory-select-dropdown">
+                                <!-- Options populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <button class="btn btn-primary" onclick="window.GarageLK.openAddPartModal()" id="btn-add-part" style="display:none;" unique-id="add-part-btn">
+                            <i class="fa-solid fa-plus"></i> Add Spare Part
+                        </button>
+                    </div>
+
                     <div class="data-table-container">
                         <div class="table-header-row">
-                            <h3 style="font-size: 1.1rem;">Pending Approval List</h3>
+                            <h3 style="font-size: 1.1rem;">Spare Parts Inventory</h3>
+                            <span>Update prices and stock quantities</span>
+                        </div>
+                        <div class="table-list" id="shop-inventory-list">
+                            <p style="color:var(--text-muted); text-align:center; padding:2rem;">Please select a shop to manage inventory.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ADMIN: Pending Approvals Panel -->
+                <section id="section-admin-approvals" class="dashboard-section">
+                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-clipboard-check"></i> Registration Approvals</h2>
+                    <div class="data-table-container">
+                        <div class="table-header-row">
+                            <h3 style="font-size: 1.1rem;">Pending Garages Approval List</h3>
                             <span>Approve new garages before they appear in public searches</span>
                         </div>
                         <div class="table-list" id="admin-approvals-list">
@@ -232,8 +276,18 @@
                     
                     <div class="data-table-container" style="margin-top: 2rem;">
                         <div class="table-header-row">
-                            <h3 style="font-size: 1.1rem;">Approved Garages List</h3>
-                            <span>Active garages that are currently public</span>
+                            <h3 style="font-size: 1.1rem;">Pending Spare Part Shops Approval List</h3>
+                            <span>Approve new shops before they appear in public searches</span>
+                        </div>
+                        <div class="table-list" id="admin-shop-approvals-list">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+                    
+                    <div class="data-table-container" style="margin-top: 2rem;">
+                        <div class="table-header-row">
+                            <h3 style="font-size: 1.1rem;">Approved Garages & Shops List</h3>
+                            <span>Active businesses that are currently public</span>
                         </div>
                         <div class="table-list" id="admin-approved-list">
                             <!-- Dynamic items -->
@@ -557,6 +611,113 @@
                 </div>
                 <button type="button" class="btn btn-primary" onclick="window.GarageLK.confirmMapSelection()" id="btn-confirm-coords" disabled unique-id="confirm-location-btn">Confirm Location</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Register Spare Part Shop Modal (Owner) -->
+    <div class="modal-overlay" id="modal-add-shop">
+        <div class="modal-content">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-add-shop')"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-store"></i> Register Spare Part Shop</h3>
+            <form onsubmit="window.GarageLK.handleAddShop(event)">
+                <input type="hidden" id="edit-shop-id">
+                <div class="form-group">
+                    <label for="shop-name">Shop Name</label>
+                    <input type="text" id="shop-name" class="form-control" placeholder="e.g. Apex Auto Spares" required unique-id="shop-name-input">
+                </div>
+                <div class="form-group">
+                    <label for="shop-desc">Description</label>
+                    <textarea id="shop-desc" class="form-control" rows="3" placeholder="Briefly describe parts catalog..." required unique-id="shop-desc-textarea"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="shop-address">Address</label>
+                    <input type="text" id="shop-address" class="form-control" placeholder="e.g. No. 12, Baseline Road" required unique-id="shop-address-input">
+                </div>
+                <div class="form-group">
+                    <label for="shop-city">City</label>
+                    <select id="shop-city" class="form-control" required unique-id="shop-city-select">
+                        <option value="Colombo">Colombo</option>
+                        <option value="Kandy">Kandy</option>
+                        <option value="Galle">Galle</option>
+                        <option value="Kurunegala">Kurunegala</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="shop-phone">Contact Phone</label>
+                    <input type="tel" id="shop-phone" class="form-control" placeholder="e.g. +94 11 234 5678" required unique-id="shop-phone-input">
+                </div>
+                <div class="form-group">
+                    <label for="shop-email">Contact Email</label>
+                    <input type="email" id="shop-email" class="form-control" placeholder="e.g. sales@myparts.lk" required unique-id="shop-email-input">
+                </div>
+                <div class="form-group">
+                    <label>Shop Image</label>
+                    <div class="image-upload-zone" id="shop-image-zone" onclick="document.getElementById('shop-image-file').click()" unique-id="shop-image-upload-zone">
+                        <input type="file" id="shop-image-file" accept="image/*" style="display: none;">
+                        <div class="image-upload-placeholder" id="shop-image-placeholder">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p>Click or drag image here to upload</p>
+                            <span>Supports JPG, PNG, WEBP</span>
+                        </div>
+                        <div class="image-upload-preview" id="shop-image-preview-container" style="display: none;">
+                            <img id="shop-image-preview" src="" alt="Preview">
+                            <button type="button" class="btn-remove-image" id="btn-remove-shop-image" onclick="window.GarageLK.removeSelectedImage(event, 'shop-image-file', 'shop-image-placeholder', 'shop-image-preview-container', 'shop-image')"><i class="fa-solid fa-trash"></i> Remove</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="shop-image" required unique-id="shop-image-input">
+                </div>
+                <div class="form-group">
+                    <label>Location Coordinates</label>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
+                        <button type="button" class="btn btn-secondary" onclick="window.GarageLK.openMapPicker('shop-lat', 'shop-lng', 'shop-city')" style="width: 100%;" unique-id="shop-pick-map-btn">
+                            <i class="fa-solid fa-map-location-dot"></i> Pick on Map
+                        </button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label for="shop-lat" style="font-size: 0.8rem; color: var(--text-secondary);">Latitude</label>
+                            <input type="number" step="any" id="shop-lat" class="form-control" placeholder="Not selected" readonly required unique-id="shop-lat-input">
+                        </div>
+                        <div>
+                            <label for="shop-lng" style="font-size: 0.8rem; color: var(--text-secondary);">Longitude</label>
+                            <input type="number" step="any" id="shop-lng" class="form-control" placeholder="Not selected" readonly required unique-id="shop-lng-input">
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="shop-submit-btn" unique-id="shop-submit-btn">Submit Request</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Spare Part Modal (Owner) -->
+    <div class="modal-overlay" id="modal-add-part">
+        <div class="modal-content">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-add-part')"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;" id="modal-part-title"><i class="fa-solid fa-gears"></i> Add Spare Part</h3>
+            <form onsubmit="window.GarageLK.submitPartForm(event)">
+                <input type="hidden" id="part-id">
+                <div class="form-group">
+                    <label for="part-name">Part Name</label>
+                    <input type="text" id="part-name" class="form-control" placeholder="e.g. Brake Pad, Side Mirror, Alternator" required unique-id="part-name-form-input">
+                </div>
+                <div class="form-group">
+                    <label for="part-vehicle-model">Compatible Vehicle Model</label>
+                    <input type="text" id="part-vehicle-model" class="form-control" placeholder="e.g. Toyota Prius, Honda Vezel" required unique-id="part-vehicle-model-input">
+                </div>
+                <div class="form-group">
+                    <label for="part-vehicle-year">Compatible Vehicle Year</label>
+                    <input type="number" id="part-vehicle-year" class="form-control" placeholder="e.g. 2015" required unique-id="part-vehicle-year-input">
+                </div>
+                <div class="form-group">
+                    <label for="part-price">Price (LKR)</label>
+                    <input type="number" step="0.01" id="part-price" class="form-control" placeholder="e.g. 12500" required unique-id="part-price-form-input">
+                </div>
+                <div class="form-group">
+                    <label for="part-quantity">Stock Quantity</label>
+                    <input type="number" id="part-quantity" class="form-control" placeholder="e.g. 5" required unique-id="part-quantity-input">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="part-submit-btn">Save Spare Part</button>
+            </form>
         </div>
     </div>
 

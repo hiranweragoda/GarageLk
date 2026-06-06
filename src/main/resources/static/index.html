@@ -38,11 +38,21 @@
 
     <main>
         <section class="hero">
-            <h1>Find & Book the Best <span>Garages</span> Nearby</h1>
-            <p>Your ultimate portal to discover, review, and book professional garage services anywhere in Sri Lanka.
+            <h1>Find & Book the Best <span>Garages</span> & <span>Parts</span></h1>
+            <p>Your ultimate portal to discover automotive services and source genuine spare parts across Sri Lanka.
             </p>
 
-            <div class="search-container">
+            <div class="search-mode-tabs" style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
+                <button class="btn btn-primary" id="mode-garage" onclick="window.GarageLK.setSearchMode('garage')" style="border-radius: 50px; padding: 0.5rem 1.5rem;" unique-id="mode-garage-tab">
+                    <i class="fa-solid fa-warehouse"></i> Find Garages
+                </button>
+                <button class="btn btn-outline" id="mode-parts" onclick="window.GarageLK.setSearchMode('parts')" style="border-radius: 50px; padding: 0.5rem 1.5rem;" unique-id="mode-parts-tab">
+                    <i class="fa-solid fa-gears"></i> Parts Marketplace
+                </button>
+            </div>
+
+            <!-- Garage Search Container -->
+            <div class="search-container" id="garage-search-container">
                 <div class="search-input-group">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="search-keyword" placeholder="Search services, repairs, or names..."
@@ -60,6 +70,35 @@
                 </div>
                 <button class="btn btn-primary" id="btn-search" unique-id="search-submit">
                     <i class="fa-solid fa-magnifying-glass"></i> Find
+                </button>
+            </div>
+
+            <!-- Parts Search Container -->
+            <div class="search-container" id="parts-search-container" style="display: none; max-width: 900px; margin: 0 auto 2rem;">
+                <div class="search-input-group" style="flex: 1.2;">
+                    <i class="fa-solid fa-gears"></i>
+                    <input type="text" id="search-part-name" placeholder="Part name (e.g. Brake Pad, Alternator)" unique-id="part-name-input">
+                </div>
+                <div class="search-input-group">
+                    <i class="fa-solid fa-car"></i>
+                    <input type="text" id="search-part-model" placeholder="Model (e.g. Prius)" unique-id="part-model-input">
+                </div>
+                <div class="search-input-group" style="flex: 0.6;">
+                    <i class="fa-solid fa-calendar"></i>
+                    <input type="number" id="search-part-year" placeholder="Year (e.g. 2015)" unique-id="part-year-input">
+                </div>
+                <div class="search-input-group">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <select id="search-part-city" unique-id="part-city-dropdown">
+                        <option value="">All Cities</option>
+                        <option value="Colombo">Colombo</option>
+                        <option value="Kandy">Kandy</option>
+                        <option value="Galle">Galle</option>
+                        <option value="Kurunegala">Kurunegala</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="btn-search-parts" onclick="window.GarageLK.loadSpareParts()" unique-id="part-search-submit">
+                    <i class="fa-solid fa-magnifying-glass"></i> Find Parts
                 </button>
             </div>
             <div style="margin-top: 1.5rem;" id="emergency-assist-container">
