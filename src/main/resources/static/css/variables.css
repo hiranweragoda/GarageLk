@@ -80,12 +80,14 @@ body {
 .text-gradient {
     background: var(--color-primary-grad);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .text-gradient-emergency {
     background: var(--color-emergency-grad);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 

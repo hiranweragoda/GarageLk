@@ -141,6 +141,7 @@ header {
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--text-primary) 30%, var(--primary) 70%, var(--secondary) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -339,6 +340,7 @@ main {
 .hero h1 span {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -1206,6 +1208,7 @@ body.light-mode header {
 body.light-mode .logo {
     background: linear-gradient(135deg, #0f172a 30%, var(--primary) 70%, var(--secondary) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
