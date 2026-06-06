@@ -1332,3 +1332,9 @@ body.light-mode footer {
 .leaflet-popup-close-button {
     color: var(--text-secondary) !important;
 }
+
+/* Ensure Map Picker Modal always appears on top of other modal overlays */
+#modal-map-picker {
+    z-index: 3000;
+}
+
