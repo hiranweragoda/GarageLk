@@ -1223,7 +1223,7 @@
                     <button class="sidebar-btn" id="side-admin-monitor" onclick="window.GarageLK.switchDashboardTab('admin-monitor'); window.GarageLK.loadAdminMonitor();">
                         <i class="fa-solid fa-chart-line"></i> System Monitor
                     </button>
-                    <button class="sidebar-btn" id="side-admin-users" onclick="window.GarageLK.switchDashboardTab('admin-users'); window.GarageLK.switchAdminUserSubtab('users');">
+                    <button class="sidebar-btn" id="side-admin-users" onclick="window.GarageLK.switchDashboardTab('admin-users'); window.GarageLK.resetAdminUserFilter();">
                         <i class="fa-solid fa-users"></i> User Management
                     </button>
                 `;
@@ -2779,7 +2779,7 @@
             }
         },
 
-        async loadAdminUsers() {
+        async loadAdminUsers(roleFilter = 'ALL') {
             const list = document.getElementById('admin-users-list');
             if (!list) return;
             list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading users...</p>';
@@ -2787,10 +2787,14 @@
             try {
                 const res = await fetch('/api/auth/users');
                 if (!res.ok) throw new Error("Failed to fetch users");
-                const users = await res.json();
+                let users = await res.json();
+
+                if (roleFilter && roleFilter !== 'ALL') {
+                    users = users.filter(u => u.role === roleFilter);
+                }
 
                 if (users.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No registered users found.</p>';
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No users found matching the filter.</p>';
                     return;
                 }
 
@@ -2866,7 +2870,9 @@
                 const data = await res.json();
                 const msg = data.active ? 'User account has been activated.' : 'User account has been deactivated/suspended.';
                 this.showToast(msg, 'success');
-                this.loadAdminUsers();
+                const filterSelect = document.getElementById('admin-user-filter');
+                const currentFilter = filterSelect ? filterSelect.value : 'ALL';
+                this.loadAdminUsers(currentFilter);
             } catch (err) {
                 console.error("Error toggling user:", err);
                 this.showToast('Connection error', 'error');
@@ -2885,45 +2891,38 @@
                 }
                 const data = await res.json();
                 this.showToast(data.message || "User deleted successfully", "success");
-                this.loadAdminUsers();
+                const filterSelect = document.getElementById('admin-user-filter');
+                const currentFilter = filterSelect ? filterSelect.value : 'ALL';
+                this.loadAdminUsers(currentFilter);
             } catch (err) {
                 console.error("Error deleting user:", err);
                 this.showToast(err.message || 'Connection error', 'error');
             }
         },
 
-        switchAdminUserSubtab(tab) {
-            const tabUsers = document.getElementById('admin-subtab-users');
-            const tabMechanics = document.getElementById('admin-subtab-mechanics');
+        resetAdminUserFilter() {
+            const filterSelect = document.getElementById('admin-user-filter');
+            if (filterSelect) {
+                filterSelect.value = 'ALL';
+            }
+            this.handleAdminUserFilterChange();
+        },
+
+        handleAdminUserFilterChange() {
+            const filterValue = document.getElementById('admin-user-filter').value;
             const contentUsers = document.getElementById('admin-users-tab-content');
             const contentMechanics = document.getElementById('admin-mechanics-tab-content');
 
-            if (!tabUsers || !tabMechanics || !contentUsers || !contentMechanics) return;
+            if (!contentUsers || !contentMechanics) return;
 
-            if (tab === 'users') {
-                tabUsers.classList.add('active');
-                tabUsers.style.borderBottomColor = 'var(--primary)';
-                tabUsers.style.color = 'var(--text-primary)';
-
-                tabMechanics.classList.remove('active');
-                tabMechanics.style.borderBottomColor = 'transparent';
-                tabMechanics.style.color = 'var(--text-secondary)';
-
-                contentUsers.style.display = 'block';
-                contentMechanics.style.display = 'none';
-                this.loadAdminUsers();
-            } else {
-                tabMechanics.classList.add('active');
-                tabMechanics.style.borderBottomColor = 'var(--primary)';
-                tabMechanics.style.color = 'var(--text-primary)';
-
-                tabUsers.classList.remove('active');
-                tabUsers.style.borderBottomColor = 'transparent';
-                tabUsers.style.color = 'var(--text-secondary)';
-
+            if (filterValue === 'MECHANIC') {
                 contentUsers.style.display = 'none';
                 contentMechanics.style.display = 'block';
                 this.loadAdminMechanics();
+            } else {
+                contentUsers.style.display = 'block';
+                contentMechanics.style.display = 'none';
+                this.loadAdminUsers(filterValue);
             }
         },
 

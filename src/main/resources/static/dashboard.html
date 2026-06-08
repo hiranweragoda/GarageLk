@@ -358,14 +358,16 @@
                 <section id="section-admin-users" class="dashboard-section">
                     <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-users"></i> User Management</h2>
                     
-                    <!-- Admin User Sub-Tabs -->
-                    <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem;">
-                        <button class="nav-link active" id="admin-subtab-users" onclick="window.GarageLK.switchAdminUserSubtab('users')" style="font-size: 1.1rem; padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid var(--primary); color: var(--text-primary); background: none; font-weight: 600; transition: var(--transition-fast);">
-                            <i class="fa-solid fa-user-gear"></i> Users
-                        </button>
-                        <button class="nav-link" id="admin-subtab-mechanics" onclick="window.GarageLK.switchAdminUserSubtab('mechanics')" style="font-size: 1.1rem; padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-secondary); background: none; font-weight: 600; transition: var(--transition-fast);">
-                            <i class="fa-solid fa-screwdriver-wrench"></i> Mechanics Team
-                        </button>
+                    <!-- Admin User Filter Dropdown -->
+                    <div class="form-group" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; max-width: 400px;">
+                        <label for="admin-user-filter" style="margin-bottom: 0; white-space: nowrap; font-weight: 600; font-size: 1rem;">Filter User Type:</label>
+                        <select id="admin-user-filter" class="form-control" onchange="window.GarageLK.handleAdminUserFilterChange()" style="padding: 0.5rem 1rem; font-weight: 500;" unique-id="admin-user-filter-select">
+                            <option value="ALL">All Users</option>
+                            <option value="CUSTOMER">Customers</option>
+                            <option value="GARAGE_OWNER">Garage Owners</option>
+                            <option value="SHOP_OWNER">Shop Owners</option>
+                            <option value="MECHANIC">Mechanics</option>
+                        </select>
                     </div>
 
                     <!-- Users Tab Content -->
