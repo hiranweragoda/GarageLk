@@ -1579,7 +1579,7 @@
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="garage.html?id=${g.id}&isAdminView=true" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-garage-${g.id}">
+                                        <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-garage-${g.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
                                         <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
@@ -1619,7 +1619,7 @@
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="garage.html?id=${g.id}&isAdminView=true" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
+                                        <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
                                         <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
@@ -1661,7 +1661,7 @@
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="shop.html?id=${s.id}&isAdminView=true" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-shop-${s.id}">
+                                        <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-shop-${s.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
                                         <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
@@ -1701,7 +1701,7 @@
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="shop.html?id=${s.id}&isAdminView=true" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
+                                        <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
                                         <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
