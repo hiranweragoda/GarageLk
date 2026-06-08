@@ -336,10 +336,12 @@
             const container = document.getElementById('garages-container');
             if (!container) return;
 
+            const isPartSearch = (partName || vehicleModel || vehicleYear);
+
             container.innerHTML = `
                 <div style="text-align:center; padding: 3rem; color: var(--text-muted);">
                     <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary); margin-bottom: 1rem;"></i>
-                    <p>Searching parts marketplace...</p>
+                    <p>${isPartSearch ? 'Searching parts marketplace...' : 'Fetching spare part shops...'}</p>
                 </div>
             `;
 
@@ -351,11 +353,18 @@
 
             const performSearch = async (latitude, longitude) => {
                 try {
-                    let url = '/api/spare-parts/search';
+                    let url;
                     const params = [];
-                    if (partName) params.push(`partName=${encodeURIComponent(partName)}`);
-                    if (vehicleModel) params.push(`vehicleModel=${encodeURIComponent(vehicleModel)}`);
-                    if (vehicleYear) params.push(`vehicleYear=${encodeURIComponent(vehicleYear)}`);
+
+                    if (isPartSearch) {
+                        url = '/api/spare-parts/search';
+                        if (partName) params.push(`partName=${encodeURIComponent(partName)}`);
+                        if (vehicleModel) params.push(`vehicleModel=${encodeURIComponent(vehicleModel)}`);
+                        if (vehicleYear) params.push(`vehicleYear=${encodeURIComponent(vehicleYear)}`);
+                    } else {
+                        url = '/api/shops';
+                    }
+
                     if (city) params.push(`city=${encodeURIComponent(city)}`);
                     if (latitude) params.push(`lat=${latitude}`);
                     if (longitude) params.push(`lng=${longitude}`);
@@ -363,14 +372,14 @@
                     if (params.length > 0) url += '?' + params.join('&');
 
                     const res = await fetch(url);
-                    if (!res.ok) throw new Error("Failed to load parts");
-                    const parts = await res.json();
+                    if (!res.ok) throw new Error("Failed to load search results");
+                    const data = await res.json();
 
-                    if (parts.length === 0) {
+                    if (data.length === 0) {
                         container.innerHTML = `
                             <div style="text-align:center; padding: 3rem; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius:var(--radius-md);">
                                 <i class="fa-solid fa-circle-info fa-2x" style="margin-bottom:1rem;"></i>
-                                <p>No matching spare parts in stock found.</p>
+                                <p>${isPartSearch ? 'No matching spare parts in stock found.' : 'No active spare part shops found matching your search.'}</p>
                             </div>
                         `;
                         return;
@@ -378,69 +387,121 @@
 
                     container.innerHTML = '';
                     const mapPoints = [];
-                    const renderedShopIds = new Set();
 
-                    parts.forEach(p => {
-                        const shop = p.shop;
-                        const card = document.createElement('div');
-                        card.className = 'garage-card';
-                        
-                        const distText = (latitude && longitude && p.distance !== undefined) 
-                            ? ` (${p.distance.toFixed(1)} km away)` 
-                            : '';
+                    if (isPartSearch) {
+                        const renderedShopIds = new Set();
+                        data.forEach(p => {
+                            const shop = p.shop;
+                            const card = document.createElement('div');
+                            card.className = 'garage-card';
+                            
+                            const distText = (latitude && longitude && p.distance !== undefined) 
+                                ? ` (${p.distance.toFixed(1)} km away)` 
+                                : '';
 
-                        card.innerHTML = `
-                            <img src="${shop.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400'}" class="garage-card-img" alt="${shop.shopName}">
-                            <div class="garage-card-content">
-                                <div>
-                                    <div class="garage-header">
-                                        <h3 class="garage-title" style="color:var(--primary); font-size:1.15rem; font-weight:700; margin:0;">${p.partName}</h3>
-                                        <div style="font-size:1.2rem; font-weight:800; color:var(--accent);">${p.price.toLocaleString('en-LK', { style: 'currency', currency: 'LKR' })}</div>
+                            card.innerHTML = `
+                                <img src="${p.imageUrl || shop.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400'}" class="garage-card-img" alt="${p.partName}">
+                                <div class="garage-card-content">
+                                    <div>
+                                        <div class="garage-header">
+                                            <h3 class="garage-title" style="color:var(--primary); font-size:1.15rem; font-weight:700; margin:0;">${p.partName}</h3>
+                                            <div style="font-size:1.2rem; font-weight:800; color:var(--accent);">${p.price.toLocaleString('en-LK', { style: 'currency', currency: 'LKR' })}</div>
+                                        </div>
+                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px; margin-top:4px;">
+                                            <strong>Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear})<br>
+                                            <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-approved' : 'badge-pending'}">${p.quantity} Available</span>
+                                        </p>
+                                        <hr style="border:0; border-top:1px solid var(--border-color); margin:8px 0;">
+                                        <div class="garage-address" style="margin-top:4px;">
+                                            <i class="fa-solid fa-store"></i> <strong>${shop.shopName}</strong>${distText}
+                                        </div>
+                                        <div class="garage-address">
+                                            <i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}
+                                        </div>
                                     </div>
-                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px; margin-top:4px;">
-                                        <strong>Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear})<br>
-                                        <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-approved' : 'badge-pending'}">${p.quantity} Available</span>
-                                    </p>
-                                    <hr style="border:0; border-top:1px solid var(--border-color); margin:8px 0;">
-                                    <div class="garage-address" style="margin-top:4px;">
-                                        <i class="fa-solid fa-store"></i> <strong>${shop.shopName}</strong>${distText}
-                                    </div>
-                                    <div class="garage-address">
-                                        <i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}
+                                    <div class="garage-footer" style="margin-top:auto; padding-top:8px;">
+                                        <span class="garage-phone"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</span>
+                                        <a href="shop.html?id=${shop.id}" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.85rem;">View Shop</a>
                                     </div>
                                 </div>
-                                <div class="garage-footer" style="margin-top:auto; padding-top:8px;">
-                                    <span class="garage-phone"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</span>
-                                    <a href="tel:${shop.phone}" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.85rem;"><i class="fa-solid fa-phone"></i> Call Shop</a>
-                                </div>
-                            </div>
-                        `;
+                            `;
 
-                        card.addEventListener('click', () => {
-                            if (shop.latitude && shop.longitude) {
-                                this.map.setView([shop.latitude, shop.longitude], 13);
+                            card.addEventListener('click', () => {
+                                if (shop.latitude && shop.longitude) {
+                                    this.map.setView([shop.latitude, shop.longitude], 13);
+                                }
+                            });
+
+                            container.appendChild(card);
+
+                            if (shop.latitude && shop.longitude && !renderedShopIds.has(shop.id)) {
+                                renderedShopIds.add(shop.id);
+                                const marker = L.marker([shop.latitude, shop.longitude]).addTo(this.map);
+                                marker.bindPopup(`
+                                    <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 180px;">
+                                        <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading);">${shop.shopName}</h4>
+                                        <p style="font-size:0.8rem; margin-bottom:6px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}</p>
+                                        <p style="font-size:0.8rem; margin-bottom:8px; color:var(--primary); font-weight:600;"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</p>
+                                        <div style="font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--border-color); padding-top:4px;">
+                                            Stocking: <strong>${p.partName}</strong> for ${p.vehicleModel}
+                                        </div>
+                                    </div>
+                                `);
+                                this.markers.push(marker);
+                                mapPoints.push([shop.latitude, shop.longitude]);
                             }
                         });
+                    } else {
+                        // Shop Marketplace rendering logic (like garages)
+                        data.forEach(s => {
+                            const card = document.createElement('div');
+                            card.className = 'garage-card';
+                            
+                            const distText = (latitude && longitude && s.distance !== undefined) 
+                                ? ` (${s.distance.toFixed(1)} km away)` 
+                                : '';
 
-                        container.appendChild(card);
-
-                        if (shop.latitude && shop.longitude && !renderedShopIds.has(shop.id)) {
-                            renderedShopIds.add(shop.id);
-                            const marker = L.marker([shop.latitude, shop.longitude]).addTo(this.map);
-                            marker.bindPopup(`
-                                <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 180px;">
-                                    <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading);">${shop.shopName}</h4>
-                                    <p style="font-size:0.8rem; margin-bottom:6px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}</p>
-                                    <p style="font-size:0.8rem; margin-bottom:8px; color:var(--primary); font-weight:600;"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</p>
-                                    <div style="font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--border-color); padding-top:4px;">
-                                        Stocking: <strong>${p.partName}</strong> for ${p.vehicleModel}
+                            card.innerHTML = `
+                                <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400'}" class="garage-card-img" alt="${s.shopName}">
+                                <div class="garage-card-content">
+                                    <div>
+                                        <div class="garage-header">
+                                            <h3 class="garage-title">${s.shopName}</h3>
+                                        </div>
+                                        <div class="garage-address">
+                                            <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}${distText}
+                                        </div>
+                                        <p class="garage-description">${s.description || 'Quality automotive spare parts.'}</p>
+                                    </div>
+                                    <div class="garage-footer">
+                                        <span class="garage-phone"><i class="fa-solid fa-phone"></i> ${s.phone || 'N/A'}</span>
+                                        <a href="shop.html?id=${s.id}" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.85rem;">View Shop</a>
                                     </div>
                                 </div>
-                            `);
-                            this.markers.push(marker);
-                            mapPoints.push([shop.latitude, shop.longitude]);
-                        }
-                    });
+                            `;
+
+                            card.addEventListener('click', () => {
+                                if (s.latitude && s.longitude) {
+                                    this.map.setView([s.latitude, s.longitude], 13);
+                                }
+                            });
+
+                            container.appendChild(card);
+
+                            if (s.latitude && s.longitude) {
+                                const marker = L.marker([s.latitude, s.longitude]).addTo(this.map);
+                                marker.bindPopup(`
+                                    <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 150px;">
+                                        <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading);">${s.shopName}</h4>
+                                        <p style="font-size:0.85rem; margin-bottom:8px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${s.city}</p>
+                                        <a href="shop.html?id=${s.id}" class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; width:100%; text-align:center; color:white;">View Shop</a>
+                                    </div>
+                                `);
+                                this.markers.push(marker);
+                                mapPoints.push([s.latitude, s.longitude]);
+                            }
+                        });
+                    }
 
                     if (mapPoints.length > 0) {
                         const bounds = L.latLngBounds(mapPoints);
@@ -448,11 +509,11 @@
                     }
 
                 } catch (err) {
-                    console.error("Error searching spare parts:", err);
+                    console.error("Error searching spare parts / shops:", err);
                     container.innerHTML = `
                         <div style="text-align:center; padding: 3rem; color: var(--danger);">
                             <i class="fa-solid fa-circle-exclamation fa-2x" style="margin-bottom:1rem;"></i>
-                            <p>Error loading spare parts. Please try again.</p>
+                            <p>Error loading search results. Please try again.</p>
                         </div>
                     `;
                 }
@@ -809,6 +870,84 @@
                     </div>
                 `;
                 container.appendChild(item);
+            });
+        },
+
+        // --- SHOP DETAILS PAGE ---
+        async initShopDetails() {
+            await this.checkAuth();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const shopId = urlParams.get('id');
+            if (!shopId) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/shops/${shopId}`);
+                if (!res.ok) throw new Error("Shop not found");
+
+                const data = await res.json();
+                this.renderShopProfile(data.shop);
+                this.renderShopParts(data.parts);
+
+            } catch (err) {
+                console.error("Error loading shop details:", err);
+                this.showToast('Error loading shop details', 'error');
+            }
+        },
+
+        renderShopProfile(s) {
+            document.title = `${s.shopName} - GarageLK`;
+            const headerContainer = document.getElementById('shop-profile-header');
+
+            headerContainer.innerHTML = `
+                <div style="position:relative; margin-bottom: 2rem;">
+                    <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=1200'}" class="garage-hero-img" alt="${s.shopName}">
+                    <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap:wrap; gap:1rem;">
+                        <div>
+                            <h1 style="font-size:2.5rem; font-weight:800; margin-bottom:0.5rem;">${s.shopName}</h1>
+                            <div style="display:flex; gap:1.5rem; color:var(--text-secondary); font-size:0.95rem; flex-wrap:wrap;">
+                                <span><i class="fa-solid fa-location-dot" style="color:var(--primary)"></i> ${s.address}, ${s.city}</span>
+                                <span><i class="fa-solid fa-phone" style="color:var(--secondary)"></i> ${s.phone || 'N/A'}</span>
+                                <span><i class="fa-solid fa-envelope" style="color:var(--primary)"></i> ${s.email || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="color:var(--text-secondary); margin-top:1rem; font-size:1.05rem; line-height:1.6;">${s.description || 'Quality automotive spare parts.'}</p>
+                </div>
+            `;
+        },
+
+        renderShopParts(parts) {
+            const container = document.getElementById('parts-container');
+            container.innerHTML = '';
+
+            if (!parts || parts.length === 0) {
+                container.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 40px; grid-column: 1 / -1; width: 100%;">No spare parts listed in inventory at this shop currently.</p>`;
+                return;
+            }
+
+            parts.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'garage-card';
+                card.innerHTML = `
+                    <img src="${p.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=400'}" class="garage-card-img" alt="${p.partName}">
+                    <div class="garage-card-content">
+                        <div>
+                            <div class="garage-header">
+                                <h3 class="garage-title" style="color:var(--primary); font-size:1.15rem; font-weight:700; margin:0;">${p.partName}</h3>
+                                <div style="font-size:1.2rem; font-weight:800; color:var(--accent);">${p.price.toLocaleString('en-LK', { style: 'currency', currency: 'LKR' })}</div>
+                            </div>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px; margin-top:4px;">
+                                <strong>Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear})<br>
+                                <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-approved' : 'badge-pending'}">${p.quantity} Available</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
             });
         },
 
@@ -2739,6 +2878,14 @@
                 'shop-image-preview',
                 'shop-image'
             );
+            this.setupDragAndDrop(
+                'part-image-zone',
+                'part-image-file',
+                'part-image-placeholder',
+                'part-image-preview-container',
+                'part-image-preview',
+                'part-image'
+            );
         },
 
         setupDragAndDrop(zoneId, fileInputId, placeholderId, previewContainerId, previewImgId, hiddenInputId) {
@@ -3070,13 +3217,16 @@
                     item.className = 'table-item';
 
                     item.innerHTML = `
-                        <div style="flex:1;">
-                            <h4 style="font-weight:700;">${p.partName}</h4>
-                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px;">
-                                <strong>Vehicle Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear}) &bull; 
-                                <strong>Price:</strong> LKR ${p.price.toFixed(2)} &bull; 
-                                <strong>Stock:</strong> ${p.quantity} units
-                            </p>
+                        <div style="display:flex; gap:1rem; align-items:center; flex:1;">
+                            <img src="${p.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);">
+                            <div>
+                                <h4 style="font-weight:700; margin:0;">${p.partName}</h4>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:4px; margin-bottom:0;">
+                                    <strong>Vehicle Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear}) &bull; 
+                                    <strong>Price:</strong> LKR ${p.price.toFixed(2)} &bull; 
+                                    <strong>Stock:</strong> ${p.quantity} units
+                                </p>
+                            </div>
                         </div>
                         <div style="display:flex; gap:0.5rem; align-items:center;">
                             <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.openEditPartModal(${p.id})" unique-id="edit-part-btn-${p.id}">
@@ -3102,6 +3252,8 @@
             document.getElementById('part-vehicle-year').value = '';
             document.getElementById('part-price').value = '';
             document.getElementById('part-quantity').value = '';
+            document.getElementById('part-image').value = '';
+            this.removeSelectedImage(null, 'part-image-file', 'part-image-placeholder', 'part-image-preview-container', 'part-image');
 
             const titleEl = document.getElementById('modal-part-title');
             if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-gears"></i> Add Spare Part';
@@ -3118,6 +3270,22 @@
             document.getElementById('part-vehicle-year').value = p.vehicleYear;
             document.getElementById('part-price').value = p.price;
             document.getElementById('part-quantity').value = p.quantity;
+            document.getElementById('part-image').value = p.imageUrl || '';
+            const placeholder = document.getElementById('part-image-placeholder');
+            const previewContainer = document.getElementById('part-image-preview-container');
+            const previewImg = document.getElementById('part-image-preview');
+            const fileInput = document.getElementById('part-image-file');
+
+            if (fileInput) fileInput.value = '';
+
+            if (p.imageUrl) {
+                if (previewImg) previewImg.src = p.imageUrl;
+                if (placeholder) placeholder.style.display = 'none';
+                if (previewContainer) previewContainer.style.display = 'block';
+            } else {
+                if (placeholder) placeholder.style.display = 'flex';
+                if (previewContainer) previewContainer.style.display = 'none';
+            }
 
             const titleEl = document.getElementById('modal-part-title');
             if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-gears"></i> Edit Spare Part';
@@ -3136,19 +3304,28 @@
             const price = parseFloat(document.getElementById('part-price').value);
             const quantity = parseInt(document.getElementById('part-quantity').value);
 
+            const fileInput = document.getElementById('part-image-file');
+            let imageUrl = document.getElementById('part-image').value.trim();
+
             try {
+                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                    this.showToast('Uploading spare part image...', 'info');
+                    imageUrl = await this.uploadFile(fileInput.files[0]);
+                }
+
                 const res = await fetch(`/api/shops/${shopId}/parts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         id: partId ? parseInt(partId) : null,
-                        partName, vehicleModel, vehicleYear, price, quantity
+                        partName, vehicleModel, vehicleYear, price, quantity, imageUrl
                     })
                 });
 
                 if (res.ok) {
                     this.showToast('Spare part saved successfully', 'success');
                     this.closeModal('modal-add-part');
+                    this.removeSelectedImage(null, 'part-image-file', 'part-image-placeholder', 'part-image-preview-container', 'part-image');
                     this.loadShopInventory();
                 } else {
                     const errData = await res.json();

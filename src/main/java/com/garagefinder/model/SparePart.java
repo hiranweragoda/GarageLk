@@ -32,6 +32,9 @@ public class SparePart {
     @Column(nullable = false)
     private String status = "IN_STOCK"; // "IN_STOCK", "OUT_OF_STOCK"
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     public SparePart() {}
 
     public SparePart(SparePartShop shop, String partName, String vehicleModel, Integer vehicleYear, Double price, Integer quantity) {
@@ -108,5 +111,13 @@ public class SparePart {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

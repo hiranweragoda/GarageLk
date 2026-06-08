@@ -716,6 +716,22 @@
                     <label for="part-quantity">Stock Quantity</label>
                     <input type="number" id="part-quantity" class="form-control" placeholder="e.g. 5" required unique-id="part-quantity-input">
                 </div>
+                <div class="form-group">
+                    <label>Part Image (Optional)</label>
+                    <div class="image-upload-zone" id="part-image-zone" onclick="document.getElementById('part-image-file').click()" unique-id="part-image-upload-zone">
+                        <input type="file" id="part-image-file" accept="image/*" style="display: none;">
+                        <div class="image-upload-placeholder" id="part-image-placeholder">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p>Click or drag image here to upload</p>
+                            <span>Supports JPG, PNG, WEBP</span>
+                        </div>
+                        <div class="image-upload-preview" id="part-image-preview-container" style="display: none;">
+                            <img id="part-image-preview" src="" alt="Preview">
+                            <button type="button" class="btn-remove-image" id="btn-remove-part-image" onclick="window.GarageLK.removeSelectedImage(event, 'part-image-file', 'part-image-placeholder', 'part-image-preview-container', 'part-image')"><i class="fa-solid fa-trash"></i> Remove</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="part-image" unique-id="part-image-input">
+                </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="part-submit-btn">Save Spare Part</button>
             </form>
         </div>

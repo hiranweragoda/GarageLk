@@ -68,6 +68,7 @@ public class SparePartController {
             map.put("price", p.getPrice());
             map.put("quantity", p.getQuantity());
             map.put("status", p.getStatus());
+            map.put("imageUrl", p.getImageUrl());
             
             SparePartShop shop = p.getShop();
             Map<String, Object> shopMap = new LinkedHashMap<>();
@@ -99,6 +100,67 @@ public class SparePartController {
         }
 
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/api/shops")
+    public ResponseEntity<?> getShops(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng) {
+
+        List<SparePartShop> shops;
+        if (city != null && !city.trim().isEmpty()) {
+            shops = shopRepository.findByCityAndStatus(city.trim(), "APPROVED");
+        } else {
+            shops = shopRepository.findByStatus("APPROVED");
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (SparePartShop s : shops) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", s.getId());
+            map.put("shopName", s.getShopName());
+            map.put("name", s.getShopName());
+            map.put("ownerName", s.getOwnerName());
+            map.put("description", s.getDescription());
+            map.put("address", s.getAddress());
+            map.put("city", s.getCity());
+            map.put("district", s.getDistrict());
+            map.put("status", s.getStatus());
+            map.put("latitude", s.getLatitude());
+            map.put("longitude", s.getLongitude());
+            map.put("imageUrl", s.getImageUrl());
+            map.put("phone", s.getPhone());
+            map.put("email", s.getEmail());
+
+            double distance = 0.0;
+            if (lat != null && lng != null && s.getLatitude() != null && s.getLongitude() != null) {
+                distance = calculateDistance(lat, lng, s.getLatitude(), s.getLongitude());
+            }
+            map.put("distance", distance);
+            result.add(map);
+        }
+
+        if (lat != null && lng != null) {
+            result.sort(Comparator.comparingDouble(m -> (Double) m.get("distance")));
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/api/shops/{id}")
+    public ResponseEntity<?> getShopDetails(@PathVariable Long id) {
+        Optional<SparePartShop> shopOpt = shopRepository.findById(id);
+        if (shopOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        SparePartShop shop = shopOpt.get();
+        List<SparePart> parts = partRepository.findByShopId(id);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("shop", shop);
+        response.put("parts", parts);
+        return ResponseEntity.ok(response);
     }
 
     // ==========================================
@@ -241,6 +303,7 @@ public class SparePartController {
 
         String partName = payload.get("partName") != null ? payload.get("partName").toString() : null;
         String vehicleModel = payload.get("vehicleModel") != null ? payload.get("vehicleModel").toString() : null;
+        String imageUrl = payload.get("imageUrl") != null ? payload.get("imageUrl").toString() : null;
         
         Integer vehicleYear;
         try {
@@ -279,8 +342,10 @@ public class SparePartController {
             part.setVehicleYear(vehicleYear);
             part.setPrice(price);
             part.setQuantity(quantity);
+            part.setImageUrl(imageUrl);
         } else {
             part = new SparePart(shop, partName, vehicleModel, vehicleYear, price, quantity);
+            part.setImageUrl(imageUrl);
         }
 
         partRepository.save(part);
