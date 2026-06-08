@@ -1544,7 +1544,10 @@
                                             <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
                                         </div>
                                     </div>
-                                    <div style="display:flex; gap:0.5rem;">
+                                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                                        <a href="garage.html?id=${g.id}" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-garage-${g.id}">
+                                            <i class="fa-solid fa-eye"></i> View
+                                        </a>
                                         <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
                                             onclick="window.GarageLK.handleApproveGarage(${g.id})" unique-id="approve-garage-${g.id}">
                                             <i class="fa-solid fa-check"></i> Approve
@@ -1581,7 +1584,10 @@
                                             <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
                                         </div>
                                     </div>
-                                    <div>
+                                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                                        <a href="garage.html?id=${g.id}" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
+                                            <i class="fa-solid fa-eye"></i> View
+                                        </a>
                                         <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
                                             onclick="window.GarageLK.handleCancelGarage(${g.id})" unique-id="cancel-garage-${g.id}">
                                             Cancel Approval
@@ -1620,7 +1626,10 @@
                                             <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
                                         </div>
                                     </div>
-                                    <div style="display:flex; gap:0.5rem;">
+                                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                                        <a href="shop.html?id=${s.id}" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-shop-${s.id}">
+                                            <i class="fa-solid fa-eye"></i> View
+                                        </a>
                                         <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
                                             onclick="window.GarageLK.handleApproveShop(${s.id})" unique-id="approve-shop-${s.id}">
                                             <i class="fa-solid fa-check"></i> Approve
@@ -1657,7 +1666,10 @@
                                             <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
                                         </div>
                                     </div>
-                                    <div>
+                                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                                        <a href="shop.html?id=${s.id}" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
+                                            <i class="fa-solid fa-eye"></i> View
+                                        </a>
                                         <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
                                             onclick="window.GarageLK.handleCancelShop(${s.id})" unique-id="cancel-shop-${s.id}">
                                             Cancel Approval
