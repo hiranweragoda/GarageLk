@@ -444,4 +444,36 @@ public class SparePartController {
         List<SparePartShop> allShops = shopRepository.findAll();
         return ResponseEntity.ok(allShops);
     }
+
+    @PutMapping("/api/shops/{id}/status")
+    public ResponseEntity<?> updateShopStatus(@PathVariable Long id, @RequestBody Map<String, Object> payload, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        Optional<SparePartShop> shopOpt = shopRepository.findById(id);
+        if (shopOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        SparePartShop shop = shopOpt.get();
+        String status = payload.get("status") != null ? payload.get("status").toString() : null;
+        
+        if ("APPROVED".equalsIgnoreCase(status)) {
+            shop.setStatus("APPROVED");
+            shopRepository.save(shop);
+            return ResponseEntity.ok(Map.of("message", "Shop approved successfully"));
+        } else if ("REJECTED".equalsIgnoreCase(status)) {
+            shop.setStatus("REJECTED");
+            shopRepository.save(shop);
+            return ResponseEntity.ok(Map.of("message", "Shop rejected successfully"));
+        } else if ("SUSPENDED".equalsIgnoreCase(status)) {
+            shop.setStatus("SUSPENDED");
+            shopRepository.save(shop);
+            return ResponseEntity.ok(Map.of("message", "Shop suspended successfully"));
+        }
+
+        return ResponseEntity.badRequest().body(Map.of("message", "Invalid status"));
+    }
 }

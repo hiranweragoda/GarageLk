@@ -399,6 +399,11 @@ public class GarageController {
             garageRepository.save(garage);
             
             return ResponseEntity.ok(Map.of("message", "Garage cancelled successfully"));
+        } else if ("SUSPENDED".equalsIgnoreCase(status)) {
+            garage.setStatus("SUSPENDED");
+            garageRepository.save(garage);
+            
+            return ResponseEntity.ok(Map.of("message", "Garage suspended successfully"));
         }
 
         return ResponseEntity.badRequest().body(Map.of("message", "Invalid status"));
@@ -507,6 +512,10 @@ public class GarageController {
         User loggedIn = (User) session.getAttribute("LOGGED_IN_USER");
         if (loggedIn == null || !"ADMIN".equals(loggedIn.getRole())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        if (loggedIn.getId().equals(userId)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "You cannot deactivate your own admin account."));
         }
 
         Optional<User> userOpt = userRepository.findById(userId);

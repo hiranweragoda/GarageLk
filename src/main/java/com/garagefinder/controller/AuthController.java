@@ -107,6 +107,33 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/register/admin")
+    public ResponseEntity<?> registerAdmin(@RequestBody Map<String, String> payload, HttpSession session) {
+        User loggedIn = (User) session.getAttribute("LOGGED_IN_USER");
+        if (loggedIn == null || !"ADMIN".equals(loggedIn.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        String username = payload.get("username");
+        String password = payload.get("password");
+        String fullName = payload.get("fullName");
+        String email = payload.get("email");
+        String phone = payload.get("phone");
+
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Username and password are required"));
+        }
+
+        if (userRepository.findByUsername(username).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Username is already taken"));
+        }
+
+        User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "ADMIN", true);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Admin registered successfully"));
+    }
+
     @PostMapping("/register/garage")
     public ResponseEntity<?> registerGarage(@RequestBody Map<String, String> payload) {
         String username = payload.get("username");
@@ -181,6 +208,54 @@ public class AuthController {
         response.put("email", user.getEmail());
         response.put("phone", user.getPhone());
         response.put("role", user.getRole());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/profile/update")
+    public ResponseEntity<?> updateProfile(@RequestBody Map<String, String> payload, HttpSession session) {
+        User loggedIn = (User) session.getAttribute("LOGGED_IN_USER");
+        if (loggedIn == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not logged in"));
+        }
+
+        Optional<User> userOpt = userRepository.findById(loggedIn.getId());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        User user = userOpt.get();
+        String fullName = payload.get("fullName");
+        String email = payload.get("email");
+        String phone = payload.get("phone");
+        String password = payload.get("password");
+
+        if (email != null && !email.isBlank()) {
+            user.setEmail(email);
+        }
+        if (phone != null && !phone.isBlank()) {
+            user.setPhone(phone);
+        }
+        if (fullName != null) {
+            user.setFullName(fullName);
+        }
+        if (password != null && !password.isBlank()) {
+            user.setPassword(HashUtil.hashPassword(password));
+        }
+
+        userRepository.save(user);
+
+        // Update user in session
+        session.setAttribute("LOGGED_IN_USER", user);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", user.getId());
+        response.put("username", user.getUsername());
+        response.put("fullName", user.getFullName() != null ? user.getFullName() : user.getUsername());
+        response.put("email", user.getEmail());
+        response.put("phone", user.getPhone());
+        response.put("role", user.getRole());
+        response.put("message", "Profile updated successfully");
 
         return ResponseEntity.ok(response);
     }

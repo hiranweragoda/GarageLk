@@ -1226,6 +1226,9 @@
                     <button class="sidebar-btn" id="side-admin-users" onclick="window.GarageLK.switchDashboardTab('admin-users'); window.GarageLK.resetAdminUserFilter();">
                         <i class="fa-solid fa-users"></i> User Management
                     </button>
+                    <button class="sidebar-btn" id="side-admin-profile" onclick="window.GarageLK.switchDashboardTab('admin-profile'); window.GarageLK.loadAdminProfile();">
+                        <i class="fa-solid fa-user-gear"></i> Profile Management
+                    </button>
                 `;
             }
 
@@ -1601,7 +1604,7 @@
                     }
 
                     // 2. Approved List
-                    const approved = allGarages.filter(g => g.status === 'APPROVED');
+                    const approved = allGarages.filter(g => g.status === 'APPROVED' || g.status === 'SUSPENDED');
                     if (approvedGaragesList) {
                         if (approved.length === 0) {
                             approvedGaragesList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved garages.</p>';
@@ -1610,11 +1613,24 @@
                             approved.forEach(g => {
                                 const item = document.createElement('div');
                                 item.className = 'table-item';
+
+                                const isActive = g.status === 'APPROVED';
+                                const statusBadgeClass = isActive ? 'badge-approved' : 'badge-cancelled';
+                                const statusText = isActive ? 'Active' : 'Suspended';
+                                
+                                const toggleBtnText = isActive ? 'Deactivate' : 'Activate';
+                                const toggleBtnIcon = isActive ? 'fa-ban' : 'fa-check';
+                                const toggleColor = isActive ? 'var(--warning)' : 'var(--success)';
+                                const nextStatus = isActive ? 'SUSPENDED' : 'APPROVED';
+
                                 item.innerHTML = `
-                                    <div style="display:flex; gap:1.25rem; align-items:center;">
+                                    <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
                                         <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
                                         <div>
-                                            <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
+                                            <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
+                                                ${g.name}
+                                                <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
+                                            </h4>
                                             <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
                                                 <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
                                             </p>
@@ -1625,6 +1641,10 @@
                                         <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
+                                        <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; color:${toggleColor}; border-color:${toggleColor};" 
+                                            onclick="window.GarageLK.toggleGarageActive(${g.id}, '${nextStatus}')" unique-id="toggle-approved-garage-${g.id}">
+                                            <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
+                                        </button>
                                         <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
                                             onclick="window.GarageLK.handleCancelGarage(${g.id})" unique-id="cancel-garage-${g.id}">
                                             Cancel Approval
@@ -1683,7 +1703,7 @@
                     }
 
                     // 4. Approved Shops List
-                    const approvedShops = allShops.filter(s => s.status === 'APPROVED');
+                    const approvedShops = allShops.filter(s => s.status === 'APPROVED' || s.status === 'SUSPENDED');
                     if (approvedShopsList) {
                         if (approvedShops.length === 0) {
                             approvedShopsList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved shops.</p>';
@@ -1692,11 +1712,24 @@
                             approvedShops.forEach(s => {
                                 const item = document.createElement('div');
                                 item.className = 'table-item';
+
+                                const isActive = s.status === 'APPROVED';
+                                const statusBadgeClass = isActive ? 'badge-approved' : 'badge-cancelled';
+                                const statusText = isActive ? 'Active' : 'Suspended';
+                                
+                                const toggleBtnText = isActive ? 'Deactivate' : 'Activate';
+                                const toggleBtnIcon = isActive ? 'fa-ban' : 'fa-check';
+                                const toggleColor = isActive ? 'var(--warning)' : 'var(--success)';
+                                const nextStatus = isActive ? 'SUSPENDED' : 'APPROVED';
+
                                 item.innerHTML = `
-                                    <div style="display:flex; gap:1.25rem; align-items:center;">
+                                    <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
                                         <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
                                         <div>
-                                            <h4 style="font-weight:700; margin-bottom:2px;">${s.name}</h4>
+                                            <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
+                                                ${s.name}
+                                                <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
+                                            </h4>
                                             <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
                                                 <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
                                             </p>
@@ -1707,6 +1740,10 @@
                                         <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
+                                        <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; color:${toggleColor}; border-color:${toggleColor};" 
+                                            onclick="window.GarageLK.toggleShopActive(${s.id}, '${nextStatus}')" unique-id="toggle-approved-shop-${s.id}">
+                                            <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
+                                        </button>
                                         <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
                                             onclick="window.GarageLK.handleCancelShop(${s.id})" unique-id="cancel-shop-${s.id}">
                                             Cancel Approval
@@ -2915,6 +2952,16 @@
 
             if (!contentUsers || !contentMechanics) return;
 
+            // Show/hide Add Admin button
+            const addAdminBtn = document.getElementById('btn-add-admin');
+            if (addAdminBtn) {
+                if (filterValue === 'ADMIN') {
+                    addAdminBtn.style.display = 'block';
+                } else {
+                    addAdminBtn.style.display = 'none';
+                }
+            }
+
             if (filterValue === 'MECHANIC') {
                 contentUsers.style.display = 'none';
                 contentMechanics.style.display = 'block';
@@ -2923,6 +2970,84 @@
                 contentUsers.style.display = 'block';
                 contentMechanics.style.display = 'none';
                 this.loadAdminUsers(filterValue);
+            }
+        },
+
+        openAddAdminModal() {
+            document.getElementById('admin-reg-username').value = '';
+            document.getElementById('admin-reg-password').value = '';
+            document.getElementById('admin-reg-fullname').value = '';
+            document.getElementById('admin-reg-email').value = '';
+            document.getElementById('admin-reg-phone').value = '';
+            this.openModal('modal-add-admin');
+        },
+
+        async submitAdminForm(event) {
+            event.preventDefault();
+            const username = document.getElementById('admin-reg-username').value;
+            const password = document.getElementById('admin-reg-password').value;
+            const fullName = document.getElementById('admin-reg-fullname').value;
+            const email = document.getElementById('admin-reg-email').value;
+            const phone = document.getElementById('admin-reg-phone').value;
+
+            try {
+                const res = await fetch('/api/auth/register/admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, fullName, email, phone })
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.message || 'Failed to register admin');
+                }
+
+                this.showToast('Administrator registered successfully', 'success');
+                this.closeModal('modal-add-admin');
+                this.loadAdminUsers('ADMIN');
+            } catch (err) {
+                console.error("Error creating admin:", err);
+                this.showToast(err.message || 'Connection error', 'error');
+            }
+        },
+
+        loadAdminProfile() {
+            if (!this.currentUser) return;
+            document.getElementById('admin-profile-username').value = this.currentUser.username || '';
+            document.getElementById('admin-profile-fullname').value = this.currentUser.fullName || '';
+            document.getElementById('admin-profile-email').value = this.currentUser.email || '';
+            document.getElementById('admin-profile-phone').value = this.currentUser.phone || '';
+            document.getElementById('admin-profile-password').value = '';
+        },
+
+        async submitAdminProfileForm(event) {
+            event.preventDefault();
+            const fullName = document.getElementById('admin-profile-fullname').value;
+            const email = document.getElementById('admin-profile-email').value;
+            const phone = document.getElementById('admin-profile-phone').value;
+            const password = document.getElementById('admin-profile-password').value;
+
+            try {
+                const res = await fetch('/api/auth/profile/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName, email, phone, password })
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.message || 'Failed to update profile');
+                }
+
+                const updatedUser = await res.json();
+                this.currentUser = updatedUser;
+                this.showToast('Profile updated successfully', 'success');
+                this.updateNavUI();
+                this.renderSidebar();
+                this.loadAdminProfile();
+            } catch (err) {
+                console.error("Error updating profile:", err);
+                this.showToast(err.message || 'Connection error', 'error');
             }
         },
 
@@ -3724,6 +3849,44 @@
             }
         },
 
+        async toggleGarageActive(id, newStatus) {
+            const actionText = newStatus === 'SUSPENDED' ? 'deactivate' : 'activate';
+            if (!confirm(`Are you sure you want to ${actionText} this garage?`)) return;
+            try {
+                const res = await fetch(`/api/garages/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error("Failed to toggle status");
+                const data = await res.json();
+                this.showToast(data.message || 'Status updated successfully', 'success');
+                this.loadAdminApprovals();
+            } catch (err) {
+                console.error("Error toggling garage status:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async toggleShopActive(id, newStatus) {
+            const actionText = newStatus === 'SUSPENDED' ? 'deactivate' : 'activate';
+            if (!confirm(`Are you sure you want to ${actionText} this shop?`)) return;
+            try {
+                const res = await fetch(`/api/shops/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error("Failed to toggle status");
+                const data = await res.json();
+                this.showToast(data.message || 'Status updated successfully', 'success');
+                this.loadAdminApprovals();
+            } catch (err) {
+                console.error("Error toggling shop status:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
         // --- THEME / MODE CONTROLLER ---
         initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'night';
@@ -3774,11 +3937,65 @@
                 ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
             L.tileLayer(tilesUrl, { maxZoom: 20 }).addTo(this.map);
+        },
+
+        initLiveDateTime() {
+            const toggleBtn = document.querySelector('.theme-toggle');
+            if (!toggleBtn) return;
+
+            if (document.getElementById('live-datetime')) return;
+
+            const dtEl = document.createElement('div');
+            dtEl.id = 'live-datetime';
+            dtEl.style.display = 'inline-flex';
+            dtEl.style.flexDirection = 'column';
+            dtEl.style.alignItems = 'flex-end';
+            dtEl.style.justifyContent = 'center';
+            dtEl.style.gap = '2px';
+            dtEl.style.fontFamily = '"Outfit", "Inter", monospace';
+            dtEl.style.whiteSpace = 'nowrap';
+            dtEl.style.background = 'transparent';
+            dtEl.style.border = 'none';
+            dtEl.style.padding = '0';
+
+            // Create wrapper container to group toggle button and clock together in the corner
+            let wrapper = document.getElementById('theme-datetime-wrapper');
+            if (!wrapper) {
+                wrapper = document.createElement('div');
+                wrapper.id = 'theme-datetime-wrapper';
+                wrapper.style.display = 'inline-flex';
+                wrapper.style.alignItems = 'center';
+                wrapper.style.gap = '0.75rem';
+                
+                // Insert wrapper where toggleBtn is, then append toggle button first and clock second (at the very end)
+                toggleBtn.parentNode.insertBefore(wrapper, toggleBtn);
+                wrapper.appendChild(toggleBtn);
+                wrapper.appendChild(dtEl);
+            }
+
+            const updateDateTime = () => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const date = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                
+                dtEl.innerHTML = `
+                    <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500; text-align: right; line-height: 1.1;">${year}-${month}-${date}</div>
+                    <div style="font-size: 0.82rem; color: var(--text-primary); font-weight: 700; text-align: right; line-height: 1.1; margin-top: 1px;">${hours}:${minutes}:${seconds}</div>
+                `;
+            };
+            
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
         }
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         GarageLK.initTheme();
+        GarageLK.initLiveDateTime();
     });
 
     window.GarageLK = GarageLK;

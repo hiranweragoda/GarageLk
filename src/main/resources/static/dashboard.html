@@ -359,15 +359,21 @@
                     <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-users"></i> User Management</h2>
                     
                     <!-- Admin User Filter Dropdown -->
-                    <div class="form-group" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; max-width: 400px;">
-                        <label for="admin-user-filter" style="margin-bottom: 0; white-space: nowrap; font-weight: 600; font-size: 1rem;">Filter User Type:</label>
-                        <select id="admin-user-filter" class="form-control" onchange="window.GarageLK.handleAdminUserFilterChange()" style="padding: 0.5rem 1rem; font-weight: 500;" unique-id="admin-user-filter-select">
-                            <option value="ALL">All Users</option>
-                            <option value="CUSTOMER">Customers</option>
-                            <option value="GARAGE_OWNER">Garage Owners</option>
-                            <option value="SHOP_OWNER">Shop Owners</option>
-                            <option value="MECHANIC">Mechanics</option>
-                        </select>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div class="form-group" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0; max-width: 400px; flex: 1;">
+                            <label for="admin-user-filter" style="margin-bottom: 0; white-space: nowrap; font-weight: 600; font-size: 1rem;">Filter User Type:</label>
+                            <select id="admin-user-filter" class="form-control" onchange="window.GarageLK.handleAdminUserFilterChange()" style="padding: 0.5rem 1rem; font-weight: 500;" unique-id="admin-user-filter-select">
+                                <option value="ALL">All Users</option>
+                                <option value="CUSTOMER">Customers</option>
+                                <option value="GARAGE_OWNER">Garage Owners</option>
+                                <option value="SHOP_OWNER">Shop Owners</option>
+                                <option value="MECHANIC">Mechanics</option>
+                                <option value="ADMIN">Administrators</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="btn-add-admin" onclick="window.GarageLK.openAddAdminModal()" style="display: none; padding: 0.5rem 1.25rem; font-size: 0.9rem; font-weight: 600;" unique-id="btn-add-admin-trigger">
+                            <i class="fa-solid fa-user-plus"></i> Add Admin
+                        </button>
                     </div>
 
                     <!-- Users Tab Content -->
@@ -394,6 +400,38 @@
                                 <!-- Dynamic items loaded by app.js -->
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <!-- ADMIN: Profile Management Panel -->
+                <section id="section-admin-profile" class="dashboard-section">
+                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-user-gear"></i> Profile Settings</h2>
+                    <div class="data-table-container" style="max-width: 600px; margin: 0 auto; padding: 2rem;">
+                        <form onsubmit="window.GarageLK.submitAdminProfileForm(event)" id="admin-profile-form">
+                            <div class="form-group">
+                                <label for="admin-profile-username">Username</label>
+                                <input type="text" id="admin-profile-username" class="form-control" readonly style="background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: not-allowed;" unique-id="admin-profile-username-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-profile-fullname">Full Name</label>
+                                <input type="text" id="admin-profile-fullname" class="form-control" required unique-id="admin-profile-fullname-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-profile-email">Email Address</label>
+                                <input type="email" id="admin-profile-email" class="form-control" required unique-id="admin-profile-email-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-profile-phone">Contact Phone</label>
+                                <input type="tel" id="admin-profile-phone" class="form-control" required unique-id="admin-profile-phone-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-profile-password">New Password</label>
+                                <input type="password" id="admin-profile-password" class="form-control" placeholder="Leave blank to keep current password" unique-id="admin-profile-password-input">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; font-weight: 600;" unique-id="admin-profile-submit-btn">
+                                Save Profile Changes
+                            </button>
+                        </form>
                     </div>
                 </section>
             </div>
@@ -790,6 +828,39 @@
                     <input type="hidden" id="part-image" unique-id="part-image-input">
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="part-submit-btn">Save Spare Part</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Admin Modal (Admin) -->
+    <div class="modal-overlay" id="modal-add-admin">
+        <div class="modal-content">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-add-admin')"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-user-shield"></i> Add Administrator</h3>
+            <form onsubmit="window.GarageLK.submitAdminForm(event)">
+                <div class="form-group">
+                    <label for="admin-reg-username">Username</label>
+                    <input type="text" id="admin-reg-username" class="form-control" placeholder="e.g. admin_john" required unique-id="admin-username-input">
+                </div>
+                <div class="form-group">
+                    <label for="admin-reg-password">Password</label>
+                    <input type="password" id="admin-reg-password" class="form-control" placeholder="••••••••" required unique-id="admin-password-input">
+                </div>
+                <div class="form-group">
+                    <label for="admin-reg-fullname">Full Name</label>
+                    <input type="text" id="admin-reg-fullname" class="form-control" placeholder="e.g. John Doe" required unique-id="admin-fullname-input">
+                </div>
+                <div class="form-group">
+                    <label for="admin-reg-email">Email Address</label>
+                    <input type="email" id="admin-reg-email" class="form-control" placeholder="e.g. john@garagefinder.lk" required unique-id="admin-email-input">
+                </div>
+                <div class="form-group">
+                    <label for="admin-reg-phone">Contact Phone</label>
+                    <input type="tel" id="admin-reg-phone" class="form-control" placeholder="e.g. 0771234567" required unique-id="admin-phone-input">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" unique-id="admin-submit-btn">
+                    Create Administrator Account
+                </button>
             </form>
         </div>
     </div>
