@@ -1,19 +1,16 @@
 package com.garagefinder.controller;
 
-import com.garagefinder.model.Customer;
-import com.garagefinder.model.User;
-import com.garagefinder.repository.CustomerRepository;
-import com.garagefinder.repository.UserRepository;
+import com.garagefinder.model.*;
+import com.garagefinder.repository.*;
 import com.garagefinder.util.HashUtil;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -24,6 +21,30 @@ public class AuthController {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private GarageRepository garageRepository;
+
+    @Autowired
+    private SparePartShopRepository shopRepository;
+
+    @Autowired
+    private SparePartRepository partRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
+
+    @Autowired
+    private ReviewRepository reviewRepository;
+
+    @Autowired
+    private BreakdownRequestRepository breakdownRequestRepository;
+
+    @Autowired
+    private MechanicRepository mechanicRepository;
+
+    @Autowired
+    private OfferedServiceRepository offeredServiceRepository;
 
     @PostMapping("/register/customer")
     public ResponseEntity<?> registerCustomer(@RequestBody Map<String, String> payload) {
@@ -171,5 +192,87 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
         return ResponseEntity.ok(userRepository.findAll());
+    }
+
+    @DeleteMapping("/users/{userId}")
+    @Transactional
+    public ResponseEntity<?> deleteUser(@PathVariable Long userId, HttpSession session) {
+        User loggedIn = (User) session.getAttribute("LOGGED_IN_USER");
+        if (loggedIn == null || !"ADMIN".equals(loggedIn.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        if (loggedIn.getId().equals(userId)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "You cannot delete your own admin account."));
+        }
+
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        User user = userOpt.get();
+
+        // 1. GARAGE_OWNER cleanup
+        List<Garage> garages = garageRepository.findByUserId(userId);
+        for (Garage g : garages) {
+            // Delete associated mechanics
+            List<Mechanic> mechanics = mechanicRepository.findByGarageId(g.getId());
+            mechanicRepository.deleteAll(mechanics);
+            // Delete associated services
+            offeredServiceRepository.deleteByGarageId(g.getId());
+            // Delete associated reviews
+            List<Review> reviews = reviewRepository.findByGarageIdOrderByCreatedAtDesc(g.getId());
+            reviewRepository.deleteAll(reviews);
+            // Delete associated bookings
+            List<Booking> bookings = bookingRepository.findByGarageId(g.getId());
+            bookingRepository.deleteAll(bookings);
+            List<BreakdownRequest> breakdowns = breakdownRequestRepository.findByAssignedGarageId(g.getId());
+            for (BreakdownRequest br : breakdowns) {
+                br.setAssignedGarage(null);
+                br.setAssignedMechanic(null);
+                if ("ACCEPTED".equals(br.getStatus())) {
+                    br.setStatus("OPEN");
+                }
+                breakdownRequestRepository.save(br);
+            }
+            garageRepository.delete(g);
+        }
+
+        // 2. SHOP_OWNER cleanup
+        List<SparePartShop> shops = shopRepository.findByUserId(userId);
+        for (SparePartShop s : shops) {
+            // Delete parts
+            List<SparePart> parts = partRepository.findByShopId(s.getId());
+            partRepository.deleteAll(parts);
+            // Delete shop
+            shopRepository.delete(s);
+        }
+
+        // 3. CUSTOMER cleanup
+        Optional<Customer> customerOpt = customerRepository.findByUserId(userId);
+        if (customerOpt.isPresent()) {
+            Customer customer = customerOpt.get();
+            // Delete reviews
+            List<Review> reviews = reviewRepository.findAll();
+            for (Review r : reviews) {
+                if (r.getCustomer().getId().equals(customer.getId())) {
+                    reviewRepository.delete(r);
+                }
+            }
+            // Delete bookings
+            List<Booking> bookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(customer.getId());
+            bookingRepository.deleteAll(bookings);
+            // Delete breakdown requests
+            List<BreakdownRequest> breakdowns = breakdownRequestRepository.findByCustomerIdOrderByCreatedTimeDesc(customer.getId());
+            breakdownRequestRepository.deleteAll(breakdowns);
+            // Delete customer
+            customerRepository.delete(customer);
+        }
+
+        // Finally, delete the user
+        userRepository.delete(user);
+
+        return ResponseEntity.ok(Map.of("message", "User and all associated data deleted successfully"));
     }
 }

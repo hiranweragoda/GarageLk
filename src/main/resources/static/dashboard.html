@@ -353,6 +353,47 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- ADMIN: User Management Panel -->
+                <section id="section-admin-users" class="dashboard-section">
+                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-users"></i> User Management</h2>
+                    
+                    <!-- Admin User Sub-Tabs -->
+                    <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                        <button class="nav-link active" id="admin-subtab-users" onclick="window.GarageLK.switchAdminUserSubtab('users')" style="font-size: 1.1rem; padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid var(--primary); color: var(--text-primary); background: none; font-weight: 600; transition: var(--transition-fast);">
+                            <i class="fa-solid fa-user-gear"></i> Users
+                        </button>
+                        <button class="nav-link" id="admin-subtab-mechanics" onclick="window.GarageLK.switchAdminUserSubtab('mechanics')" style="font-size: 1.1rem; padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-secondary); background: none; font-weight: 600; transition: var(--transition-fast);">
+                            <i class="fa-solid fa-screwdriver-wrench"></i> Mechanics Team
+                        </button>
+                    </div>
+
+                    <!-- Users Tab Content -->
+                    <div id="admin-users-tab-content">
+                        <div class="data-table-container">
+                            <div class="table-header-row">
+                                <h3 style="font-size: 1.1rem;">Registered Users</h3>
+                                <span>View all registered users and manage active accounts</span>
+                            </div>
+                            <div class="table-list" id="admin-users-list">
+                                <!-- Dynamic items loaded by app.js -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mechanics Tab Content -->
+                    <div id="admin-mechanics-tab-content" style="display: none;">
+                        <div class="data-table-container">
+                            <div class="table-header-row">
+                                <h3 style="font-size: 1.1rem;">Mechanic Profiles</h3>
+                                <span>View all registered mechanics and their status across garages</span>
+                            </div>
+                            <div class="table-list" id="admin-mechanics-list">
+                                <!-- Dynamic items loaded by app.js -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     </main>

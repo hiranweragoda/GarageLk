@@ -25,6 +25,9 @@ public class Mechanic {
     @Column(nullable = false)
     private String status = "AVAILABLE"; // "AVAILABLE", "ON_RESCUE"
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     // Constructors
     public Mechanic() {}
 
@@ -83,5 +86,13 @@ public class Mechanic {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

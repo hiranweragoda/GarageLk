@@ -1223,6 +1223,9 @@
                     <button class="sidebar-btn" id="side-admin-monitor" onclick="window.GarageLK.switchDashboardTab('admin-monitor'); window.GarageLK.loadAdminMonitor();">
                         <i class="fa-solid fa-chart-line"></i> System Monitor
                     </button>
+                    <button class="sidebar-btn" id="side-admin-users" onclick="window.GarageLK.switchDashboardTab('admin-users'); window.GarageLK.switchAdminUserSubtab('users');">
+                        <i class="fa-solid fa-users"></i> User Management
+                    </button>
                 `;
             }
 
@@ -2773,6 +2776,256 @@
             } catch (err) {
                 console.error("Error loading admin monitor logs:", err);
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading monitor logs.</p>';
+            }
+        },
+
+        async loadAdminUsers() {
+            const list = document.getElementById('admin-users-list');
+            if (!list) return;
+            list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading users...</p>';
+
+            try {
+                const res = await fetch('/api/auth/users');
+                if (!res.ok) throw new Error("Failed to fetch users");
+                const users = await res.json();
+
+                if (users.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No registered users found.</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                users.forEach(u => {
+                    const item = document.createElement('div');
+                    item.className = 'table-item';
+
+                    const initials = u.fullName ?
+                        u.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() :
+                        u.username.substring(0, 2).toUpperCase();
+
+                    const isSelf = this.currentUser && this.currentUser.id === u.id;
+
+                    const statusBadgeClass = u.active ? 'badge-approved' : 'badge-cancelled';
+                    const statusText = u.active ? 'Active' : 'Suspended';
+
+                    // Actions HTML
+                    let actionHtml = '';
+                    if (isSelf) {
+                        actionHtml = `<span style="color:var(--text-muted); font-size:0.85rem; font-style:italic;"><i class="fa-solid fa-user-shield"></i> You (Admin)</span>`;
+                    } else {
+                        const toggleBtnText = u.active ? 'Deactivate' : 'Activate';
+                        const toggleBtnIcon = u.active ? 'fa-ban' : 'fa-check';
+                        const toggleColor = u.active ? 'var(--warning)' : 'var(--success)';
+                        
+                        actionHtml = `
+                            <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:${toggleColor}; border-color:${toggleColor};" 
+                                onclick="window.GarageLK.toggleUser(${u.id})" unique-id="toggle-user-btn-${u.id}">
+                                <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
+                            </button>
+                            <button class="btn btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                onclick="window.GarageLK.handleDeleteUser(${u.id})" unique-id="delete-user-btn-${u.id}">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        `;
+                    }
+
+                    item.innerHTML = `
+                        <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
+                            <div class="user-avatar" style="width:48px; height:48px; min-width:48px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.1rem; box-shadow:var(--shadow-sm);">
+                                ${initials}
+                            </div>
+                            <div>
+                                <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
+                                    ${u.fullName || u.username}
+                                    <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem; vertical-align:middle;">${statusText}</span>
+                                </h4>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:2px; line-height:1.4;">
+                                    <i class="fa-solid fa-user" style="width:16px;"></i> Username: <strong>${u.username}</strong> &bull; <i class="fa-solid fa-envelope" style="width:16px;"></i> ${u.email}
+                                </p>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.4;">
+                                    <i class="fa-solid fa-phone" style="width:16px;"></i> Phone: ${u.phone || 'N/A'} &bull; <i class="fa-solid fa-id-badge" style="width:16px;"></i> Role: <strong style="color:var(--secondary);">${u.role}</strong>
+                                </p>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:0.5rem; align-items:center; justify-content:flex-end; min-width:200px;">
+                            ${actionHtml}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                console.error("Error loading admin users:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading users.</p>';
+            }
+        },
+
+        async toggleUser(userId) {
+            try {
+                const res = await fetch(`/api/garages/admin/toggle-user/${userId}`, { method: 'POST' });
+                if (!res.ok) throw new Error("Toggle status failed");
+                const data = await res.json();
+                const msg = data.active ? 'User account has been activated.' : 'User account has been deactivated/suspended.';
+                this.showToast(msg, 'success');
+                this.loadAdminUsers();
+            } catch (err) {
+                console.error("Error toggling user:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async handleDeleteUser(userId) {
+            if (!confirm("WARNING: Are you sure you want to permanently delete this user?\n\nThis will also cascade delete all their registered garages, spare part shops, mechanic records, services, spare parts inventory, reviews, bookings, and emergency assist logs permanently! This action cannot be undone.")) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/auth/users/${userId}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.message || "Deletion failed");
+                }
+                const data = await res.json();
+                this.showToast(data.message || "User deleted successfully", "success");
+                this.loadAdminUsers();
+            } catch (err) {
+                console.error("Error deleting user:", err);
+                this.showToast(err.message || 'Connection error', 'error');
+            }
+        },
+
+        switchAdminUserSubtab(tab) {
+            const tabUsers = document.getElementById('admin-subtab-users');
+            const tabMechanics = document.getElementById('admin-subtab-mechanics');
+            const contentUsers = document.getElementById('admin-users-tab-content');
+            const contentMechanics = document.getElementById('admin-mechanics-tab-content');
+
+            if (!tabUsers || !tabMechanics || !contentUsers || !contentMechanics) return;
+
+            if (tab === 'users') {
+                tabUsers.classList.add('active');
+                tabUsers.style.borderBottomColor = 'var(--primary)';
+                tabUsers.style.color = 'var(--text-primary)';
+
+                tabMechanics.classList.remove('active');
+                tabMechanics.style.borderBottomColor = 'transparent';
+                tabMechanics.style.color = 'var(--text-secondary)';
+
+                contentUsers.style.display = 'block';
+                contentMechanics.style.display = 'none';
+                this.loadAdminUsers();
+            } else {
+                tabMechanics.classList.add('active');
+                tabMechanics.style.borderBottomColor = 'var(--primary)';
+                tabMechanics.style.color = 'var(--text-primary)';
+
+                tabUsers.classList.remove('active');
+                tabUsers.style.borderBottomColor = 'transparent';
+                tabUsers.style.color = 'var(--text-secondary)';
+
+                contentUsers.style.display = 'none';
+                contentMechanics.style.display = 'block';
+                this.loadAdminMechanics();
+            }
+        },
+
+        async loadAdminMechanics() {
+            const list = document.getElementById('admin-mechanics-list');
+            if (!list) return;
+            list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading mechanics...</p>';
+
+            try {
+                const res = await fetch('/api/mechanics/all');
+                if (!res.ok) throw new Error("Failed to fetch mechanics");
+                const mechanics = await res.json();
+
+                if (mechanics.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No mechanics found in the system.</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                mechanics.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'table-item';
+
+                    const statusBadgeClass = m.status === 'AVAILABLE' ? 'badge-approved' : 'badge-pending';
+                    const statusText = m.status === 'AVAILABLE' ? 'Available' : 'On Rescue';
+
+                    const activeBadgeClass = m.active ? 'badge-approved' : 'badge-cancelled';
+                    const activeText = m.active ? 'Active' : 'Suspended';
+
+                    // Actions HTML
+                    const toggleBtnText = m.active ? 'Deactivate' : 'Activate';
+                    const toggleBtnIcon = m.active ? 'fa-ban' : 'fa-check';
+                    const toggleColor = m.active ? 'var(--warning)' : 'var(--success)';
+
+                    item.innerHTML = `
+                        <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
+                            <div class="user-avatar" style="width:48px; height:48px; min-width:48px; border-radius:50%; background:var(--secondary); color:white; display:flex; align-items:center; justify-content:center; font-size:1.2rem; box-shadow:var(--shadow-sm);">
+                                <i class="fa-solid fa-wrench"></i>
+                            </div>
+                            <div>
+                                <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
+                                    ${m.name}
+                                    <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem; vertical-align:middle;">${statusText}</span>
+                                    <span class="badge ${activeBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem; vertical-align:middle;">${activeText}</span>
+                                </h4>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:2px; line-height:1.4;">
+                                    <i class="fa-solid fa-phone" style="width:16px;"></i> Phone: <strong>${m.phone}</strong> &bull; <i class="fa-solid fa-screwdriver-wrench" style="width:16px;"></i> Specialization: ${m.specialization || 'General'}
+                                </p>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.4;">
+                                    <i class="fa-solid fa-warehouse" style="width:16px;"></i> Garage: <strong style="color:var(--primary);">${m.garage ? m.garage.name : 'N/A'}</strong> (${m.garage ? m.garage.city : 'N/A'})
+                                </p>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:0.5rem; align-items:center; justify-content:flex-end; min-width:200px;">
+                            <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:${toggleColor}; border-color:${toggleColor};" 
+                                onclick="window.GarageLK.toggleMechanicActive(${m.id})" unique-id="toggle-mech-btn-${m.id}">
+                                <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
+                            </button>
+                            <button class="btn btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                onclick="window.GarageLK.handleDeleteMechanic(${m.id})" unique-id="delete-mechanic-btn-${m.id}">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                console.error("Error loading admin mechanics:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading mechanics.</p>';
+            }
+        },
+
+        async toggleMechanicActive(mechanicId) {
+            try {
+                const res = await fetch(`/api/mechanics/admin/toggle-active/${mechanicId}`, { method: 'POST' });
+                if (!res.ok) throw new Error("Toggle status failed");
+                const data = await res.json();
+                const msg = data.active ? 'Mechanic account has been activated.' : 'Mechanic account has been deactivated/suspended.';
+                this.showToast(msg, 'success');
+                this.loadAdminMechanics();
+            } catch (err) {
+                console.error("Error toggling mechanic active:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async handleDeleteMechanic(mechanicId) {
+            if (!confirm("Are you sure you want to permanently delete this mechanic profile?\n\nThis will unassign them from any active emergency breakdown rescue duties they are currently assigned to.")) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/mechanics/${mechanicId}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.message || "Deletion failed");
+                }
+                const data = await res.json();
+                this.showToast(data.message || "Mechanic deleted successfully", "success");
+                this.loadAdminMechanics();
+            } catch (err) {
+                console.error("Error deleting mechanic:", err);
+                this.showToast(err.message || 'Connection error', 'error');
             }
         },
 

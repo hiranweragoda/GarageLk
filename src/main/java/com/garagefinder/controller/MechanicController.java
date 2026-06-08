@@ -5,6 +5,8 @@ import com.garagefinder.model.Mechanic;
 import com.garagefinder.model.User;
 import com.garagefinder.repository.GarageRepository;
 import com.garagefinder.repository.MechanicRepository;
+import com.garagefinder.model.BreakdownRequest;
+import com.garagefinder.repository.BreakdownRequestRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,9 @@ public class MechanicController {
 
     @Autowired
     private GarageRepository garageRepository;
+
+    @Autowired
+    private BreakdownRequestRepository breakdownRequestRepository;
 
     // Get mechanics for the logged-in owner's garage
     @GetMapping
@@ -61,7 +66,8 @@ public class MechanicController {
         }
 
         List<Mechanic> mechanics = mechanicRepository.findByGarageIdAndStatus(garageId, "AVAILABLE");
-        return ResponseEntity.ok(mechanics);
+        List<Mechanic> activeAvailable = mechanics.stream().filter(Mechanic::isActive).toList();
+        return ResponseEntity.ok(activeAvailable);
     }
 
     // Add a mechanic
@@ -137,11 +143,43 @@ public class MechanicController {
         return ResponseEntity.ok(Map.of("message", "Mechanic updated successfully"));
     }
 
+    // Get all mechanics in the system (ADMIN only)
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllMechanics(HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+        return ResponseEntity.ok(mechanicRepository.findAll());
+    }
+
+    @PostMapping("/admin/toggle-active/{id}")
+    public ResponseEntity<?> toggleMechanicActive(@PathVariable Long id, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        Optional<Mechanic> mechOpt = mechanicRepository.findById(id);
+        if (mechOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Mechanic mechanic = mechOpt.get();
+        mechanic.setActive(!mechanic.isActive());
+        mechanicRepository.save(mechanic);
+
+        return ResponseEntity.ok(Map.of(
+            "message", "Mechanic status updated successfully",
+            "active", mechanic.isActive()
+        ));
+    }
+
     // Delete a mechanic
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteMechanic(@PathVariable Long id, HttpSession session) {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
-        if (user == null || !"GARAGE_OWNER".equals(user.getRole())) {
+        if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
@@ -151,11 +189,31 @@ public class MechanicController {
         }
 
         Mechanic mechanic = mechanicOpt.get();
-        if (!mechanic.getGarage().getUser().getId().equals(user.getId())) {
+
+        // Admin override
+        if ("ADMIN".equals(user.getRole())) {
+            cleanUpBreakdownRequestsForMechanic(id);
+            mechanicRepository.delete(mechanic);
+            return ResponseEntity.ok(Map.of("message", "Mechanic profile deleted successfully by admin"));
+        }
+
+        // Owner validation
+        if (!"GARAGE_OWNER".equals(user.getRole()) || !mechanic.getGarage().getUser().getId().equals(user.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
         }
 
+        cleanUpBreakdownRequestsForMechanic(id);
         mechanicRepository.delete(mechanic);
         return ResponseEntity.ok(Map.of("message", "Mechanic deleted successfully"));
+    }
+
+    private void cleanUpBreakdownRequestsForMechanic(Long mechanicId) {
+        List<BreakdownRequest> breakdowns = breakdownRequestRepository.findAll();
+        for (BreakdownRequest br : breakdowns) {
+            if (br.getAssignedMechanic() != null && br.getAssignedMechanic().getId().equals(mechanicId)) {
+                br.setAssignedMechanic(null);
+                breakdownRequestRepository.save(br);
+            }
+        }
     }
 }
