@@ -772,6 +772,29 @@
                 this.renderGarageServices(data.services);
                 this.renderGarageReviews(data.reviews);
 
+                // If user is ADMIN, hide booking sidebar & adjust grid columns
+                if (this.currentUser && this.currentUser.role === 'ADMIN') {
+                    const sidebar = document.querySelector('.booking-sidebar');
+                    if (sidebar) {
+                        sidebar.style.display = 'none';
+                    }
+                    const main = document.querySelector('.details-main');
+                    if (main) {
+                        main.style.width = '100%';
+                        main.style.maxWidth = '100%';
+                        main.style.flex = '1';
+                    }
+                    const grid = document.querySelector('.details-grid');
+                    if (grid) {
+                        grid.style.gridTemplateColumns = '1fr';
+                    }
+                    // Hide select services instructions
+                    const serviceDesc = document.querySelector('.details-panel p');
+                    if (serviceDesc && serviceDesc.textContent.includes('booking request')) {
+                        serviceDesc.style.display = 'none';
+                    }
+                }
+
             } catch (err) {
                 console.error("Error loading garage details:", err);
                 this.showToast('Error loading garage details', 'error');
@@ -858,6 +881,14 @@
             services.forEach(s => {
                 const item = document.createElement('div');
                 item.className = 'service-list-item';
+
+                // If user is ADMIN, do not render booking checkboxes
+                const isCheckable = !this.currentUser || this.currentUser.role !== 'ADMIN';
+                const checkboxHtml = isCheckable 
+                    ? `<input type="checkbox" class="form-control" style="width:20px; height:20px; cursor:pointer;" 
+                            onclick="window.GarageLK.toggleServiceSelect(this, ${s.id}, '${s.serviceName}', ${s.price})" unique-id="service-chk-${s.id}">`
+                    : '';
+
                 item.innerHTML = `
                     <div class="service-info">
                         <h4>${s.serviceName}</h4>
@@ -865,8 +896,7 @@
                     </div>
                     <div class="service-price-select">
                         <span class="service-price">LKR ${s.price.toFixed(2)}</span>
-                        <input type="checkbox" class="form-control" style="width:20px; height:20px; cursor:pointer;" 
-                            onclick="window.GarageLK.toggleServiceSelect(this, ${s.id}, '${s.serviceName}', ${s.price})" unique-id="service-chk-${s.id}">
+                        ${checkboxHtml}
                     </div>
                 `;
                 container.appendChild(item);
