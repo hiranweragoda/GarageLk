@@ -756,6 +756,7 @@
                 return;
             }
             this.selectedGarageId = garageId;
+            this.isAdminView = urlParams.get('isAdminView') === 'true';
 
             // Set min booking date to today
             const dateInput = document.getElementById('booking-date');
@@ -771,29 +772,6 @@
                 this.renderGarageProfile(data.garage);
                 this.renderGarageServices(data.services);
                 this.renderGarageReviews(data.reviews);
-
-                // If user is ADMIN, hide booking sidebar & adjust grid columns
-                if (this.currentUser && this.currentUser.role === 'ADMIN') {
-                    const sidebar = document.querySelector('.booking-sidebar');
-                    if (sidebar) {
-                        sidebar.style.display = 'none';
-                    }
-                    const main = document.querySelector('.details-main');
-                    if (main) {
-                        main.style.width = '100%';
-                        main.style.maxWidth = '100%';
-                        main.style.flex = '1';
-                    }
-                    const grid = document.querySelector('.details-grid');
-                    if (grid) {
-                        grid.style.gridTemplateColumns = '1fr';
-                    }
-                    // Hide select services instructions
-                    const serviceDesc = document.querySelector('.details-panel p');
-                    if (serviceDesc && serviceDesc.textContent.includes('booking request')) {
-                        serviceDesc.style.display = 'none';
-                    }
-                }
 
             } catch (err) {
                 console.error("Error loading garage details:", err);
@@ -819,13 +797,35 @@
                 `;
             }
 
+            let ownerInfoHtml = '';
+            if (this.isAdminView) {
+                ownerInfoHtml = `
+                    <div style="margin-top: 0.5rem; font-size: 1.15rem; color: var(--accent); font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-user-tie"></i> Owner: ${g.ownerName || (g.user ? (g.user.fullName || g.user.username) : 'N/A')}
+                    </div>
+                `;
+                
+                // Hide booking sidebar
+                setTimeout(() => {
+                    const bookingSidebar = document.querySelector('.booking-sidebar');
+                    if (bookingSidebar) {
+                        bookingSidebar.style.display = 'none';
+                    }
+                    const detailsGrid = document.querySelector('.details-grid');
+                    if (detailsGrid) {
+                        detailsGrid.style.gridTemplateColumns = '1fr';
+                    }
+                }, 50);
+            }
+
             headerContainer.innerHTML = `
                 <div style="position:relative; margin-bottom: 2rem;">
                     <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=1200'}" class="garage-hero-img" alt="${g.name}">
                     <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap:wrap; gap:1rem;">
                         <div>
-                            <h1 style="font-size:2.5rem; font-weight:800; margin-bottom:0.5rem;">${g.name}</h1>
-                            <div style="display:flex; gap:1.5rem; color:var(--text-secondary); font-size:0.95rem; flex-wrap:wrap;">
+                            <h1 style="font-size:2.5rem; font-weight:800; margin-bottom:0.25rem;">${g.name}</h1>
+                            ${ownerInfoHtml}
+                            <div style="display:flex; gap:1.5rem; color:var(--text-secondary); font-size:0.95rem; flex-wrap:wrap; margin-top:0.75rem;">
                                 <span><i class="fa-solid fa-location-dot" style="color:var(--primary)"></i> ${g.address}, ${g.city}</span>
                                 <span><i class="fa-solid fa-phone" style="color:var(--secondary)"></i> ${g.phone || 'N/A'}</span>
                                 <span><i class="fa-solid fa-envelope" style="color:var(--primary)"></i> ${g.email || 'N/A'}</span>
@@ -881,14 +881,6 @@
             services.forEach(s => {
                 const item = document.createElement('div');
                 item.className = 'service-list-item';
-
-                // If user is ADMIN, do not render booking checkboxes
-                const isCheckable = !this.currentUser || this.currentUser.role !== 'ADMIN';
-                const checkboxHtml = isCheckable 
-                    ? `<input type="checkbox" class="form-control" style="width:20px; height:20px; cursor:pointer;" 
-                            onclick="window.GarageLK.toggleServiceSelect(this, ${s.id}, '${s.serviceName}', ${s.price})" unique-id="service-chk-${s.id}">`
-                    : '';
-
                 item.innerHTML = `
                     <div class="service-info">
                         <h4>${s.serviceName}</h4>
@@ -896,7 +888,8 @@
                     </div>
                     <div class="service-price-select">
                         <span class="service-price">LKR ${s.price.toFixed(2)}</span>
-                        ${checkboxHtml}
+                        <input type="checkbox" class="form-control" style="width:20px; height:20px; cursor:pointer;" 
+                            onclick="window.GarageLK.toggleServiceSelect(this, ${s.id}, '${s.serviceName}', ${s.price})" unique-id="service-chk-${s.id}">
                     </div>
                 `;
                 container.appendChild(item);
@@ -913,6 +906,7 @@
                 window.location.href = 'index.html';
                 return;
             }
+            this.isAdminView = urlParams.get('isAdminView') === 'true';
 
             try {
                 const res = await fetch(`/api/shops/${shopId}`);
@@ -932,13 +926,23 @@
             document.title = `${s.shopName} - GarageLK`;
             const headerContainer = document.getElementById('shop-profile-header');
 
+            let ownerInfoHtml = '';
+            if (this.isAdminView) {
+                ownerInfoHtml = `
+                    <div style="margin-top: 0.5rem; font-size: 1.15rem; color: var(--accent); font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-user-tie"></i> Owner: ${s.ownerName || (s.user ? (s.user.fullName || s.user.username) : 'N/A')}
+                    </div>
+                `;
+            }
+
             headerContainer.innerHTML = `
                 <div style="position:relative; margin-bottom: 2rem;">
                     <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=1200'}" class="garage-hero-img" alt="${s.shopName}">
                     <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap:wrap; gap:1rem;">
                         <div>
-                            <h1 style="font-size:2.5rem; font-weight:800; margin-bottom:0.5rem;">${s.shopName}</h1>
-                            <div style="display:flex; gap:1.5rem; color:var(--text-secondary); font-size:0.95rem; flex-wrap:wrap;">
+                            <h1 style="font-size:2.5rem; font-weight:800; margin-bottom:0.25rem;">${s.shopName}</h1>
+                            ${ownerInfoHtml}
+                            <div style="display:flex; gap:1.5rem; color:var(--text-secondary); font-size:0.95rem; flex-wrap:wrap; margin-top:0.75rem;">
                                 <span><i class="fa-solid fa-location-dot" style="color:var(--primary)"></i> ${s.address}, ${s.city}</span>
                                 <span><i class="fa-solid fa-phone" style="color:var(--secondary)"></i> ${s.phone || 'N/A'}</span>
                                 <span><i class="fa-solid fa-envelope" style="color:var(--primary)"></i> ${s.email || 'N/A'}</span>
@@ -1575,7 +1579,7 @@
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="garage.html?id=${g.id}" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-garage-${g.id}">
+                                        <a href="garage.html?id=${g.id}&isAdminView=true" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-garage-${g.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
                                         <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
@@ -1615,7 +1619,7 @@
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="garage.html?id=${g.id}" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
+                                        <a href="garage.html?id=${g.id}&isAdminView=true" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
                                         <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
@@ -1657,7 +1661,7 @@
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="shop.html?id=${s.id}" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-shop-${s.id}">
+                                        <a href="shop.html?id=${s.id}&isAdminView=true" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-shop-${s.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
                                         <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
@@ -1697,7 +1701,7 @@
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="shop.html?id=${s.id}" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
+                                        <a href="shop.html?id=${s.id}&isAdminView=true" target="_blank" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
                                         <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
