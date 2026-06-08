@@ -1109,7 +1109,7 @@
                 await this.loadShopMyShops();
                 this.loadShopInventoryDropdown();
             } else if (role === 'ADMIN') {
-                this.switchDashboardTab('admin-approvals');
+                this.switchDashboardTab('admin-garage-approvals');
                 this.loadAdminApprovals();
                 this.loadAdminMonitor();
             }
@@ -1180,8 +1180,11 @@
                         <h4 style="font-weight:700;">Admin Panel</h4>
                         <span style="font-size:0.75rem; color:var(--danger);">System Administrator</span>
                     </div>
-                    <button class="sidebar-btn active" id="side-admin-approvals" onclick="window.GarageLK.switchDashboardTab('admin-approvals')">
-                        <i class="fa-solid fa-clipboard-check"></i> Pending Approvals
+                    <button class="sidebar-btn active" id="side-admin-garage-approvals" onclick="window.GarageLK.switchDashboardTab('admin-garage-approvals')">
+                        <i class="fa-solid fa-warehouse"></i> Garage Approvals
+                    </button>
+                    <button class="sidebar-btn" id="side-admin-shop-approvals" onclick="window.GarageLK.switchDashboardTab('admin-shop-approvals')">
+                        <i class="fa-solid fa-store"></i> Shop Approvals
                     </button>
                     <button class="sidebar-btn" id="side-admin-monitor" onclick="window.GarageLK.switchDashboardTab('admin-monitor'); window.GarageLK.loadAdminMonitor();">
                         <i class="fa-solid fa-chart-line"></i> System Monitor
@@ -1505,95 +1508,100 @@
         // --- ADMIN DATA LOADERS ---
         async loadAdminApprovals() {
             const list = document.getElementById('admin-approvals-list');
-            const approvedList = document.getElementById('admin-approved-list');
+            const approvedGaragesList = document.getElementById('admin-approved-garages-list');
+            const shopList = document.getElementById('admin-shop-approvals-list');
+            const approvedShopsList = document.getElementById('admin-approved-shops-list');
 
             if (list) list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading pending garages...</p>';
-            if (approvedList) approvedList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading approved garages...</p>';
+            if (approvedGaragesList) approvedGaragesList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading approved garages...</p>';
+            if (shopList) shopList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading pending shops...</p>';
+            if (approvedShopsList) approvedShopsList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading approved shops...</p>';
 
             try {
+                // Fetch Garages
                 const res = await fetch('/api/garages/all');
-                const allGarages = await res.json();
-                if (!res.ok) throw new Error();
-
-                // 1. Pending List
-                const pending = allGarages.filter(g => g.status === 'PENDING_APPROVAL' || g.status === 'PENDING');
-                if (list) {
-                    if (pending.length === 0) {
-                        list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No garages currently pending approval.</p>';
-                    } else {
-                        list.innerHTML = '';
-                        pending.forEach(g => {
-                            const item = document.createElement('div');
-                            item.className = 'table-item';
-                            item.innerHTML = `
-                                <div style="display:flex; gap:1.25rem; align-items:center;">
-                                    <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
-                                    <div>
-                                        <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
-                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                            <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
-                                        </p>
-                                        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
+                if (res.ok) {
+                    const allGarages = await res.json();
+                    
+                    // 1. Pending List
+                    const pending = allGarages.filter(g => g.status === 'PENDING_APPROVAL' || g.status === 'PENDING');
+                    if (list) {
+                        if (pending.length === 0) {
+                            list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No garages currently pending approval.</p>';
+                        } else {
+                            list.innerHTML = '';
+                            pending.forEach(g => {
+                                const item = document.createElement('div');
+                                item.className = 'table-item';
+                                item.innerHTML = `
+                                    <div style="display:flex; gap:1.25rem; align-items:center;">
+                                        <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                        <div>
+                                            <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
+                                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                                <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
+                                            </p>
+                                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div style="display:flex; gap:0.5rem;">
-                                    <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                        onclick="window.GarageLK.handleApproveGarage(${g.id})" unique-id="approve-garage-${g.id}">
-                                        <i class="fa-solid fa-check"></i> Approve
-                                    </button>
-                                    <button class="btn btn-outline btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                        onclick="window.GarageLK.handleRejectGarage(${g.id})" unique-id="reject-garage-${g.id}">
-                                        Reject
-                                    </button>
-                                </div>
-                            `;
-                            list.appendChild(item);
-                        });
+                                    <div style="display:flex; gap:0.5rem;">
+                                        <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                            onclick="window.GarageLK.handleApproveGarage(${g.id})" unique-id="approve-garage-${g.id}">
+                                            <i class="fa-solid fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-outline btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                            onclick="window.GarageLK.handleRejectGarage(${g.id})" unique-id="reject-garage-${g.id}">
+                                            Reject
+                                        </button>
+                                    </div>
+                                `;
+                                list.appendChild(item);
+                            });
+                        }
+                    }
+
+                    // 2. Approved List
+                    const approved = allGarages.filter(g => g.status === 'APPROVED');
+                    if (approvedGaragesList) {
+                        if (approved.length === 0) {
+                            approvedGaragesList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved garages.</p>';
+                        } else {
+                            approvedGaragesList.innerHTML = '';
+                            approved.forEach(g => {
+                                const item = document.createElement('div');
+                                item.className = 'table-item';
+                                item.innerHTML = `
+                                    <div style="display:flex; gap:1.25rem; align-items:center;">
+                                        <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                        <div>
+                                            <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
+                                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                                <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
+                                            </p>
+                                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                            onclick="window.GarageLK.handleCancelGarage(${g.id})" unique-id="cancel-garage-${g.id}">
+                                            Cancel Approval
+                                        </button>
+                                    </div>
+                                `;
+                                approvedGaragesList.appendChild(item);
+                            });
+                        }
                     }
                 }
 
-                // 2. Approved List
-                const approved = allGarages.filter(g => g.status === 'APPROVED');
-                if (approvedList) {
-                    if (approved.length === 0) {
-                        approvedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved garages.</p>';
-                    } else {
-                        approvedList.innerHTML = '';
-                        approved.forEach(g => {
-                            const item = document.createElement('div');
-                            item.className = 'table-item';
-                            item.innerHTML = `
-                                <div style="display:flex; gap:1.25rem; align-items:center;">
-                                    <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
-                                    <div>
-                                        <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
-                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                            <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
-                                        </p>
-                                        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                        onclick="window.GarageLK.handleCancelGarage(${g.id})" unique-id="cancel-garage-${g.id}">
-                                        Cancel Approval
-                                    </button>
-                                </div>
-                            `;
-                            approvedList.appendChild(item);
-                        });
-                    }
-                }
-
-                // 3. Shop Approvals List
-                const shopList = document.getElementById('admin-shop-approvals-list');
-                if (shopList) {
-                    shopList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading pending shops...</p>';
-                    const shopRes = await fetch('/api/shops/all');
-                    if (shopRes.ok) {
-                        const allShops = await shopRes.json();
-                        const pendingShops = allShops.filter(s => s.status === 'PENDING_APPROVAL' || s.status === 'PENDING');
-                        
+                // Fetch Shops
+                const shopRes = await fetch('/api/shops/all');
+                if (shopRes.ok) {
+                    const allShops = await shopRes.json();
+                    
+                    // 3. Shop Approvals List
+                    const pendingShops = allShops.filter(s => s.status === 'PENDING_APPROVAL' || s.status === 'PENDING');
+                    if (shopList) {
                         if (pendingShops.length === 0) {
                             shopList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No shops currently pending approval.</p>';
                         } else {
@@ -1626,44 +1634,45 @@
                                 shopList.appendChild(item);
                             });
                         }
+                    }
 
-                        // Append approved shops to approvedList
-                        const approvedShops = allShops.filter(s => s.status === 'APPROVED');
-                        approvedShops.forEach(s => {
-                            const item = document.createElement('div');
-                            item.className = 'table-item';
-                            item.innerHTML = `
-                                <div style="display:flex; gap:1.25rem; align-items:center;">
-                                    <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
-                                    <div>
-                                        <h4 style="font-weight:700; margin-bottom:2px;">${s.name} (Spare Part Shop)</h4>
-                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                            <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
-                                        </p>
-                                        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
+                    // 4. Approved Shops List
+                    const approvedShops = allShops.filter(s => s.status === 'APPROVED');
+                    if (approvedShopsList) {
+                        if (approvedShops.length === 0) {
+                            approvedShopsList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved shops.</p>';
+                        } else {
+                            approvedShopsList.innerHTML = '';
+                            approvedShops.forEach(s => {
+                                const item = document.createElement('div');
+                                item.className = 'table-item';
+                                item.innerHTML = `
+                                    <div style="display:flex; gap:1.25rem; align-items:center;">
+                                        <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                        <div>
+                                            <h4 style="font-weight:700; margin-bottom:2px;">${s.name}</h4>
+                                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                                <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
+                                            </p>
+                                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                        onclick="window.GarageLK.handleCancelShop(${s.id})" unique-id="cancel-shop-${s.id}">
-                                        Cancel Approval
-                                    </button>
-                                </div>
-                            `;
-                            if (approvedList) {
-                                if (approvedList.innerHTML.includes('No approved garages')) {
-                                    approvedList.innerHTML = '';
-                                }
-                                approvedList.appendChild(item);
-                            }
-                        });
+                                    <div>
+                                        <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                            onclick="window.GarageLK.handleCancelShop(${s.id})" unique-id="cancel-shop-${s.id}">
+                                            Cancel Approval
+                                        </button>
+                                    </div>
+                                `;
+                                approvedShopsList.appendChild(item);
+                            });
+                        }
                     }
                 }
-
             } catch (err) {
                 console.error("Error loading admin approvals:", err);
                 if (list) list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading admin approvals.</p>';
-                if (approvedList) approvedList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading approved list.</p>';
+                if (approvedGaragesList) approvedGaragesList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading approved list.</p>';
             }
         },
 
