@@ -164,3 +164,53 @@ INSERT INTO spare_parts (id, shop_id, part_name, vehicle_model, vehicle_year, pr
 VALUES (6, 2, 'Side Mirror', 'Toyota Prius', 2015, 16500.00, 6, 'IN_STOCK')
 ON DUPLICATE KEY UPDATE price=price;
 
+
+-- 10. Insert Seed Breakdown Requests
+-- Colombo requests
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (1, 1, 'Engine overheating on Baseline Road', 'Colombo', 'COMPLETED', '0711122334', '2026-05-10 10:00:00', 6.9271, 79.8612, 'WP CAD-4321', 'Baseline Road, Colombo 08')
+ON DUPLICATE KEY UPDATE description=description;
+
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (2, 2, 'Flat tire near Galle Face', 'Colombo', 'COMPLETED', '0722233445', '2026-05-11 11:30:00', 6.9275, 79.8484, 'CP LG-8899', 'Galle Face Green, Colombo 03')
+ON DUPLICATE KEY UPDATE description=description;
+
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (3, 1, 'Brake failure near Town Hall', 'Colombo', 'ACCEPTED', '0711122334', '2026-06-01 08:15:00', 6.9182, 79.8631, 'WP CAD-4321', 'Town Hall, Colombo 07')
+ON DUPLICATE KEY UPDATE description=description;
+
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (4, 2, 'Battery dead in Bambalapitiya', 'Colombo', 'OPEN', '0722233445', '2026-06-09 14:00:00', 6.8972, 79.8597, 'CP LG-8899', 'Galle Road, Colombo 04')
+ON DUPLICATE KEY UPDATE description=description;
+
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (5, 1, 'Transmission slip near Kollupitiya', 'Colombo', 'OPEN', '0711122334', '2026-06-10 16:30:00', 6.9112, 79.8512, 'WP CAD-4321', 'R. A. De Mel Mawatha, Colombo 03')
+ON DUPLICATE KEY UPDATE description=description;
+
+-- Kandy requests
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (6, 2, 'Clutch burn near Kandy Lake Round', 'Kandy', 'COMPLETED', '0722233445', '2026-05-15 09:00:00', 7.2911, 80.6418, 'CP LG-8899', 'Lake Round Road, Kandy')
+ON DUPLICATE KEY UPDATE description=description;
+
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (7, 1, 'Radiator leak in Peradeniya', 'Kandy', 'ACCEPTED', '0711122334', '2026-06-02 12:45:00', 7.2714, 80.5921, 'WP CAD-4321', 'Peradeniya, Kandy')
+ON DUPLICATE KEY UPDATE description=description;
+
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (8, 2, 'Suspension noise near Katugastota', 'Kandy', 'OPEN', '0722233445', '2026-06-10 18:00:00', 7.3211, 80.6288, 'CP LG-8899', 'Katugastota, Kandy')
+ON DUPLICATE KEY UPDATE description=description;
+
+-- Galle requests
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (9, 1, 'Engine warning light near Galle Fort', 'Galle', 'COMPLETED', '0711122334', '2026-05-20 15:30:00', 6.0264, 80.2176, 'WP CAD-4321', 'Fort, Galle')
+ON DUPLICATE KEY UPDATE description=description;
+
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (10, 2, 'Puncture tire in Karapitiya', 'Galle', 'OPEN', '0722233445', '2026-06-08 10:15:00', 6.0622, 80.2234, 'CP LG-8899', 'Karapitiya, Galle')
+ON DUPLICATE KEY UPDATE description=description;
+
+-- Kurunegala requests
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
+VALUES (11, 1, 'Alternator failure near Kurunegala Clock Tower', 'Kurunegala', 'COMPLETED', '0711122334', '2026-05-25 11:00:00', 7.4875, 80.3647, 'WP CAD-4321', 'Clock Tower Road, Kurunegala')
+ON DUPLICATE KEY UPDATE description=description;
+

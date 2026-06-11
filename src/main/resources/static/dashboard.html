@@ -312,6 +312,43 @@
                 <!-- ADMIN: System Monitor Panel -->
                 <section id="section-admin-monitor" class="dashboard-section">
                     <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-chart-line"></i> System Monitor</h2>
+                    
+                    <!-- Admin Date and Export controls (Excluded from PDF) -->
+                    <div class="data-table-container" data-html2pdf-ignore="true" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; border-radius: var(--radius-lg); border-left: 4px solid var(--color-primary);">
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 0.5rem;">
+                                <label for="admin-date-filter-type" style="margin-bottom: 0; white-space: nowrap; font-weight: 600;">Date Filter:</label>
+                                <select id="admin-date-filter-type" class="form-control" onchange="window.GarageLK.handleAdminDateFilterTypeChange()" style="padding: 0.4rem 0.8rem; width: 140px;" unique-id="admin-date-type">
+                                    <option value="ALL">All Time</option>
+                                    <option value="DAY">Specific Day</option>
+                                    <option value="MONTH">Specific Month</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Date input picker (Hidden by default) -->
+                            <div class="form-group" id="admin-date-picker-group" style="margin-bottom: 0; display: none; align-items: center; gap: 0.5rem;">
+                                <label for="admin-date-picker" style="margin-bottom: 0; white-space: nowrap; font-weight: 600;">Select Day:</label>
+                                <input type="date" id="admin-date-picker" class="form-control" onchange="window.GarageLK.applyAdminDateFilter()" style="padding: 0.4rem 0.8rem; width: 160px;" unique-id="admin-day-picker">
+                            </div>
+
+                            <!-- Month input picker (Hidden by default) -->
+                            <div class="form-group" id="admin-month-picker-group" style="margin-bottom: 0; display: none; align-items: center; gap: 0.5rem;">
+                                <label for="admin-month-picker" style="margin-bottom: 0; white-space: nowrap; font-weight: 600;">Select Month:</label>
+                                <input type="month" id="admin-month-picker" class="form-control" onchange="window.GarageLK.applyAdminDateFilter()" style="padding: 0.4rem 0.8rem; width: 160px;" unique-id="admin-month-picker-el">
+                            </div>
+                        </div>
+
+                        <!-- Export and Print buttons -->
+                        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                            <button class="btn btn-outline" onclick="window.GarageLK.exportAdminMonitorToExcel()" style="font-weight: 600;" unique-id="admin-export-excel-btn">
+                                <i class="fa-solid fa-file-excel" style="color: #10b981; margin-right: 0.4rem;"></i> Export Excel
+                            </button>
+                            <button class="btn btn-outline" onclick="window.GarageLK.downloadAdminMonitorAsPDF()" style="font-weight: 600;" unique-id="admin-export-pdf-btn">
+                                <i class="fa-solid fa-file-pdf" style="color: #ef4444; margin-right: 0.4rem;"></i> Download PDF
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="stats-grid" id="admin-stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
@@ -341,8 +378,46 @@
                                 <p>Active Emergencies</p>
                             </div>
                         </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="color: #a855f7; background: rgba(168, 85, 247, 0.1);"><i class="fa-solid fa-store"></i></div>
+                            <div class="stat-info">
+                                <h3 id="admin-stat-shops">0</h3>
+                                <p>Total Shops</p>
+                            </div>
+                        </div>
                     </div>
                     
+                    <!-- Clean Print Page Break for PDF -->
+                    <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
+
+                    <!-- Charts Container Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; margin-top: 1.5rem;">
+                        <div class="data-table-container" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-chart-pie" style="color: var(--color-primary); margin-right: 0.5rem;"></i>Breakdown Requests Status</h3>
+                            <div style="position: relative; height: 260px; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="chart-breakdown-status"></canvas>
+                            </div>
+                        </div>
+                        <div class="data-table-container" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-chart-bar" style="color: var(--color-admin); margin-right: 0.5rem;"></i>Service Providers Overview</h3>
+                            <div style="position: relative; height: 260px; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="chart-providers-overview"></canvas>
+                            </div>
+                        </div>
+                        <div class="data-table-container" style="padding: 1.5rem; border-radius: var(--radius-lg); display: flex; flex-direction: column;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-truck-monster" style="color: #f87171; margin-right: 0.5rem;"></i>Breakdowns by City</h3>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.35;">
+                                Shows real-world societal impact and rescue distribution across Sri Lanka's cities.
+                            </p>
+                            <div style="position: relative; height: 200px; display: flex; align-items: center; justify-content: center; flex: 1;">
+                                <canvas id="chart-breakdowns-by-city"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Clean Print Page Break for PDF -->
+                    <div style="page-break-before: always; height: 0; margin: 0; padding: 0;"></div>
+
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">System-Wide Emergency Logs</h3>
@@ -876,6 +951,11 @@
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for Excel Exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- html2pdf for PDF Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- App JavaScript -->
     <script src="js/app.js"></script>
     <script>

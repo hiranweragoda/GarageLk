@@ -31,6 +31,9 @@
         pickerMarker: null,
         activeLatInput: null,
         activeLngInput: null,
+        breakdownChart: null,
+        providersChart: null,
+        breakdownsByCityChart: null,
 
         // --- AUTH & INITIAL CHECK ---
         async checkAuth() {
@@ -2746,16 +2749,18 @@
                 const breakdownsRes = await fetch('/api/breakdowns/all');
                 const breakdowns = await breakdownsRes.json();
 
-                // Compute counts
+                const mechanicsRes = await fetch('/api/mechanics/all');
+                const mechanics = mechanicsRes.ok ? await mechanicsRes.json() : [];
+
+                // Store raw data for client-side filtering
+                this.adminRawData = { garages, shops, bookings, breakdowns, mechanics };
+
+                // Compute system-wide static counts
                 document.getElementById('admin-stat-garages').textContent = garages.length;
                 const shopStatEl = document.getElementById('admin-stat-shops');
                 if (shopStatEl) {
                     shopStatEl.textContent = shops.length;
                 }
-                document.getElementById('admin-stat-bookings').textContent = bookings.length;
-
-                const activeBreakdowns = breakdowns.filter(b => b.status !== 'COMPLETED').length;
-                document.getElementById('admin-stat-breakdowns').textContent = activeBreakdowns;
 
                 const userIds = new Set();
                 userIds.add(1); userIds.add(2); userIds.add(3); // standard seeds
@@ -2766,53 +2771,464 @@
                 });
                 document.getElementById('admin-stat-users').textContent = userIds.size;
 
-                // Render breakdowns list
-                if (breakdowns.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No emergency assist logs recorded.</p>';
-                    return;
-                }
-
-                list.innerHTML = '';
-                breakdowns.forEach(b => {
-                    const item = document.createElement('div');
-                    item.className = 'table-item';
-
-                    let badgeClass = 'badge-pending';
-                    let detailHtml = '<span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> Pending Dispatcher</span>';
-                    if (b.status === 'ACCEPTED') {
-                        badgeClass = 'badge-approved';
-                        detailHtml = `<span style="color:var(--secondary); font-size:0.85rem;"><i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy.name}</strong></span>`;
-                    } else if (b.status === 'COMPLETED') {
-                        badgeClass = 'badge-completed';
-                        detailHtml = `<span style="color:var(--success); font-size:0.85rem;"><i class="fa-solid fa-circle-check"></i> Resolved by ${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</span>`;
-                    }
-
-                    item.innerHTML = `
-                        <div style="flex:1;">
-                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                <h4 style="font-weight:700;">Request ID #${b.id} &bull; ${b.user.fullName || b.user.username}</h4>
-                                <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
-                            </div>
-                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
-                            </p>
-                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3; margin-bottom:6px;">
-                                <strong>Vehicle:</strong> ${b.vehicleNo} &bull; <strong>Phone:</strong> ${b.contactPhone} <br>
-                                ${b.assignedMechanic ? `<strong>Mechanic:</strong> ${b.assignedMechanic.name} (${b.assignedMechanic.phone}) <br>` : ''}
-                                <strong>Issue:</strong> ${b.description}
-                            </p>
-                            ${detailHtml}
-                        </div>
-                        <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:140px;">
-                            <span class="badge ${badgeClass}">${b.status}</span>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+                // Sync controls and trigger client-side date filter rendering
+                this.applyAdminDateFilter();
 
             } catch (err) {
                 console.error("Error loading admin monitor logs:", err);
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading monitor logs.</p>';
+            }
+        },
+
+        renderAdminBreakdownsList(breakdowns) {
+            const list = document.getElementById('admin-breakdowns-list');
+            if (!list) return;
+
+            if (breakdowns.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No emergency assist logs recorded for this selection.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            breakdowns.forEach(b => {
+                const item = document.createElement('div');
+                item.className = 'table-item';
+
+                let badgeClass = 'badge-pending';
+                let detailHtml = '<span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> Pending Dispatcher</span>';
+                if (b.status === 'ACCEPTED') {
+                    badgeClass = 'badge-approved';
+                    detailHtml = `<span style="color:var(--secondary); font-size:0.85rem;"><i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy.name}</strong></span>`;
+                } else if (b.status === 'COMPLETED') {
+                    badgeClass = 'badge-completed';
+                    detailHtml = `<span style="color:var(--success); font-size:0.85rem;"><i class="fa-solid fa-circle-check"></i> Resolved by ${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</span>`;
+                }
+
+                item.innerHTML = `
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                            <h4 style="font-weight:700;">Request ID #${b.id} &bull; ${b.user.fullName || b.user.username}</h4>
+                            <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                            <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
+                        </p>
+                        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3; margin-bottom:6px;">
+                            <strong>Vehicle:</strong> ${b.vehicleNo} &bull; <strong>Phone:</strong> ${b.contactPhone} <br>
+                            ${b.assignedMechanic ? `<strong>Mechanic:</strong> ${b.assignedMechanic.name} (${b.assignedMechanic.phone}) <br>` : ''}
+                            <strong>Issue:</strong> ${b.description}
+                        </p>
+                        ${detailHtml}
+                    </div>
+                    <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:140px;">
+                        <span class="badge ${badgeClass}">${b.status}</span>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        },
+
+        handleAdminDateFilterTypeChange() {
+            const typeVal = document.getElementById('admin-date-filter-type').value;
+            const dayGroup = document.getElementById('admin-date-picker-group');
+            const monthGroup = document.getElementById('admin-month-picker-group');
+            
+            if (typeVal === 'ALL') {
+                if (dayGroup) dayGroup.style.display = 'none';
+                if (monthGroup) monthGroup.style.display = 'none';
+            } else if (typeVal === 'DAY') {
+                if (dayGroup) dayGroup.style.display = 'inline-flex';
+                if (monthGroup) monthGroup.style.display = 'none';
+                const dayPicker = document.getElementById('admin-date-picker');
+                if (dayPicker && !dayPicker.value) {
+                    dayPicker.value = new Date().toISOString().split('T')[0];
+                }
+            } else if (typeVal === 'MONTH') {
+                if (dayGroup) dayGroup.style.display = 'none';
+                if (monthGroup) monthGroup.style.display = 'inline-flex';
+                const monthPicker = document.getElementById('admin-month-picker');
+                if (monthPicker && !monthPicker.value) {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    monthPicker.value = `${year}-${month}`;
+                }
+            }
+            this.applyAdminDateFilter();
+        },
+
+        applyAdminDateFilter() {
+            if (!this.adminRawData || !this.adminRawData.bookings) return;
+
+            const filterType = document.getElementById('admin-date-filter-type').value;
+            let filteredBookings = [...this.adminRawData.bookings];
+            let filteredBreakdowns = [...this.adminRawData.breakdowns];
+
+            if (filterType === 'DAY') {
+                const selectedDay = document.getElementById('admin-date-picker').value;
+                if (selectedDay) {
+                    filteredBookings = filteredBookings.filter(b => {
+                        const bDate = b.bookingDate ? b.bookingDate.substring(0, 10) : '';
+                        return bDate === selectedDay;
+                    });
+                    filteredBreakdowns = filteredBreakdowns.filter(b => {
+                        const bDate = b.createdAt ? b.createdAt.substring(0, 10) : '';
+                        return bDate === selectedDay;
+                    });
+                }
+            } else if (filterType === 'MONTH') {
+                const selectedMonth = document.getElementById('admin-month-picker').value;
+                if (selectedMonth) {
+                    filteredBookings = filteredBookings.filter(b => {
+                        const bDate = b.bookingDate ? b.bookingDate.substring(0, 7) : '';
+                        return bDate === selectedMonth;
+                    });
+                    filteredBreakdowns = filteredBreakdowns.filter(b => {
+                        const bDate = b.createdAt ? b.createdAt.substring(0, 7) : '';
+                        return bDate === selectedMonth;
+                    });
+                }
+            }
+
+            // Update stats cards in UI
+            document.getElementById('admin-stat-bookings').textContent = filteredBookings.length;
+            const activeBreakdowns = filteredBreakdowns.filter(b => b.status !== 'COMPLETED').length;
+            document.getElementById('admin-stat-breakdowns').textContent = activeBreakdowns;
+
+            // Render filtered charts
+            this.renderAdminMonitorCharts(filteredBreakdowns, this.adminRawData.garages, this.adminRawData.shops, this.adminRawData.mechanics);
+
+            // Render filtered breakdowns list
+            this.renderAdminBreakdownsList(filteredBreakdowns);
+        },
+
+        exportAdminMonitorToExcel() {
+            if (!this.adminRawData) {
+                this.showToast("No data to export", "error");
+                return;
+            }
+
+            const filterTypeVal = document.getElementById('admin-date-filter-type').value;
+            let dateStr = "All_Time";
+            let filteredBookings = [...this.adminRawData.bookings];
+            let filteredBreakdowns = [...this.adminRawData.breakdowns];
+
+            if (filterTypeVal === 'DAY') {
+                const selectedDay = document.getElementById('admin-date-picker').value;
+                if (selectedDay) {
+                    dateStr = selectedDay;
+                    filteredBookings = filteredBookings.filter(b => (b.bookingDate ? b.bookingDate.substring(0, 10) : '') === selectedDay);
+                    filteredBreakdowns = filteredBreakdowns.filter(b => (b.createdAt ? b.createdAt.substring(0, 10) : '') === selectedDay);
+                }
+            } else if (filterTypeVal === 'MONTH') {
+                const selectedMonth = document.getElementById('admin-month-picker').value;
+                if (selectedMonth) {
+                    dateStr = selectedMonth;
+                    filteredBookings = filteredBookings.filter(b => (b.bookingDate ? b.bookingDate.substring(0, 7) : '') === selectedMonth);
+                    filteredBreakdowns = filteredBreakdowns.filter(b => (b.createdAt ? b.createdAt.substring(0, 7) : '') === selectedMonth);
+                }
+            }
+
+            // Map breakdowns to nice rows
+            const breakdownRows = filteredBreakdowns.map(b => ({
+                "Request ID": b.id,
+                "Customer Name": b.user ? (b.user.fullName || b.user.username) : "N/A",
+                "Contact Phone": b.contactPhone || "N/A",
+                "Vehicle No": b.vehicleNo || "N/A",
+                "Address": b.address || "N/A",
+                "City": b.city || "N/A",
+                "Description": b.description || "N/A",
+                "Status": b.status || "N/A",
+                "Dispatched Garage": b.acceptedBy ? b.acceptedBy.name : "N/A",
+                "Created Time": b.createdAt ? new Date(b.createdAt).toLocaleString() : "N/A"
+            }));
+
+            // Map bookings to nice rows
+            const bookingRows = filteredBookings.map(b => ({
+                "Booking ID": b.id,
+                "Customer Name": b.user ? (b.user.fullName || b.user.username) : "N/A",
+                "Vehicle No": b.vehicleNo || "N/A",
+                "Garage Name": b.garage ? b.garage.garageName : "N/A",
+                "Service Type": b.serviceType || "N/A",
+                "Date": b.bookingDate || "N/A",
+                "Time Slot": b.timeSlot || "N/A",
+                "Price (LKR)": b.price || 0.0,
+                "Status": b.status || "N/A",
+                "Notes": b.notes || ""
+            }));
+
+            // Use SheetJS to build workbook
+            const wb = XLSX.utils.book_new();
+            
+            const wsBreakdowns = XLSX.utils.json_to_sheet(breakdownRows);
+            XLSX.utils.book_append_sheet(wb, wsBreakdowns, "Breakdown Requests");
+
+            const wsBookings = XLSX.utils.json_to_sheet(bookingRows);
+            XLSX.utils.book_append_sheet(wb, wsBookings, "Appointments Bookings");
+
+            // Write workbook to file
+            XLSX.writeFile(wb, `GarageLK_System_Monitor_Report_${dateStr}.xlsx`);
+            this.showToast("Excel report downloaded successfully!", "success");
+        },
+
+        downloadAdminMonitorAsPDF() {
+            const element = document.getElementById('section-admin-monitor');
+            if (!element) return;
+
+            const filterType = document.getElementById('admin-date-filter-type').value;
+            let dateStr = "All_Time";
+            if (filterType === 'DAY') {
+                dateStr = document.getElementById('admin-date-picker').value;
+            } else if (filterType === 'MONTH') {
+                dateStr = document.getElementById('admin-month-picker').value;
+            }
+
+            this.showToast("Generating PDF report...", "info");
+
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5], // in inches
+                filename: `GarageLK_System_Monitor_${dateStr}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: '#0f172a' // Dark mode background to match dark mode aesthetics
+                },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save()
+                .then(() => {
+                    this.showToast("PDF report downloaded successfully!", "success");
+                })
+                .catch(err => {
+                    console.error("PDF generation failed:", err);
+                    this.showToast("PDF generation failed", "error");
+                });
+        },
+
+        renderAdminMonitorCharts(breakdowns, garages, shops, mechanics) {
+            const getCssVar = (name) => getComputedStyle(document.documentElement || document.body).getPropertyValue(name).trim();
+
+            const breakdownCanvas = document.getElementById('chart-breakdown-status');
+            const providersCanvas = document.getElementById('chart-providers-overview');
+            const breakdownsByCityCanvas = document.getElementById('chart-breakdowns-by-city');
+
+            if (this.breakdownChart) {
+                this.breakdownChart.destroy();
+                this.breakdownChart = null;
+            }
+            if (this.providersChart) {
+                this.providersChart.destroy();
+                this.providersChart = null;
+            }
+            if (this.breakdownsByCityChart) {
+                this.breakdownsByCityChart.destroy();
+                this.breakdownsByCityChart = null;
+            }
+
+            if (breakdownCanvas) {
+                const pendingCount = breakdowns.filter(b => b.status === 'PENDING').length;
+                const dispatchedCount = breakdowns.filter(b => b.status === 'ACCEPTED').length;
+                const resolvedCount = breakdowns.filter(b => b.status === 'COMPLETED').length;
+
+                this.breakdownChart = new Chart(breakdownCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pending Dispatch', 'Dispatched', 'Resolved'],
+                        datasets: [{
+                            data: [pendingCount, dispatchedCount, resolvedCount],
+                            backgroundColor: [
+                                getCssVar('--color-warning') || '#f59e0b',
+                                getCssVar('--color-customer') || '#3b82f6',
+                                getCssVar('--color-garage') || '#10b981'
+                            ],
+                            borderColor: getCssVar('--bg-card') || 'rgba(17, 24, 39, 0.7)',
+                            borderWidth: 2,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: getCssVar('--text-primary') || '#f3f4f6',
+                                    font: {
+                                        family: 'Outfit',
+                                        size: 11
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const val = context.raw || 0;
+                                        const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                        return ` ${context.label}: ${val} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+
+            if (providersCanvas) {
+                this.providersChart = new Chart(providersCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Garages', 'Shops', 'Mechanics'],
+                        datasets: [{
+                            label: 'Registered Providers',
+                            data: [garages.length, shops.length, mechanics.length],
+                            backgroundColor: [
+                                getCssVar('--color-garage') || '#10b981',
+                                getCssVar('--color-admin') || '#8b5cf6',
+                                getCssVar('--color-primary') || '#00f2fe'
+                            ],
+                            borderRadius: 6,
+                            borderWidth: 0,
+                            barThickness: 30
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` Total: ${context.raw}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: getCssVar('--text-secondary') || '#9ca3af',
+                                    font: {
+                                        family: 'Outfit',
+                                        size: 11
+                                    }
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: getCssVar('--border-color') || 'rgba(255, 255, 255, 0.08)'
+                                },
+                                ticks: {
+                                    color: getCssVar('--text-secondary') || '#9ca3af',
+                                    font: {
+                                        family: 'Outfit',
+                                        size: 11
+                                    },
+                                    stepSize: 1,
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (breakdownsByCityCanvas) {
+                const cities = ['Colombo', 'Kandy', 'Galle', 'Kurunegala'];
+                const cityCounts = { 'Colombo': 0, 'Kandy': 0, 'Galle': 0, 'Kurunegala': 0 };
+
+                breakdowns.forEach(b => {
+                    if (b.city) {
+                        const cityName = b.city.trim().toLowerCase();
+                        if (cityName.includes('colombo')) {
+                            cityCounts['Colombo']++;
+                        } else if (cityName.includes('kandy')) {
+                            cityCounts['Kandy']++;
+                        } else if (cityName.includes('galle')) {
+                            cityCounts['Galle']++;
+                        } else if (cityName.includes('kurunegala')) {
+                            cityCounts['Kurunegala']++;
+                        }
+                    }
+                });
+
+                const chartData = cities.map(city => cityCounts[city]);
+
+                this.breakdownsByCityChart = new Chart(breakdownsByCityCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: cities,
+                        datasets: [{
+                            label: 'Number of Requests',
+                            data: chartData,
+                            backgroundColor: [
+                                '#f87171', // soft red for Colombo
+                                '#fb923c', // soft orange for Kandy
+                                '#fbbf24', // soft yellow for Galle
+                                '#38bdf8'  // soft blue for Kurunegala
+                            ],
+                            borderRadius: 6,
+                            borderWidth: 0,
+                            barThickness: 18
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` Requests: ${context.raw}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: getCssVar('--border-color') || 'rgba(255, 255, 255, 0.08)'
+                                },
+                                ticks: {
+                                    color: getCssVar('--text-secondary') || '#9ca3af',
+                                    font: {
+                                        family: 'Outfit',
+                                        size: 11
+                                    },
+                                    stepSize: 1,
+                                    beginAtZero: true
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: getCssVar('--text-secondary') || '#9ca3af',
+                                    font: {
+                                        family: 'Outfit',
+                                        size: 11,
+                                        weight: '600'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             }
         },
 
@@ -3910,6 +4326,9 @@
                 localStorage.setItem('theme', 'day');
                 this.updateThemeToggleUI('day');
                 this.updateMapTiles('day');
+            }
+            if (document.getElementById('admin-breakdowns-list')) {
+                this.loadAdminMonitor();
             }
         },
 
