@@ -8,7 +8,6 @@ import com.garagefinder.repository.MechanicRepository;
 import com.garagefinder.model.BreakdownRequest;
 import com.garagefinder.repository.BreakdownRequestRepository;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,14 +20,15 @@ import java.util.Optional;
 @RequestMapping("/api/mechanics")
 public class MechanicController {
 
-    @Autowired
-    private MechanicRepository mechanicRepository;
+    private final MechanicRepository mechanicRepository;
+    private final GarageRepository garageRepository;
+    private final BreakdownRequestRepository breakdownRequestRepository;
 
-    @Autowired
-    private GarageRepository garageRepository;
-
-    @Autowired
-    private BreakdownRequestRepository breakdownRequestRepository;
+    public MechanicController(MechanicRepository mechanicRepository, GarageRepository garageRepository, BreakdownRequestRepository breakdownRequestRepository) {
+        this.mechanicRepository = mechanicRepository;
+        this.garageRepository = garageRepository;
+        this.breakdownRequestRepository = breakdownRequestRepository;
+    }
 
     // Get mechanics for the logged-in owner's garage
     @GetMapping

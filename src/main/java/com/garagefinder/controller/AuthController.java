@@ -4,7 +4,6 @@ import com.garagefinder.model.*;
 import com.garagefinder.repository.*;
 import com.garagefinder.util.HashUtil;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,35 +15,39 @@ import java.util.*;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final CustomerRepository customerRepository;
+    private final GarageRepository garageRepository;
+    private final SparePartShopRepository shopRepository;
+    private final SparePartRepository partRepository;
+    private final BookingRepository bookingRepository;
+    private final ReviewRepository reviewRepository;
+    private final BreakdownRequestRepository breakdownRequestRepository;
+    private final MechanicRepository mechanicRepository;
+    private final OfferedServiceRepository offeredServiceRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private GarageRepository garageRepository;
-
-    @Autowired
-    private SparePartShopRepository shopRepository;
-
-    @Autowired
-    private SparePartRepository partRepository;
-
-    @Autowired
-    private BookingRepository bookingRepository;
-
-    @Autowired
-    private ReviewRepository reviewRepository;
-
-    @Autowired
-    private BreakdownRequestRepository breakdownRequestRepository;
-
-    @Autowired
-    private MechanicRepository mechanicRepository;
-
-    @Autowired
-    private OfferedServiceRepository offeredServiceRepository;
+    public AuthController(
+            UserRepository userRepository,
+            CustomerRepository customerRepository,
+            GarageRepository garageRepository,
+            SparePartShopRepository shopRepository,
+            SparePartRepository partRepository,
+            BookingRepository bookingRepository,
+            ReviewRepository reviewRepository,
+            BreakdownRequestRepository breakdownRequestRepository,
+            MechanicRepository mechanicRepository,
+            OfferedServiceRepository offeredServiceRepository) {
+        this.userRepository = userRepository;
+        this.customerRepository = customerRepository;
+        this.garageRepository = garageRepository;
+        this.shopRepository = shopRepository;
+        this.partRepository = partRepository;
+        this.bookingRepository = bookingRepository;
+        this.reviewRepository = reviewRepository;
+        this.breakdownRequestRepository = breakdownRequestRepository;
+        this.mechanicRepository = mechanicRepository;
+        this.offeredServiceRepository = offeredServiceRepository;
+    }
 
     @PostMapping("/register/customer")
     public ResponseEntity<?> registerCustomer(@RequestBody Map<String, String> payload) {

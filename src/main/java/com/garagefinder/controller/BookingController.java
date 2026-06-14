@@ -8,7 +8,6 @@ import com.garagefinder.repository.BookingRepository;
 import com.garagefinder.repository.CustomerRepository;
 import com.garagefinder.repository.GarageRepository;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,14 +22,15 @@ import java.util.Optional;
 @RequestMapping("/api/bookings")
 public class BookingController {
 
-    @Autowired
-    private BookingRepository bookingRepository;
+    private final BookingRepository bookingRepository;
+    private final CustomerRepository customerRepository;
+    private final GarageRepository garageRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private GarageRepository garageRepository;
+    public BookingController(BookingRepository bookingRepository, CustomerRepository customerRepository, GarageRepository garageRepository) {
+        this.bookingRepository = bookingRepository;
+        this.customerRepository = customerRepository;
+        this.garageRepository = garageRepository;
+    }
 
     // Create a new booking (Customer only)
     @PostMapping
@@ -226,5 +226,61 @@ public class BookingController {
         bookingRepository.save(booking);
 
         return ResponseEntity.ok(Map.of("message", "Booking status updated to " + newStatus));
+    }
+
+    // Delete a specific completed booking request history item
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteBooking(@PathVariable Long id, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        Optional<Booking> bookingOpt = bookingRepository.findById(id);
+        if (bookingOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Booking booking = bookingOpt.get();
+
+        boolean authorized = false;
+        if ("ADMIN".equals(user.getRole())) {
+            authorized = true;
+        } else if ("GARAGE_OWNER".equals(user.getRole())) {
+            List<Garage> garages = garageRepository.findByUserId(user.getId());
+            if ("COMPLETED".equals(booking.getStatus())) {
+                authorized = garages.stream().anyMatch(g -> g.getId().equals(booking.getGarage().getId()));
+            }
+        }
+
+        if (!authorized) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        }
+
+        bookingRepository.delete(booking);
+        return ResponseEntity.ok(Map.of("message", "Booking history item deleted successfully"));
+    }
+
+    // Clear all completed booking history for the owner's garages
+    @DeleteMapping("/history/clear")
+    public ResponseEntity<?> clearBookingHistory(HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"GARAGE_OWNER".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        List<Garage> garages = garageRepository.findByUserId(user.getId());
+        if (garages.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Garage profile not found"));
+        }
+
+        List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+        List<Booking> bookings = bookingRepository.findByGarageIdInOrderByBookingDateDesc(garageIds);
+        List<Booking> completed = bookings.stream()
+                .filter(b -> "COMPLETED".equals(b.getStatus()))
+                .toList();
+
+        bookingRepository.deleteAll(completed);
+        return ResponseEntity.ok(Map.of("message", "All completed booking history cleared successfully"));
     }
 }

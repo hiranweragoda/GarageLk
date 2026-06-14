@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
 
     <!-- Header & Navigation -->
@@ -46,7 +48,8 @@
                 <!-- Services Panel -->
                 <div class="details-panel">
                     <h2><i class="fa-solid fa-screwdriver-wrench"></i> Available Services</h2>
-                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Select services below to add them to your booking request.</p>
+                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Select services below to
+                        add them to your booking request.</p>
                     <div id="services-container">
                         <!-- Dynamic list of services with select checkbox -->
                     </div>
@@ -68,7 +71,8 @@
                     <form id="form-booking" onsubmit="window.GarageLK.handleBookingSubmit(event)">
                         <div class="form-group">
                             <label for="booking-date">Select Date</label>
-                            <input type="date" id="booking-date" class="form-control" required unique-id="booking-date-input">
+                            <input type="date" id="booking-date" class="form-control" required
+                                unique-id="booking-date-input">
                         </div>
                         <div class="form-group">
                             <label for="booking-time">Select Time Slot</label>
@@ -86,7 +90,8 @@
                         </div>
                         <div class="form-group">
                             <label for="booking-vehicletype">Vehicle Type</label>
-                            <select id="booking-vehicletype" class="form-control" required unique-id="booking-vehicle-type-select">
+                            <select id="booking-vehicletype" class="form-control" required
+                                unique-id="booking-vehicle-type-select">
                                 <option value="Sedan">Sedan</option>
                                 <option value="SUV">SUV</option>
                                 <option value="Hatchback">Hatchback</option>
@@ -96,16 +101,20 @@
                         </div>
                         <div class="form-group">
                             <label for="booking-vehicleno">Vehicle Number</label>
-                            <input type="text" id="booking-vehicleno" class="form-control" placeholder="e.g. WP CAB-1234" required unique-id="booking-vehicle-no-input">
+                            <input type="text" id="booking-vehicleno" class="form-control"
+                                placeholder="e.g. WP CAB-1234" required unique-id="booking-vehicle-no-input">
                         </div>
                         <div class="form-group">
                             <label for="booking-desc">Service Description / Requests</label>
-                            <textarea id="booking-desc" class="form-control" rows="3" placeholder="Explain details or issues..." unique-id="booking-desc-textarea"></textarea>
+                            <textarea id="booking-desc" class="form-control" rows="3"
+                                placeholder="Explain details or issues..." unique-id="booking-desc-textarea"></textarea>
                         </div>
 
                         <!-- Booking Summary -->
                         <div class="booking-summary">
-                            <h4 style="font-size: 0.9rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem;">Cost Summary</h4>
+                            <h4
+                                style="font-size: 0.9rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem;">
+                                Cost Summary</h4>
                             <div id="booking-services-summary">
                                 <!-- list of checked services and their prices -->
                                 <p style="font-size: 0.85rem; color: var(--text-muted);">No services selected yet.</p>
@@ -116,7 +125,8 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="booking-submit-btn">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;"
+                            unique-id="booking-submit-btn">
                             <i class="fa-solid fa-calendar-check"></i> Request Booking
                         </button>
                     </form>
@@ -143,4 +153,5 @@
         });
     </script>
 </body>
+
 </html>

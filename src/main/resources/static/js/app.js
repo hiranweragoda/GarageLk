@@ -1172,6 +1172,9 @@
                     <button class="sidebar-btn" id="side-customer-breakdowns" onclick="window.GarageLK.switchDashboardTab('customer-breakdowns'); window.GarageLK.loadCustomerBreakdowns();">
                         <i class="fa-solid fa-truck-medical"></i> Emergency Assist
                     </button>
+                    <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
+                        <i class="fa-solid fa-user-gear"></i> Profile Settings
+                    </button>
                 `;
             } else if (role === 'GARAGE_OWNER') {
                 html = `
@@ -1197,6 +1200,9 @@
                     <button class="sidebar-btn" id="side-owner-analytics" onclick="window.GarageLK.switchDashboardTab('owner-analytics')">
                         <i class="fa-solid fa-chart-line"></i> Analytics Overview
                     </button>
+                    <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
+                        <i class="fa-solid fa-user-gear"></i> Profile Settings
+                    </button>
                 `;
             } else if (role === 'SHOP_OWNER') {
                 html = `
@@ -1209,6 +1215,9 @@
                     </button>
                     <button class="sidebar-btn" id="side-shop-inventory" onclick="window.GarageLK.switchDashboardTab('shop-inventory'); window.GarageLK.loadShopInventoryDropdown();">
                         <i class="fa-solid fa-gears"></i> Manage Inventory
+                    </button>
+                    <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
+                        <i class="fa-solid fa-user-gear"></i> Profile Settings
                     </button>
                 `;
             } else if (role === 'ADMIN') {
@@ -1229,7 +1238,7 @@
                     <button class="sidebar-btn" id="side-admin-users" onclick="window.GarageLK.switchDashboardTab('admin-users'); window.GarageLK.resetAdminUserFilter();">
                         <i class="fa-solid fa-users"></i> User Management
                     </button>
-                    <button class="sidebar-btn" id="side-admin-profile" onclick="window.GarageLK.switchDashboardTab('admin-profile'); window.GarageLK.loadAdminProfile();">
+                    <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Management
                     </button>
                 `;
@@ -1343,6 +1352,17 @@
                         }
                     });
                 }
+
+                // Populate analytics garage select dropdown
+                const analyticsSelect = document.getElementById('owner-analytics-garage-select');
+                if (analyticsSelect) {
+                    analyticsSelect.innerHTML = '<option value="">All Garages</option>';
+                    garages.forEach(g => {
+                        if (g.status === 'APPROVED') {
+                            analyticsSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+                        }
+                    });
+                }
                 const mechSelect = document.getElementById('owner-mechanics-garage-select');
                 if (mechSelect) {
                     mechSelect.innerHTML = '<option value="">-- Choose Garage --</option>';
@@ -1400,74 +1420,162 @@
 
         async loadOwnerBookings() {
             const list = document.getElementById('owner-bookings-list');
+            const completedList = document.getElementById('owner-completed-bookings-list');
+            const clearBtn = document.getElementById('btn-clear-bookings-history');
+            
             list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading bookings...</p>';
+            if (completedList) {
+                completedList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading completed history...</p>';
+            }
 
             try {
                 const res = await fetch('/api/bookings/my');
                 const bookings = await res.json();
                 if (!res.ok) throw new Error();
 
-                if (bookings.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No booking requests found.</p>';
-                    return;
+                const activeBookings = bookings.filter(b => b.status !== 'COMPLETED');
+                const completedBookings = bookings.filter(b => b.status === 'COMPLETED');
+
+                // 1. Render Active Bookings
+                if (activeBookings.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active booking requests found.</p>';
+                } else {
+                    list.innerHTML = '';
+                    activeBookings.forEach(b => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
+
+                        let badgeClass = 'badge-pending';
+                        if (b.status === 'APPROVED') badgeClass = 'badge-approved';
+                        else if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
+
+                        // Actions
+                        let actionHtml = '';
+                        if (b.status === 'PENDING') {
+                            actionHtml = `
+                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.updateBookingStatus(${b.id}, 'APPROVED')" unique-id="approve-btn-${b.id}">Approve</button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.updateBookingStatus(${b.id}, 'CANCELLED')" unique-id="reject-btn-${b.id}">Reject</button>
+                            `;
+                        } else if (b.status === 'APPROVED') {
+                            actionHtml = `
+                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:var(--success);" 
+                                    onclick="window.GarageLK.updateBookingStatus(${b.id}, 'COMPLETED')" unique-id="complete-btn-${b.id}">Mark Completed</button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.updateBookingStatus(${b.id}, 'CANCELLED')" unique-id="owner-cancel-btn-${b.id}">Cancel</button>
+                            `;
+                        }
+
+                        item.innerHTML = `
+                            <div style="flex:1;">
+                                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
+                                    <h4 style="font-weight:700; margin-bottom:0;">${b.user.fullName || b.user.username}</h4>
+                                    <span style="font-size:0.8rem; color:var(--text-muted);">booked at <strong>${b.garage.name}</strong></span>
+                                </div>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                    <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
+                                </p>
+                                <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                                    <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
+                                    <strong>Details:</strong> ${b.description}
+                                </p>
+                            </div>
+                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 180px;">
+                                <span class="badge ${badgeClass}">${b.status}</span>
+                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                                    ${actionHtml}
+                                </div>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
                 }
 
-                list.innerHTML = '';
-                bookings.forEach(b => {
-                    const item = document.createElement('div');
-                    item.className = 'table-item';
-
-                    let badgeClass = 'badge-pending';
-                    if (b.status === 'APPROVED') badgeClass = 'badge-approved';
-                    else if (b.status === 'COMPLETED') badgeClass = 'badge-completed';
-                    else if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
-
-                    // Actions
-                    let actionHtml = '';
-                    if (b.status === 'PENDING') {
-                        actionHtml = `
-                            <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.updateBookingStatus(${b.id}, 'APPROVED')" unique-id="approve-btn-${b.id}">Approve</button>
-                            <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.updateBookingStatus(${b.id}, 'CANCELLED')" unique-id="reject-btn-${b.id}">Reject</button>
-                        `;
-                    } else if (b.status === 'APPROVED') {
-                        actionHtml = `
-                            <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:var(--success);" 
-                                onclick="window.GarageLK.updateBookingStatus(${b.id}, 'COMPLETED')" unique-id="complete-btn-${b.id}">Mark Completed</button>
-                            <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.updateBookingStatus(${b.id}, 'CANCELLED')" unique-id="owner-cancel-btn-${b.id}">Cancel</button>
-                        `;
+                // 2. Render Completed Bookings History
+                if (completedList) {
+                    if (completedBookings.length === 0) {
+                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed booking history found.</p>';
+                        if (clearBtn) clearBtn.style.display = 'none';
+                    } else {
+                        if (clearBtn) clearBtn.style.display = 'inline-block';
+                        completedList.innerHTML = '';
+                        completedBookings.forEach(b => {
+                            const item = document.createElement('div');
+                            item.className = 'table-item';
+                            item.innerHTML = `
+                                <div style="flex:1;">
+                                    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
+                                        <h4 style="font-weight:700; margin-bottom:0; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Appointment</h4>
+                                        <span style="font-size:0.8rem; color:var(--text-muted);">at <strong>${b.garage.name}</strong></span>
+                                    </div>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                        <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                                        <strong>Customer:</strong> ${b.user.fullName || b.user.username} <br>
+                                        <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
+                                        <strong>Details:</strong> ${b.description}
+                                    </p>
+                                </div>
+                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 180px;">
+                                    <span class="badge badge-completed">${b.status}</span>
+                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                    <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                                        <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                            onclick="window.GarageLK.deleteBookingHistory(${b.id})" unique-id="delete-booking-btn-${b.id}">
+                                            <i class="fa-solid fa-trash-can"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            completedList.appendChild(item);
+                        });
                     }
-
-                    item.innerHTML = `
-                        <div style="flex:1;">
-                            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
-                                <h4 style="font-weight:700; margin-bottom:0;">${b.user.fullName || b.user.username}</h4>
-                                <span style="font-size:0.8rem; color:var(--text-muted);">booked at <strong>${b.garage.name}</strong></span>
-                            </div>
-                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
-                            </p>
-                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
-                                <strong>Details:</strong> ${b.description}
-                            </p>
-                        </div>
-                        <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 180px;">
-                            <span class="badge ${badgeClass}">${b.status}</span>
-                            <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
-                            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
-                                ${actionHtml}
-                            </div>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+                }
 
             } catch (err) {
                 console.error("Error loading owner bookings:", err);
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading bookings.</p>';
+            }
+        },
+
+        async deleteBookingHistory(id) {
+            if (!confirm('Are you sure you want to delete this booking from your history?')) return;
+            try {
+                const res = await fetch(`/api/bookings/${id}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    this.showToast('Booking history item deleted.', 'success');
+                    this.loadOwnerBookings();
+                } else {
+                    const data = await res.json();
+                    this.showToast(data.message || 'Delete failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error deleting booking history item:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async clearAllCompletedBookingsHistory() {
+            if (!confirm('Are you sure you want to clear ALL completed bookings history? This action cannot be undone.')) return;
+            try {
+                const res = await fetch('/api/bookings/history/clear', {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    this.showToast('All completed bookings history cleared.', 'success');
+                    this.loadOwnerBookings();
+                } else {
+                    const data = await res.json();
+                    this.showToast(data.message || 'Clear failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error clearing bookings history:", err);
+                this.showToast('Connection error', 'error');
             }
         },
 
@@ -1491,6 +1599,8 @@
                 const data = await res.json();
 
                 const services = data.services;
+                this.ownerServices = services;
+
                 if (services.length === 0) {
                     container.innerHTML = '<p style="color:var(--text-muted);">No services added yet for this garage.</p>';
                     return;
@@ -1507,10 +1617,16 @@
                         </div>
                         <div class="owner-service-footer">
                             <span class="owner-service-price">LKR ${s.price.toFixed(2)}</span>
-                            <button class="btn btn-outline btn-danger" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
-                                onclick="window.GarageLK.handleDeleteService(${garageId}, ${s.id})" unique-id="del-service-${s.id}">
-                                <i class="fa-solid fa-trash"></i> Delete
-                            </button>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <button class="btn btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
+                                    onclick="window.GarageLK.openEditServiceModal(${garageId}, ${s.id})" unique-id="edit-service-${s.id}">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
+                                    onclick="window.GarageLK.handleDeleteService(${garageId}, ${s.id})" unique-id="del-service-${s.id}">
+                                    <i class="fa-solid fa-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     `;
                     container.appendChild(card);
@@ -1524,28 +1640,339 @@
 
         async loadOwnerAnalytics() {
             try {
+                // Fetch bookings
                 const res = await fetch('/api/bookings/my');
                 const bookings = await res.json();
                 if (!res.ok) return;
 
-                let totalCount = bookings.length;
-                let completedCount = 0;
-                let revenue = 0.0;
+                this.ownerBookingsList = bookings;
 
-                bookings.forEach(b => {
-                    if (b.status === 'COMPLETED') {
-                        completedCount++;
-                        revenue += b.totalPrice;
-                    }
-                });
+                // Fetch completed rescues
+                const resBreakdowns = await fetch('/api/breakdowns/history');
+                const breakdowns = await resBreakdowns.json();
+                if (resBreakdowns.ok) {
+                    this.ownerBreakdownsList = breakdowns;
+                } else {
+                    this.ownerBreakdownsList = [];
+                }
 
-                document.getElementById('stat-total-bookings').textContent = totalCount;
-                document.getElementById('stat-total-revenue').textContent = `LKR ${revenue.toFixed(2)}`;
-                document.getElementById('stat-completed-bookings').textContent = completedCount;
+                this.filterOwnerAnalytics();
 
             } catch (err) {
                 console.error("Analytics failure", err);
             }
+        },
+
+        toggleDateFilterType() {
+            const dateTypeEl = document.getElementById('owner-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            
+            const dayContainer = document.getElementById('container-analytics-day');
+            const monthContainer = document.getElementById('container-analytics-month');
+            
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(Date.now() - tzoffset)).toISOString();
+            
+            if (dateType === 'all') {
+                if (dayContainer) dayContainer.style.display = 'none';
+                if (monthContainer) monthContainer.style.display = 'none';
+            } else if (dateType === 'day') {
+                if (dayContainer) dayContainer.style.display = 'flex';
+                if (monthContainer) monthContainer.style.display = 'none';
+                const dayInput = document.getElementById('owner-analytics-date-day');
+                if (dayInput && !dayInput.value) {
+                    dayInput.value = localISOTime.split('T')[0];
+                }
+            } else if (dateType === 'month') {
+                if (dayContainer) dayContainer.style.display = 'none';
+                if (monthContainer) monthContainer.style.display = 'flex';
+                const monthInput = document.getElementById('owner-analytics-date-month');
+                if (monthInput && !monthInput.value) {
+                    monthInput.value = localISOTime.substring(0, 7);
+                }
+            }
+            
+            this.filterOwnerAnalytics();
+        },
+
+        filterOwnerAnalytics() {
+            if (!this.ownerBookingsList) return;
+
+            const garageIdSelect = document.getElementById('owner-analytics-garage-select');
+            const selectedGarageId = garageIdSelect ? garageIdSelect.value : '';
+            
+            const dateTypeEl = document.getElementById('owner-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            const targetDay = document.getElementById('owner-analytics-date-day') ? document.getElementById('owner-analytics-date-day').value : '';
+            const targetMonth = document.getElementById('owner-analytics-date-month') ? document.getElementById('owner-analytics-date-month').value : '';
+
+            // Filter bookings
+            let filteredBookings = this.ownerBookingsList;
+            if (selectedGarageId) {
+                filteredBookings = this.ownerBookingsList.filter(b => b.garage && b.garage.id === parseInt(selectedGarageId, 10));
+            }
+            if (dateType === 'day' && targetDay) {
+                filteredBookings = filteredBookings.filter(b => b.bookingDate && b.bookingDate.split(' ')[0] === targetDay);
+            } else if (dateType === 'month' && targetMonth) {
+                filteredBookings = filteredBookings.filter(b => b.bookingDate && b.bookingDate.split(' ')[0].startsWith(targetMonth));
+            }
+
+            let totalCount = filteredBookings.length;
+            let completedCount = 0;
+            let revenue = 0.0;
+            const revenueMap = {};
+
+            filteredBookings.forEach(b => {
+                if (b.status === 'COMPLETED') {
+                    completedCount++;
+                    revenue += b.totalPrice;
+                    const type = b.serviceType || 'Other';
+                    revenueMap[type] = (revenueMap[type] || 0) + (b.totalPrice || 0);
+                }
+            });
+
+            document.getElementById('stat-total-bookings').textContent = totalCount;
+            document.getElementById('stat-total-revenue').textContent = `LKR ${revenue.toFixed(2)}`;
+            document.getElementById('stat-completed-bookings').textContent = completedCount;
+
+            // Filter completed rescues (breakdowns)
+            let completedRescuesCount = 0;
+            if (this.ownerBreakdownsList) {
+                let filteredBreakdowns = this.ownerBreakdownsList;
+                if (selectedGarageId) {
+                    filteredBreakdowns = this.ownerBreakdownsList.filter(b => b.assignedGarage && b.assignedGarage.id === parseInt(selectedGarageId, 10));
+                }
+                if (dateType === 'day' && targetDay) {
+                    filteredBreakdowns = filteredBreakdowns.filter(b => b.createdAt && b.createdAt.split('T')[0] === targetDay);
+                } else if (dateType === 'month' && targetMonth) {
+                    filteredBreakdowns = filteredBreakdowns.filter(b => b.createdAt && b.createdAt.split('T')[0].startsWith(targetMonth));
+                }
+                completedRescuesCount = filteredBreakdowns.length;
+                const statCompletedBreakdowns = document.getElementById('stat-completed-breakdowns');
+                if (statCompletedBreakdowns) {
+                    statCompletedBreakdowns.textContent = completedRescuesCount;
+                }
+            }
+
+            // --- RENDER REVENUE BAR CHART ---
+            const revenueCanvas = document.getElementById('chart-owner-revenue');
+            if (revenueCanvas) {
+                if (window.ownerRevenueChart) window.ownerRevenueChart.destroy();
+                
+                const isDarkMode = !document.body.classList.contains('light-mode');
+                const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+                const gridColor = isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                
+                const revenueLabels = Object.keys(revenueMap);
+                const revenueValues = Object.values(revenueMap);
+
+                window.ownerRevenueChart = new Chart(revenueCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: revenueLabels.length > 0 ? revenueLabels : ['No Data'],
+                        datasets: [{
+                            label: 'Revenue (LKR)',
+                            data: revenueValues.length > 0 ? revenueValues : [0],
+                            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                            borderColor: 'rgb(6, 182, 212)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 11 } }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- RENDER PIE CHART (Completed Bookings vs Rescues) ---
+            const completionsCanvas = document.getElementById('chart-owner-completions');
+            if (completionsCanvas) {
+                if (window.ownerCompletionsChart) window.ownerCompletionsChart.destroy();
+
+                const isDarkMode = !document.body.classList.contains('light-mode');
+                const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+
+                const hasData = completedCount > 0 || completedRescuesCount > 0;
+
+                window.ownerCompletionsChart = new Chart(completionsCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Completed Bookings', 'Completed Rescues'],
+                        datasets: [{
+                            data: hasData ? [completedCount, completedRescuesCount] : [1, 0],
+                            backgroundColor: hasData ? ['rgba(16, 185, 129, 0.75)', 'rgba(239, 68, 68, 0.75)'] : ['rgba(148, 163, 184, 0.25)', 'rgba(0,0,0,0)'],
+                            borderColor: hasData ? ['rgb(16, 185, 129)', 'rgb(239, 68, 68)'] : ['rgba(148, 163, 184, 0.4)', 'rgba(0,0,0,0)'],
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Outfit', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+
+        exportOwnerAnalyticsToExcel() {
+            if (!this.ownerBookingsList) return;
+            
+            const garageIdSelect = document.getElementById('owner-analytics-garage-select');
+            const selectedGarageId = garageIdSelect ? garageIdSelect.value : '';
+            
+            const dateTypeEl = document.getElementById('owner-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            const targetDay = document.getElementById('owner-analytics-date-day') ? document.getElementById('owner-analytics-date-day').value : '';
+            const targetMonth = document.getElementById('owner-analytics-date-month') ? document.getElementById('owner-analytics-date-month').value : '';
+
+            // Filter bookings
+            let filteredBookings = this.ownerBookingsList;
+            if (selectedGarageId) {
+                filteredBookings = this.ownerBookingsList.filter(b => b.garage && b.garage.id === parseInt(selectedGarageId, 10));
+            }
+            if (dateType === 'day' && targetDay) {
+                filteredBookings = filteredBookings.filter(b => b.bookingDate && b.bookingDate.split(' ')[0] === targetDay);
+            } else if (dateType === 'month' && targetMonth) {
+                filteredBookings = filteredBookings.filter(b => b.bookingDate && b.bookingDate.split(' ')[0].startsWith(targetMonth));
+            }
+
+            // Filter completed rescues (breakdowns)
+            let filteredBreakdowns = this.ownerBreakdownsList || [];
+            if (selectedGarageId) {
+                filteredBreakdowns = filteredBreakdowns.filter(b => b.assignedGarage && b.assignedGarage.id === parseInt(selectedGarageId, 10));
+            }
+            if (dateType === 'day' && targetDay) {
+                filteredBreakdowns = filteredBreakdowns.filter(b => b.createdAt && b.createdAt.split('T')[0] === targetDay);
+            } else if (dateType === 'month' && targetMonth) {
+                filteredBreakdowns = filteredBreakdowns.filter(b => b.createdAt && b.createdAt.split('T')[0].startsWith(targetMonth));
+            }
+
+            // Map bookings data
+            const bookingsSheetData = filteredBookings.map(b => ({
+                'Booking ID': b.id,
+                'Garage Name': b.garage ? b.garage.name : 'N/A',
+                'Customer Name': b.user ? (b.user.fullName || b.user.username) : 'N/A',
+                'Customer Email': b.user ? b.user.email : 'N/A',
+                'Customer Phone': b.user ? b.user.phone : 'N/A',
+                'Service Type': b.serviceType,
+                'Booking Date/Time': b.bookingDate,
+                'Price (LKR)': b.totalPrice,
+                'Status': b.status,
+                'Vehicle No': b.vehicleNo || 'N/A',
+                'Vehicle Type': b.vehicleType || 'N/A',
+                'Description': b.description || 'N/A'
+            }));
+
+            // Map rescues data
+            const rescuesSheetData = filteredBreakdowns.map(b => ({
+                'Rescue ID': b.id,
+                'Garage Name': b.assignedGarage ? b.assignedGarage.name : 'N/A',
+                'Customer Name': b.user ? (b.user.fullName || b.user.username) : 'N/A',
+                'Contact Phone': b.phone || 'N/A',
+                'Location City': b.city || 'N/A',
+                'Address/Landmark': b.address || 'N/A',
+                'Vehicle No': b.vehicleNo || 'N/A',
+                'Description': b.description || 'N/A',
+                'Created Time': b.createdAt,
+                'Status': b.status
+            }));
+
+            // Calculate overview summary statistics
+            let totalCount = filteredBookings.length;
+            let completedCount = 0;
+            let revenue = 0.0;
+            filteredBookings.forEach(b => {
+                if (b.status === 'COMPLETED') {
+                    completedCount++;
+                    revenue += (b.totalPrice || 0);
+                }
+            });
+            const completedRescuesCount = filteredBreakdowns.length;
+
+            let dateRangeStr = 'All Time';
+            if (dateType === 'day') {
+                dateRangeStr = `Day: ${targetDay}`;
+            } else if (dateType === 'month') {
+                dateRangeStr = `Month: ${targetMonth}`;
+            }
+
+            const summarySheetData = [
+                { 'Metric': 'Export Date', 'Value': new Date().toISOString().split('T')[0] },
+                { 'Metric': 'Selected Garage', 'Value': selectedGarageId ? (document.getElementById('owner-analytics-garage-select')?.options[document.getElementById('owner-analytics-garage-select').selectedIndex]?.text || selectedGarageId) : 'All Garages' },
+                { 'Metric': 'Date Range', 'Value': dateRangeStr },
+                { 'Metric': 'Total Bookings', 'Value': totalCount },
+                { 'Metric': 'Total Revenue', 'Value': `LKR ${revenue.toFixed(2)}` },
+                { 'Metric': 'Completed', 'Value': completedCount },
+                { 'Metric': 'Completed Rescues', 'Value': completedRescuesCount }
+            ];
+
+            // Generate Workbook
+            const wb = XLSX.utils.book_new();
+
+            const wsSummary = XLSX.utils.json_to_sheet(summarySheetData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, 'Overview Summary');
+            
+            const wsBookings = XLSX.utils.json_to_sheet(bookingsSheetData);
+            XLSX.utils.book_append_sheet(wb, wsBookings, 'Bookings');
+
+            const wsRescues = XLSX.utils.json_to_sheet(rescuesSheetData);
+            XLSX.utils.book_append_sheet(wb, wsRescues, 'Completed Rescues');
+
+            XLSX.writeFile(wb, `garage_analytics_${new Date().toISOString().split('T')[0]}.xlsx`);
+            this.showToast('Excel file downloaded successfully!', 'success');
+        },
+
+        downloadOwnerAnalyticsPDF() {
+            const element = document.getElementById('section-owner-analytics');
+            if (!element) return;
+
+            const dateStr = new Date().toISOString().split('T')[0];
+            this.showToast("Generating PDF report...", "success");
+
+            const isDarkMode = !document.body.classList.contains('light-mode');
+            const bgHex = isDarkMode ? '#0f172a' : '#ffffff';
+
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5], // in inches
+                filename: `GarageLK_Owner_Analytics_${dateStr}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: bgHex
+                },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(element).save()
+                .then(() => {
+                    this.showToast("PDF report downloaded successfully!", "success");
+                })
+                .catch(err => {
+                    console.error("PDF generation failed:", err);
+                    this.showToast("Failed to generate PDF", "error");
+                });
         },
 
         // --- ADMIN DATA LOADERS ---
@@ -1927,6 +2354,7 @@
         async handleAddService(e) {
             e.preventDefault();
             const garageId = document.getElementById('owner-services-garage-select').value;
+            const serviceId = document.getElementById('service-id').value;
             const serviceName = document.getElementById('service-name').value.trim();
             const description = document.getElementById('service-desc').value.trim();
             const price = parseFloat(document.getElementById('service-price').value);
@@ -1934,23 +2362,28 @@
             if (!garageId) return;
 
             try {
+                const payload = { serviceName, description, price };
+                if (serviceId) {
+                    payload.id = parseInt(serviceId, 10);
+                }
+
                 const res = await fetch(`/api/garages/${garageId}/services`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ serviceName, description, price })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
                 if (res.ok) {
-                    this.showToast('Service added successfully!', 'success');
+                    this.showToast(serviceId ? 'Service updated successfully!' : 'Service added successfully!', 'success');
                     this.closeModal('modal-add-service');
                     this.loadOwnerServices();
                     e.target.reset();
                 } else {
-                    this.showToast(data.message || 'Add service failed', 'error');
+                    this.showToast(data.message || 'Save service failed', 'error');
                 }
             } catch (err) {
-                console.error("Error adding service:", err);
+                console.error("Error saving service:", err);
                 this.showToast('Connection error', 'error');
             }
         },
@@ -2752,8 +3185,11 @@
                 const mechanicsRes = await fetch('/api/mechanics/all');
                 const mechanics = mechanicsRes.ok ? await mechanicsRes.json() : [];
 
+                const usersRes = await fetch('/api/auth/users');
+                const users = usersRes.ok ? await usersRes.json() : [];
+
                 // Store raw data for client-side filtering
-                this.adminRawData = { garages, shops, bookings, breakdowns, mechanics };
+                this.adminRawData = { garages, shops, bookings, breakdowns, mechanics, users };
 
                 // Compute system-wide static counts
                 document.getElementById('admin-stat-garages').textContent = garages.length;
@@ -2762,14 +3198,10 @@
                     shopStatEl.textContent = shops.length;
                 }
 
-                const userIds = new Set();
-                userIds.add(1); userIds.add(2); userIds.add(3); // standard seeds
-                bookings.forEach(b => userIds.add(b.user.id));
-                garages.forEach(g => userIds.add(g.owner.id));
-                shops.forEach(s => {
-                    if (s.user) userIds.add(s.user.id);
-                });
-                document.getElementById('admin-stat-users').textContent = userIds.size;
+                const userStatEl = document.getElementById('admin-stat-users');
+                if (userStatEl) {
+                    userStatEl.textContent = users.length;
+                }
 
                 // Sync controls and trigger client-side date filter rendering
                 this.applyAdminDateFilter();
@@ -2929,6 +3361,17 @@
                 }
             }
 
+            // Map overview stats to key-value rows
+            const overviewRows = [
+                { "Metric": "Report Date / Range", "Value": dateStr },
+                { "Metric": "Total Registered Users", "Value": this.adminRawData.users ? this.adminRawData.users.length : 0 },
+                { "Metric": "Total Registered Garages", "Value": this.adminRawData.garages ? this.adminRawData.garages.length : 0 },
+                { "Metric": "Total Spare Part Shops", "Value": this.adminRawData.shops ? this.adminRawData.shops.length : 0 },
+                { "Metric": "Total Mechanics Team", "Value": this.adminRawData.mechanics ? this.adminRawData.mechanics.length : 0 },
+                { "Metric": "Appointment Bookings (Filtered)", "Value": filteredBookings.length },
+                { "Metric": "Emergency Assists (Filtered)", "Value": filteredBreakdowns.length }
+            ];
+
             // Map breakdowns to nice rows
             const breakdownRows = filteredBreakdowns.map(b => ({
                 "Request ID": b.id,
@@ -2939,7 +3382,8 @@
                 "City": b.city || "N/A",
                 "Description": b.description || "N/A",
                 "Status": b.status || "N/A",
-                "Dispatched Garage": b.acceptedBy ? b.acceptedBy.name : "N/A",
+                "Dispatched Garage": b.acceptedBy ? (b.acceptedBy.garageName || b.acceptedBy.name) : "N/A",
+                "Assigned Mechanic": b.assignedMechanic ? b.assignedMechanic.name : "N/A",
                 "Created Time": b.createdAt ? new Date(b.createdAt).toLocaleString() : "N/A"
             }));
 
@@ -2948,7 +3392,7 @@
                 "Booking ID": b.id,
                 "Customer Name": b.user ? (b.user.fullName || b.user.username) : "N/A",
                 "Vehicle No": b.vehicleNo || "N/A",
-                "Garage Name": b.garage ? b.garage.garageName : "N/A",
+                "Garage Name": b.garage ? (b.garage.garageName || b.garage.name) : "N/A",
                 "Service Type": b.serviceType || "N/A",
                 "Date": b.bookingDate || "N/A",
                 "Time Slot": b.timeSlot || "N/A",
@@ -2957,14 +3401,87 @@
                 "Notes": b.notes || ""
             }));
 
+            // Map users to nice rows
+            const userRows = (this.adminRawData.users || []).map(u => ({
+                "User ID": u.id,
+                "Username": u.username || "N/A",
+                "Full Name": u.fullName || "N/A",
+                "Email": u.email || "N/A",
+                "Phone": u.phone || "N/A",
+                "Role": u.role || "N/A",
+                "Status": u.active ? "Active" : "Suspended"
+            }));
+
+            // Map garages to nice rows
+            const garageRows = (this.adminRawData.garages || []).map(g => ({
+                "Garage ID": g.id,
+                "Garage Name": g.garageName || g.name || "N/A",
+                "Owner Name": g.ownerName || (g.owner ? (g.owner.fullName || g.owner.username) : "N/A"),
+                "District": g.district || "N/A",
+                "City": g.city || "N/A",
+                "Address": g.address || "N/A",
+                "Phone": g.phone || "N/A",
+                "Email": g.email || "N/A",
+                "Status": g.status || "N/A",
+                "Vehicle Specializations": g.vehicleTypes || "N/A",
+                "Engine Specializations": g.engineTypes || "N/A"
+            }));
+
+            // Map shops to nice rows
+            const shopRows = (this.adminRawData.shops || []).map(s => ({
+                "Shop ID": s.id,
+                "Shop Name": s.shopName || s.name || "N/A",
+                "Owner Name": s.ownerName || (s.user ? (s.user.fullName || s.user.username) : "N/A"),
+                "District": s.district || "N/A",
+                "City": s.city || "N/A",
+                "Address": s.address || "N/A",
+                "Phone": s.phone || "N/A",
+                "Email": s.email || "N/A",
+                "Status": s.status || "N/A"
+            }));
+
+            // Map mechanics to nice rows
+            const mechanicRows = (this.adminRawData.mechanics || []).map(m => {
+                let garageName = "N/A";
+                if (m.garageId && this.adminRawData.garages) {
+                    const gar = this.adminRawData.garages.find(g => g.id === m.garageId);
+                    if (gar) {
+                        garageName = gar.garageName || gar.name;
+                    }
+                }
+                return {
+                    "Mechanic ID": m.id,
+                    "Name": m.name || "N/A",
+                    "Phone": m.phone || "N/A",
+                    "Specialization": m.specialization || "N/A",
+                    "Status": m.status || "N/A",
+                    "Assigned Garage": garageName
+                };
+            });
+
             // Use SheetJS to build workbook
             const wb = XLSX.utils.book_new();
+
+            const wsOverview = XLSX.utils.json_to_sheet(overviewRows);
+            XLSX.utils.book_append_sheet(wb, wsOverview, "System Overview");
             
             const wsBreakdowns = XLSX.utils.json_to_sheet(breakdownRows);
             XLSX.utils.book_append_sheet(wb, wsBreakdowns, "Breakdown Requests");
 
             const wsBookings = XLSX.utils.json_to_sheet(bookingRows);
             XLSX.utils.book_append_sheet(wb, wsBookings, "Appointments Bookings");
+
+            const wsUsers = XLSX.utils.json_to_sheet(userRows);
+            XLSX.utils.book_append_sheet(wb, wsUsers, "Registered Users");
+
+            const wsGarages = XLSX.utils.json_to_sheet(garageRows);
+            XLSX.utils.book_append_sheet(wb, wsGarages, "Garages Directory");
+
+            const wsShops = XLSX.utils.json_to_sheet(shopRows);
+            XLSX.utils.book_append_sheet(wb, wsShops, "Spare Part Shops");
+
+            const wsMechanics = XLSX.utils.json_to_sheet(mechanicRows);
+            XLSX.utils.book_append_sheet(wb, wsMechanics, "Mechanics Directory");
 
             // Write workbook to file
             XLSX.writeFile(wb, `GarageLK_System_Monitor_Report_${dateStr}.xlsx`);
@@ -3427,21 +3944,21 @@
             }
         },
 
-        loadAdminProfile() {
+        loadUserProfile() {
             if (!this.currentUser) return;
-            document.getElementById('admin-profile-username').value = this.currentUser.username || '';
-            document.getElementById('admin-profile-fullname').value = this.currentUser.fullName || '';
-            document.getElementById('admin-profile-email').value = this.currentUser.email || '';
-            document.getElementById('admin-profile-phone').value = this.currentUser.phone || '';
-            document.getElementById('admin-profile-password').value = '';
+            document.getElementById('profile-username').value = this.currentUser.username || '';
+            document.getElementById('profile-fullname').value = this.currentUser.fullName || '';
+            document.getElementById('profile-email').value = this.currentUser.email || '';
+            document.getElementById('profile-phone').value = this.currentUser.phone || '';
+            document.getElementById('profile-password').value = '';
         },
 
-        async submitAdminProfileForm(event) {
+        async submitUserProfileForm(event) {
             event.preventDefault();
-            const fullName = document.getElementById('admin-profile-fullname').value;
-            const email = document.getElementById('admin-profile-email').value;
-            const phone = document.getElementById('admin-profile-phone').value;
-            const password = document.getElementById('admin-profile-password').value;
+            const fullName = document.getElementById('profile-fullname').value;
+            const email = document.getElementById('profile-email').value;
+            const phone = document.getElementById('profile-phone').value;
+            const password = document.getElementById('profile-password').value;
 
             try {
                 const res = await fetch('/api/auth/profile/update', {
@@ -3459,8 +3976,8 @@
                 this.currentUser = updatedUser;
                 this.showToast('Profile updated successfully', 'success');
                 this.updateNavUI();
-                this.renderSidebar();
-                this.loadAdminProfile();
+                this.buildDashboardSidebar();
+                this.loadUserProfile();
             } catch (err) {
                 console.error("Error updating profile:", err);
                 this.showToast(err.message || 'Connection error', 'error');
@@ -3580,6 +4097,27 @@
         },
 
         openAddServiceModal() {
+            document.getElementById('service-id').value = '';
+            document.getElementById('service-name').value = '';
+            document.getElementById('service-desc').value = '';
+            document.getElementById('service-price').value = '';
+            document.getElementById('modal-service-title').innerHTML = '<i class="fa-solid fa-wrench"></i> Add New Service';
+            document.getElementById('btn-save-service').textContent = 'Add Service';
+            this.openModal('modal-add-service');
+        },
+
+        openEditServiceModal(garageId, serviceId) {
+            if (!this.ownerServices) return;
+            const service = this.ownerServices.find(s => s.id === serviceId);
+            if (!service) return;
+
+            document.getElementById('service-id').value = service.id;
+            document.getElementById('service-name').value = service.serviceName || service.serviceType || '';
+            document.getElementById('service-desc').value = service.description || '';
+            document.getElementById('service-price').value = service.price;
+
+            document.getElementById('modal-service-title').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Edit Service';
+            document.getElementById('btn-save-service').textContent = 'Save Changes';
             this.openModal('modal-add-service');
         },
 
@@ -4003,6 +4541,9 @@
                                 <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.openEditShopModal(${s.id})" unique-id="edit-shop-btn-${s.id}">
                                     Edit
                                 </button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.handleDeleteShop(${s.id})" unique-id="delete-shop-btn-${s.id}">
+                                    Delete
+                                </button>
                             </div>
                         </div>
                     `;
@@ -4205,6 +4746,29 @@
                 }
             } catch (err) {
                 console.error("Error deleting spare part:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async handleDeleteShop(shopId) {
+            if (!confirm('Are you sure you want to delete this spare part shop? This will also delete all associated spare parts in inventory.')) return;
+            try {
+                const res = await fetch(`/api/shops/${shopId}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    this.showToast('Spare Part Shop deleted successfully', 'success');
+                    this.loadShopMyShops();
+                    if (typeof this.loadShopInventoryDropdown === 'function') {
+                        this.loadShopInventoryDropdown();
+                    }
+                } else {
+                    const data = await res.json();
+                    this.showToast(data.message || 'Deletion failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error deleting shop:", err);
                 this.showToast('Connection error', 'error');
             }
         },

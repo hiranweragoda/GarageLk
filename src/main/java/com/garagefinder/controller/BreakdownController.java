@@ -10,7 +10,6 @@ import com.garagefinder.repository.CustomerRepository;
 import com.garagefinder.repository.GarageRepository;
 import com.garagefinder.repository.MechanicRepository;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,17 +22,21 @@ import java.util.Optional;
 @RequestMapping("/api/breakdowns")
 public class BreakdownController {
 
-    @Autowired
-    private BreakdownRequestRepository breakdownRequestRepository;
+    private final BreakdownRequestRepository breakdownRequestRepository;
+    private final CustomerRepository customerRepository;
+    private final GarageRepository garageRepository;
+    private final MechanicRepository mechanicRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private GarageRepository garageRepository;
-
-    @Autowired
-    private MechanicRepository mechanicRepository;
+    public BreakdownController(
+            BreakdownRequestRepository breakdownRequestRepository,
+            CustomerRepository customerRepository,
+            GarageRepository garageRepository,
+            MechanicRepository mechanicRepository) {
+        this.breakdownRequestRepository = breakdownRequestRepository;
+        this.customerRepository = customerRepository;
+        this.garageRepository = garageRepository;
+        this.mechanicRepository = mechanicRepository;
+    }
 
     // File an emergency breakdown request (Customer only)
     @PostMapping

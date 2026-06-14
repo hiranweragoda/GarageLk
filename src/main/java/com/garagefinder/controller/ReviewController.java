@@ -3,7 +3,6 @@ package com.garagefinder.controller;
 import com.garagefinder.model.*;
 import com.garagefinder.repository.*;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,14 +13,15 @@ import java.util.*;
 @RequestMapping("/api/reviews")
 public class ReviewController {
 
-    @Autowired
-    private ReviewRepository reviewRepository;
+    private final ReviewRepository reviewRepository;
+    private final BookingRepository bookingRepository;
+    private final CustomerRepository customerRepository;
 
-    @Autowired
-    private BookingRepository bookingRepository;
-
-    @Autowired
-    private CustomerRepository customerRepository;
+    public ReviewController(ReviewRepository reviewRepository, BookingRepository bookingRepository, CustomerRepository customerRepository) {
+        this.reviewRepository = reviewRepository;
+        this.bookingRepository = bookingRepository;
+        this.customerRepository = customerRepository;
+    }
 
     // Submit a review (Customer only, for a COMPLETED booking, one per booking)
     @PostMapping

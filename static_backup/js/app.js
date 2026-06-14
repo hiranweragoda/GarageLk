@@ -728,6 +728,17 @@
                     });
                 }
 
+                // Populate analytics garage select dropdown
+                const analyticsSelect = document.getElementById('owner-analytics-garage-select');
+                if (analyticsSelect) {
+                    analyticsSelect.innerHTML = '<option value="">All Garages</option>';
+                    garages.forEach(g => {
+                        if (g.status === 'APPROVED') {
+                            analyticsSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+                        }
+                    });
+                }
+
                 if (garages.length === 0) {
                     list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have not registered any garages yet.</p>';
                     return;
@@ -853,6 +864,8 @@
                 const data = await res.json();
                 
                 const services = data.services;
+                this.ownerServices = services;
+
                 if (services.length === 0) {
                     container.innerHTML = '<p style="color:var(--text-muted);">No services added yet for this garage.</p>';
                     return;
@@ -869,10 +882,16 @@
                         </div>
                         <div class="owner-service-footer">
                             <span class="owner-service-price">LKR ${s.price.toFixed(2)}</span>
-                            <button class="btn btn-outline btn-danger" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
-                                onclick="window.GarageLK.handleDeleteService(${garageId}, ${s.id})" unique-id="del-service-${s.id}">
-                                <i class="fa-solid fa-trash"></i> Delete
-                            </button>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <button class="btn btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
+                                    onclick="window.GarageLK.openEditServiceModal(${garageId}, ${s.id})" unique-id="edit-service-${s.id}">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
+                                    onclick="window.GarageLK.handleDeleteService(${garageId}, ${s.id})" unique-id="del-service-${s.id}">
+                                    <i class="fa-solid fa-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     `;
                     container.appendChild(card);
@@ -885,28 +904,339 @@
 
         async loadOwnerAnalytics() {
             try {
+                // Fetch bookings
                 const res = await fetch('/api/bookings/my');
                 const bookings = await res.json();
                 if (!res.ok) return;
 
-                let totalCount = bookings.length;
-                let completedCount = 0;
-                let revenue = 0.0;
+                this.ownerBookingsList = bookings;
 
-                bookings.forEach(b => {
-                    if (b.status === 'COMPLETED') {
-                        completedCount++;
-                        revenue += b.totalPrice;
-                    }
-                });
+                // Fetch completed rescues
+                const resBreakdowns = await fetch('/api/breakdowns/history');
+                const breakdowns = await resBreakdowns.json();
+                if (resBreakdowns.ok) {
+                    this.ownerBreakdownsList = breakdowns;
+                } else {
+                    this.ownerBreakdownsList = [];
+                }
 
-                document.getElementById('stat-total-bookings').textContent = totalCount;
-                document.getElementById('stat-total-revenue').textContent = `LKR ${revenue.toFixed(2)}`;
-                document.getElementById('stat-completed-bookings').textContent = completedCount;
+                this.filterOwnerAnalytics();
 
             } catch (err) {
                 console.error("Analytics failure", err);
             }
+        },
+
+        toggleDateFilterType() {
+            const dateTypeEl = document.getElementById('owner-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            
+            const dayContainer = document.getElementById('container-analytics-day');
+            const monthContainer = document.getElementById('container-analytics-month');
+            
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(Date.now() - tzoffset)).toISOString();
+            
+            if (dateType === 'all') {
+                if (dayContainer) dayContainer.style.display = 'none';
+                if (monthContainer) monthContainer.style.display = 'none';
+            } else if (dateType === 'day') {
+                if (dayContainer) dayContainer.style.display = 'flex';
+                if (monthContainer) monthContainer.style.display = 'none';
+                const dayInput = document.getElementById('owner-analytics-date-day');
+                if (dayInput && !dayInput.value) {
+                    dayInput.value = localISOTime.split('T')[0];
+                }
+            } else if (dateType === 'month') {
+                if (dayContainer) dayContainer.style.display = 'none';
+                if (monthContainer) monthContainer.style.display = 'flex';
+                const monthInput = document.getElementById('owner-analytics-date-month');
+                if (monthInput && !monthInput.value) {
+                    monthInput.value = localISOTime.substring(0, 7);
+                }
+            }
+            
+            this.filterOwnerAnalytics();
+        },
+
+        filterOwnerAnalytics() {
+            if (!this.ownerBookingsList) return;
+
+            const garageIdSelect = document.getElementById('owner-analytics-garage-select');
+            const selectedGarageId = garageIdSelect ? garageIdSelect.value : '';
+            
+            const dateTypeEl = document.getElementById('owner-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            const targetDay = document.getElementById('owner-analytics-date-day') ? document.getElementById('owner-analytics-date-day').value : '';
+            const targetMonth = document.getElementById('owner-analytics-date-month') ? document.getElementById('owner-analytics-date-month').value : '';
+
+            // Filter bookings
+            let filteredBookings = this.ownerBookingsList;
+            if (selectedGarageId) {
+                filteredBookings = this.ownerBookingsList.filter(b => b.garage && b.garage.id === parseInt(selectedGarageId, 10));
+            }
+            if (dateType === 'day' && targetDay) {
+                filteredBookings = filteredBookings.filter(b => b.bookingDate && b.bookingDate.split(' ')[0] === targetDay);
+            } else if (dateType === 'month' && targetMonth) {
+                filteredBookings = filteredBookings.filter(b => b.bookingDate && b.bookingDate.split(' ')[0].startsWith(targetMonth));
+            }
+
+            let totalCount = filteredBookings.length;
+            let completedCount = 0;
+            let revenue = 0.0;
+            const revenueMap = {};
+
+            filteredBookings.forEach(b => {
+                if (b.status === 'COMPLETED') {
+                    completedCount++;
+                    revenue += b.totalPrice;
+                    const type = b.serviceType || 'Other';
+                    revenueMap[type] = (revenueMap[type] || 0) + (b.totalPrice || 0);
+                }
+            });
+
+            document.getElementById('stat-total-bookings').textContent = totalCount;
+            document.getElementById('stat-total-revenue').textContent = `LKR ${revenue.toFixed(2)}`;
+            document.getElementById('stat-completed-bookings').textContent = completedCount;
+
+            // Filter completed rescues (breakdowns)
+            let completedRescuesCount = 0;
+            if (this.ownerBreakdownsList) {
+                let filteredBreakdowns = this.ownerBreakdownsList;
+                if (selectedGarageId) {
+                    filteredBreakdowns = this.ownerBreakdownsList.filter(b => b.assignedGarage && b.assignedGarage.id === parseInt(selectedGarageId, 10));
+                }
+                if (dateType === 'day' && targetDay) {
+                    filteredBreakdowns = filteredBreakdowns.filter(b => b.createdAt && b.createdAt.split('T')[0] === targetDay);
+                } else if (dateType === 'month' && targetMonth) {
+                    filteredBreakdowns = filteredBreakdowns.filter(b => b.createdAt && b.createdAt.split('T')[0].startsWith(targetMonth));
+                }
+                completedRescuesCount = filteredBreakdowns.length;
+                const statCompletedBreakdowns = document.getElementById('stat-completed-breakdowns');
+                if (statCompletedBreakdowns) {
+                    statCompletedBreakdowns.textContent = completedRescuesCount;
+                }
+            }
+
+            // --- RENDER REVENUE BAR CHART ---
+            const revenueCanvas = document.getElementById('chart-owner-revenue');
+            if (revenueCanvas) {
+                if (window.ownerRevenueChart) window.ownerRevenueChart.destroy();
+                
+                const isDarkMode = !document.body.classList.contains('light-mode');
+                const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+                const gridColor = isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                
+                const revenueLabels = Object.keys(revenueMap);
+                const revenueValues = Object.values(revenueMap);
+
+                window.ownerRevenueChart = new Chart(revenueCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: revenueLabels.length > 0 ? revenueLabels : ['No Data'],
+                        datasets: [{
+                            label: 'Revenue (LKR)',
+                            data: revenueValues.length > 0 ? revenueValues : [0],
+                            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                            borderColor: 'rgb(6, 182, 212)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 11 } }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- RENDER PIE CHART (Completed Bookings vs Rescues) ---
+            const completionsCanvas = document.getElementById('chart-owner-completions');
+            if (completionsCanvas) {
+                if (window.ownerCompletionsChart) window.ownerCompletionsChart.destroy();
+
+                const isDarkMode = !document.body.classList.contains('light-mode');
+                const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+
+                const hasData = completedCount > 0 || completedRescuesCount > 0;
+
+                window.ownerCompletionsChart = new Chart(completionsCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Completed Bookings', 'Completed Rescues'],
+                        datasets: [{
+                            data: hasData ? [completedCount, completedRescuesCount] : [1, 0],
+                            backgroundColor: hasData ? ['rgba(16, 185, 129, 0.75)', 'rgba(239, 68, 68, 0.75)'] : ['rgba(148, 163, 184, 0.25)', 'rgba(0,0,0,0)'],
+                            borderColor: hasData ? ['rgb(16, 185, 129)', 'rgb(239, 68, 68)'] : ['rgba(148, 163, 184, 0.4)', 'rgba(0,0,0,0)'],
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Outfit', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+
+        exportOwnerAnalyticsToExcel() {
+            if (!this.ownerBookingsList) return;
+            
+            const garageIdSelect = document.getElementById('owner-analytics-garage-select');
+            const selectedGarageId = garageIdSelect ? garageIdSelect.value : '';
+            
+            const dateTypeEl = document.getElementById('owner-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            const targetDay = document.getElementById('owner-analytics-date-day') ? document.getElementById('owner-analytics-date-day').value : '';
+            const targetMonth = document.getElementById('owner-analytics-date-month') ? document.getElementById('owner-analytics-date-month').value : '';
+
+            // Filter bookings
+            let filteredBookings = this.ownerBookingsList;
+            if (selectedGarageId) {
+                filteredBookings = this.ownerBookingsList.filter(b => b.garage && b.garage.id === parseInt(selectedGarageId, 10));
+            }
+            if (dateType === 'day' && targetDay) {
+                filteredBookings = filteredBookings.filter(b => b.bookingDate && b.bookingDate.split(' ')[0] === targetDay);
+            } else if (dateType === 'month' && targetMonth) {
+                filteredBookings = filteredBookings.filter(b => b.bookingDate && b.bookingDate.split(' ')[0].startsWith(targetMonth));
+            }
+
+            // Filter completed rescues (breakdowns)
+            let filteredBreakdowns = this.ownerBreakdownsList || [];
+            if (selectedGarageId) {
+                filteredBreakdowns = filteredBreakdowns.filter(b => b.assignedGarage && b.assignedGarage.id === parseInt(selectedGarageId, 10));
+            }
+            if (dateType === 'day' && targetDay) {
+                filteredBreakdowns = filteredBreakdowns.filter(b => b.createdAt && b.createdAt.split('T')[0] === targetDay);
+            } else if (dateType === 'month' && targetMonth) {
+                filteredBreakdowns = filteredBreakdowns.filter(b => b.createdAt && b.createdAt.split('T')[0].startsWith(targetMonth));
+            }
+
+            // Map bookings data
+            const bookingsSheetData = filteredBookings.map(b => ({
+                'Booking ID': b.id,
+                'Garage Name': b.garage ? b.garage.name : 'N/A',
+                'Customer Name': b.user ? (b.user.fullName || b.user.username) : 'N/A',
+                'Customer Email': b.user ? b.user.email : 'N/A',
+                'Customer Phone': b.user ? b.user.phone : 'N/A',
+                'Service Type': b.serviceType,
+                'Booking Date/Time': b.bookingDate,
+                'Price (LKR)': b.totalPrice,
+                'Status': b.status,
+                'Vehicle No': b.vehicleNo || 'N/A',
+                'Vehicle Type': b.vehicleType || 'N/A',
+                'Description': b.description || 'N/A'
+            }));
+
+            // Map rescues data
+            const rescuesSheetData = filteredBreakdowns.map(b => ({
+                'Rescue ID': b.id,
+                'Garage Name': b.assignedGarage ? b.assignedGarage.name : 'N/A',
+                'Customer Name': b.user ? (b.user.fullName || b.user.username) : 'N/A',
+                'Contact Phone': b.phone || 'N/A',
+                'Location City': b.city || 'N/A',
+                'Address/Landmark': b.address || 'N/A',
+                'Vehicle No': b.vehicleNo || 'N/A',
+                'Description': b.description || 'N/A',
+                'Created Time': b.createdAt,
+                'Status': b.status
+            }));
+
+            // Calculate overview summary statistics
+            let totalCount = filteredBookings.length;
+            let completedCount = 0;
+            let revenue = 0.0;
+            filteredBookings.forEach(b => {
+                if (b.status === 'COMPLETED') {
+                    completedCount++;
+                    revenue += (b.totalPrice || 0);
+                }
+            });
+            const completedRescuesCount = filteredBreakdowns.length;
+
+            let dateRangeStr = 'All Time';
+            if (dateType === 'day') {
+                dateRangeStr = `Day: ${targetDay}`;
+            } else if (dateType === 'month') {
+                dateRangeStr = `Month: ${targetMonth}`;
+            }
+
+            const summarySheetData = [
+                { 'Metric': 'Export Date', 'Value': new Date().toISOString().split('T')[0] },
+                { 'Metric': 'Selected Garage', 'Value': selectedGarageId ? (document.getElementById('owner-analytics-garage-select')?.options[document.getElementById('owner-analytics-garage-select').selectedIndex]?.text || selectedGarageId) : 'All Garages' },
+                { 'Metric': 'Date Range', 'Value': dateRangeStr },
+                { 'Metric': 'Total Bookings', 'Value': totalCount },
+                { 'Metric': 'Total Revenue', 'Value': `LKR ${revenue.toFixed(2)}` },
+                { 'Metric': 'Completed', 'Value': completedCount },
+                { 'Metric': 'Completed Rescues', 'Value': completedRescuesCount }
+            ];
+
+            // Generate Workbook
+            const wb = XLSX.utils.book_new();
+
+            const wsSummary = XLSX.utils.json_to_sheet(summarySheetData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, 'Overview Summary');
+            
+            const wsBookings = XLSX.utils.json_to_sheet(bookingsSheetData);
+            XLSX.utils.book_append_sheet(wb, wsBookings, 'Bookings');
+
+            const wsRescues = XLSX.utils.json_to_sheet(rescuesSheetData);
+            XLSX.utils.book_append_sheet(wb, wsRescues, 'Completed Rescues');
+
+            XLSX.writeFile(wb, `garage_analytics_${new Date().toISOString().split('T')[0]}.xlsx`);
+            this.showToast('Excel file downloaded successfully!', 'success');
+        },
+
+        downloadOwnerAnalyticsPDF() {
+            const element = document.getElementById('section-owner-analytics');
+            if (!element) return;
+
+            const dateStr = new Date().toISOString().split('T')[0];
+            this.showToast("Generating PDF report...", "success");
+
+            const isDarkMode = !document.body.classList.contains('light-mode');
+            const bgHex = isDarkMode ? '#0f172a' : '#ffffff';
+
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5], // in inches
+                filename: `GarageLK_Owner_Analytics_${dateStr}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: bgHex
+                },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(element).save()
+                .then(() => {
+                    this.showToast("PDF report downloaded successfully!", "success");
+                })
+                .catch(err => {
+                    console.error("PDF generation failed:", err);
+                    this.showToast("Failed to generate PDF", "error");
+                });
         },
 
         // --- ADMIN DATA LOADERS ---
@@ -1060,6 +1390,7 @@
         async handleAddService(e) {
             e.preventDefault();
             const garageId = document.getElementById('owner-services-garage-select').value;
+            const serviceId = document.getElementById('service-id').value;
             const serviceName = document.getElementById('service-name').value.trim();
             const description = document.getElementById('service-desc').value.trim();
             const price = parseFloat(document.getElementById('service-price').value);
@@ -1067,20 +1398,25 @@
             if (!garageId) return;
 
             try {
+                const payload = { serviceName, description, price };
+                if (serviceId) {
+                    payload.id = parseInt(serviceId, 10);
+                }
+
                 const res = await fetch(`/api/garages/${garageId}/services`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ serviceName, description, price })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
                 if (res.ok) {
-                    this.showToast('Service added successfully!', 'success');
+                    this.showToast(serviceId ? 'Service updated successfully!' : 'Service added successfully!', 'success');
                     this.closeModal('modal-add-service');
                     this.loadOwnerServices();
                     e.target.reset();
                 } else {
-                    this.showToast(data.message || 'Add service failed', 'error');
+                    this.showToast(data.message || 'Save service failed', 'error');
                 }
             } catch (err) {
                 this.showToast('Connection error', 'error');
@@ -1514,6 +1850,27 @@
         },
 
         openAddServiceModal() {
+            document.getElementById('service-id').value = '';
+            document.getElementById('service-name').value = '';
+            document.getElementById('service-desc').value = '';
+            document.getElementById('service-price').value = '';
+            document.getElementById('modal-service-title').innerHTML = '<i class="fa-solid fa-wrench"></i> Add New Service';
+            document.getElementById('btn-save-service').textContent = 'Add Service';
+            this.openModal('modal-add-service');
+        },
+
+        openEditServiceModal(garageId, serviceId) {
+            if (!this.ownerServices) return;
+            const service = this.ownerServices.find(s => s.id === serviceId);
+            if (!service) return;
+
+            document.getElementById('service-id').value = service.id;
+            document.getElementById('service-name').value = service.serviceName || service.serviceType || '';
+            document.getElementById('service-desc').value = service.description || '';
+            document.getElementById('service-price').value = service.price;
+
+            document.getElementById('modal-service-title').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Edit Service';
+            document.getElementById('btn-save-service').textContent = 'Save Changes';
             this.openModal('modal-add-service');
         },
 

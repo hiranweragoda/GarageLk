@@ -20,6 +20,9 @@ public class OfferedService {
     @Column(nullable = false)
     private Double price;
 
+    @Column(name = "description", length = 500)
+    private String description;
+
     // Constructors
     public OfferedService() {}
 
@@ -67,6 +70,10 @@ public class OfferedService {
     }
 
     public String getDescription() {
-        return "Automotive service offered by our garage.";
+        return description != null ? description : "Automotive service offered by our garage.";
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

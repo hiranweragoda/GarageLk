@@ -7,7 +7,6 @@ import com.garagefinder.repository.SparePartRepository;
 import com.garagefinder.repository.SparePartShopRepository;
 import com.garagefinder.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,14 +17,15 @@ import java.util.*;
 @RequestMapping
 public class SparePartController {
 
-    @Autowired
-    private SparePartShopRepository shopRepository;
+    private final SparePartShopRepository shopRepository;
+    private final SparePartRepository partRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private SparePartRepository partRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    public SparePartController(SparePartShopRepository shopRepository, SparePartRepository partRepository, UserRepository userRepository) {
+        this.shopRepository = shopRepository;
+        this.partRepository = partRepository;
+        this.userRepository = userRepository;
+    }
 
     // Helper method to calculate distance in kilometers between two coordinates (Haversine formula)
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -475,5 +475,32 @@ public class SparePartController {
         }
 
         return ResponseEntity.badRequest().body(Map.of("message", "Invalid status"));
+    }
+
+    @DeleteMapping("/api/shops/{id}")
+    public ResponseEntity<?> deleteShop(@PathVariable Long id, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"SHOP_OWNER".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        Optional<SparePartShop> shopOpt = shopRepository.findById(id);
+        if (shopOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        SparePartShop shop = shopOpt.get();
+        if (!shop.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        }
+
+        // Delete all associated spare parts first to maintain database integrity
+        List<SparePart> parts = partRepository.findByShopId(id);
+        partRepository.deleteAll(parts);
+
+        // Delete the shop itself
+        shopRepository.delete(shop);
+
+        return ResponseEntity.ok(Map.of("message", "Spare Part Shop deleted successfully"));
     }
 }

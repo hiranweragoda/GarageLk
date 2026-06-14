@@ -10,7 +10,6 @@ import com.garagefinder.repository.ReviewRepository;
 import com.garagefinder.repository.UserRepository;
 import com.garagefinder.repository.MechanicRepository;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,26 +27,30 @@ import java.util.*;
 @RequestMapping("/api/garages")
 public class GarageController {
 
-    @Autowired
-    private GarageRepository garageRepository;
+    private final GarageRepository garageRepository;
+    private final OfferedServiceRepository offeredServiceRepository;
+    private final UserRepository userRepository;
+    private final ReviewRepository reviewRepository;
+    private final BookingRepository bookingRepository;
+    private final BreakdownRequestRepository breakdownRequestRepository;
+    private final MechanicRepository mechanicRepository;
 
-    @Autowired
-    private OfferedServiceRepository offeredServiceRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ReviewRepository reviewRepository;
-
-    @Autowired
-    private BookingRepository bookingRepository;
-
-    @Autowired
-    private BreakdownRequestRepository breakdownRequestRepository;
-
-    @Autowired
-    private MechanicRepository mechanicRepository;
+    public GarageController(
+            GarageRepository garageRepository,
+            OfferedServiceRepository offeredServiceRepository,
+            UserRepository userRepository,
+            ReviewRepository reviewRepository,
+            BookingRepository bookingRepository,
+            BreakdownRequestRepository breakdownRequestRepository,
+            MechanicRepository mechanicRepository) {
+        this.garageRepository = garageRepository;
+        this.offeredServiceRepository = offeredServiceRepository;
+        this.userRepository = userRepository;
+        this.reviewRepository = reviewRepository;
+        this.bookingRepository = bookingRepository;
+        this.breakdownRequestRepository = breakdownRequestRepository;
+        this.mechanicRepository = mechanicRepository;
+    }
 
     // Search/List garages with optional filters
     @GetMapping
@@ -228,14 +231,28 @@ public class GarageController {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid price format"));
         }
 
-        Optional<OfferedService> existingOpt = offeredServiceRepository.findByGarageIdAndServiceType(garage.getId(), serviceType);
+        Long serviceId = payload.containsKey("id") && payload.get("id") != null ? Long.parseLong(payload.get("id").toString()) : null;
+
+        Optional<OfferedService> existingOpt = Optional.empty();
+        if (serviceId != null) {
+            existingOpt = offeredServiceRepository.findById(serviceId);
+        } else {
+            existingOpt = offeredServiceRepository.findByGarageIdAndServiceType(garage.getId(), serviceType);
+        }
+
+        String description = payload.containsKey("description") && payload.get("description") != null 
+            ? payload.get("description").toString() 
+            : null;
+
         OfferedService service;
         if (existingOpt.isPresent()) {
             service = existingOpt.get();
+            service.setServiceType(serviceType);
             service.setPrice(price);
         } else {
             service = new OfferedService(garage, serviceType, price);
         }
+        service.setDescription(description);
 
         offeredServiceRepository.save(service);
         return ResponseEntity.ok(Map.of("message", "Service saved successfully"));
