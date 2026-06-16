@@ -49,6 +49,14 @@
                         <!-- Dynamic list of spare parts -->
                     </div>
                 </div>
+
+                <!-- Reviews Panel -->
+                <div class="details-panel" style="margin-top: 2rem;">
+                    <h2><i class="fa-solid fa-star"></i> Customer Reviews</h2>
+                    <div id="reviews-container">
+                        <!-- Dynamic reviews -->
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -70,6 +78,42 @@
             }
         });
     </script>
+    <!-- Reserve Spare Part Modal -->
+    <div class="modal-overlay" id="modal-reserve-part">
+        <div class="modal-content">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-reserve-part')"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-gears"></i> Reserve Spare Part</h3>
+            <form onsubmit="window.GarageLK.submitPartReservation(event)">
+                <input type="hidden" id="reserve-part-id">
+                <div class="form-group">
+                    <label>Part Name</label>
+                    <input type="text" id="reserve-part-name" class="form-control" readonly style="background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label>Price (LKR)</label>
+                    <input type="text" id="reserve-part-price" class="form-control" readonly style="background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label for="reserve-quantity">Quantity to Reserve</label>
+                    <input type="number" id="reserve-quantity" class="form-control" min="1" required value="1" oninput="window.GarageLK.updateReserveTotalPrice()">
+                </div>
+                <div class="form-group">
+                    <label for="reserve-pickup-date">Estimated Pickup Date/Time</label>
+                    <input type="datetime-local" id="reserve-pickup-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="reserve-notes">Notes / Special Instructions</label>
+                    <textarea id="reserve-notes" class="form-control" rows="3" placeholder="Specify compatibility details, etc."></textarea>
+                </div>
+                <div style="margin: 1.5rem 0; padding: 1rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 600;">Total Estimate:</span>
+                    <span id="reserve-total-price" style="font-size: 1.25rem; font-weight: 800; color: var(--secondary);">LKR 0.00</span>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="reserve-submit-btn">Confirm Reservation</button>
+            </form>
+        </div>
+    </div>
+
     <div class="toast-container" id="toast-container"></div>
 </body>
 </html>

@@ -9,6 +9,7 @@ import com.garagefinder.repository.OfferedServiceRepository;
 import com.garagefinder.repository.ReviewRepository;
 import com.garagefinder.repository.UserRepository;
 import com.garagefinder.repository.MechanicRepository;
+import com.garagefinder.repository.CustomerRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,7 @@ public class GarageController {
     private final BookingRepository bookingRepository;
     private final BreakdownRequestRepository breakdownRequestRepository;
     private final MechanicRepository mechanicRepository;
+    private final CustomerRepository customerRepository;
 
     public GarageController(
             GarageRepository garageRepository,
@@ -42,7 +44,8 @@ public class GarageController {
             ReviewRepository reviewRepository,
             BookingRepository bookingRepository,
             BreakdownRequestRepository breakdownRequestRepository,
-            MechanicRepository mechanicRepository) {
+            MechanicRepository mechanicRepository,
+            CustomerRepository customerRepository) {
         this.garageRepository = garageRepository;
         this.offeredServiceRepository = offeredServiceRepository;
         this.userRepository = userRepository;
@@ -50,6 +53,21 @@ public class GarageController {
         this.bookingRepository = bookingRepository;
         this.breakdownRequestRepository = breakdownRequestRepository;
         this.mechanicRepository = mechanicRepository;
+        this.customerRepository = customerRepository;
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<?> getStats() {
+        long verifiedGarages = garageRepository.countByStatus("APPROVED");
+        long customers = customerRepository.count();
+        long bookings = bookingRepository.count();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("verifiedGarages", verifiedGarages);
+        stats.put("customers", customers);
+        stats.put("bookings", bookings);
+
+        return ResponseEntity.ok(stats);
     }
 
     // Search/List garages with optional filters
@@ -141,6 +159,9 @@ public class GarageController {
         map.put("longitude", g.getLongitude());
         map.put("vehicleTypes", g.getVehicleTypes());
         map.put("engineTypes", g.getEngineTypes());
+        map.put("imageUrl", g.getImageUrl());
+        map.put("phone", g.getPhone());
+        map.put("email", g.getEmail());
         map.put("user", g.getUser());
 
         Double avg = reviewRepository.findAverageRatingByGarageId(g.getId());

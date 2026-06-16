@@ -146,17 +146,35 @@ const auth = {
 
     // Mock coordinates generator for Sri Lanka districts
     getMockCoordinates(district) {
+        if (!district) return { lat: 6.9271, lng: 79.8612 };
+        const key = district.trim().charAt(0).toUpperCase() + district.trim().slice(1).toLowerCase();
         const coords = {
-            'Colombo': { lat: 6.9271, lng: 79.8612 },
-            'Gampaha': { lat: 7.0873, lng: 80.0144 },
-            'Kandy': { lat: 7.2906, lng: 80.6337 },
-            'Galle': { lat: 6.0535, lng: 80.2117 },
-            'Matara': { lat: 5.9549, lng: 80.5550 },
-            'Jaffna': { lat: 9.6615, lng: 80.0255 },
-            'Kurunegala': { lat: 7.4863, lng: 80.3647 },
+            'Ampara': { lat: 7.3019, lng: 81.6747 },
             'Anuradhapura': { lat: 8.3114, lng: 80.4037 },
-            'Kalutara': { lat: 6.5854, lng: 79.9607 }
+            'Badulla': { lat: 6.9934, lng: 81.0550 },
+            'Batticaloa': { lat: 7.7311, lng: 81.6747 },
+            'Colombo': { lat: 6.9271, lng: 79.8612 },
+            'Galle': { lat: 6.0535, lng: 80.2117 },
+            'Gampaha': { lat: 7.0873, lng: 80.0144 },
+            'Hambantota': { lat: 6.1246, lng: 81.1185 },
+            'Jaffna': { lat: 9.6615, lng: 80.0255 },
+            'Kalutara': { lat: 6.5854, lng: 79.9607 },
+            'Kandy': { lat: 7.2906, lng: 80.6337 },
+            'Kegalle': { lat: 7.2514, lng: 80.3464 },
+            'Kilinochchi': { lat: 9.3803, lng: 80.4037 },
+            'Kurunegala': { lat: 7.4863, lng: 80.3647 },
+            'Mannar': { lat: 8.9811, lng: 79.9044 },
+            'Matale': { lat: 7.4682, lng: 80.6244 },
+            'Matara': { lat: 5.9549, lng: 80.5550 },
+            'Moneragala': { lat: 6.8714, lng: 81.3486 },
+            'Mullaitivu': { lat: 9.2667, lng: 80.8144 },
+            'Nuwara Eliya': { lat: 6.9497, lng: 80.7891 },
+            'Polonnaruwa': { lat: 7.9397, lng: 81.0003 },
+            'Puttalam': { lat: 8.0362, lng: 79.8283 },
+            'Ratnapura': { lat: 6.6828, lng: 80.3992 },
+            'Trincomalee': { lat: 8.5873, lng: 81.2152 },
+            'Vavuniya': { lat: 8.7514, lng: 80.4972 }
         };
-        return coords[district] || { lat: 6.9271, lng: 79.8612 };
+        return coords[key] || { lat: 6.9271, lng: 79.8612 };
     }
 };

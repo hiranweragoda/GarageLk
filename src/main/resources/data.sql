@@ -49,26 +49,26 @@ VALUES (2, 3, 'CP LG-8899', 'Honda Vezel (Hybrid)', 'Hybrid')
 ON DUPLICATE KEY UPDATE vehicle_no=vehicle_no;
 
 
--- 3. Insert Garages (with vehicle_types and engine_types)
+-- 3. Insert Garages (with vehicle_types, engine_types, phone, and email)
 -- Garage 1: Colombo Hybrid Motors
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types)
-VALUES (1, 4, 'Colombo Hybrid Motors', 'Priyantha De Silva', 'Specialized hybrid vehicle maintenance, battery testing, scan reports, and general servicing for Toyota and Honda models.', '142, Baseline Road, Borella', 'Colombo 08', 'Colombo', 'APPROVED', 6.9242, 79.8732, 'Car,Van', 'Hybrid,Petrol')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Van', engine_types='Hybrid,Petrol';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
+VALUES (1, 4, 'Colombo Hybrid Motors', 'Priyantha De Silva', 'Specialized hybrid vehicle maintenance, battery testing, scan reports, and general servicing for Toyota and Honda models.', '142, Baseline Road, Borella', 'Colombo 08', 'Colombo', 'APPROVED', 6.9242, 79.8732, 'Car,Van', 'Hybrid,Petrol', '0112233445', 'info@colombohybrid.lk')
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Van', engine_types='Hybrid,Petrol', phone='0112233445', email='info@colombohybrid.lk';
 
 -- Garage 2: Kandy Auto Care & Towing
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types)
-VALUES (2, 5, 'Kandy Auto Care & Towing', 'Ranjith Alwis', 'Full-service garage including engine diagnostics, AC repairs, breakdown support, and 24/7 towing services in the hill country.', '88, William Gopallawa Mawatha', 'Kandy', 'Kandy', 'APPROVED', 7.2842, 80.6234, 'Car,Van,Truck', 'Petrol,Diesel,Hybrid')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Van,Truck', engine_types='Petrol,Diesel,Hybrid';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
+VALUES (2, 5, 'Kandy Auto Care & Towing', 'Ranjith Alwis', 'Full-service garage including engine diagnostics, AC repairs, breakdown support, and 24/7 towing services in the hill country.', '88, William Gopallawa Mawatha', 'Kandy', 'Kandy', 'APPROVED', 7.2842, 80.6234, 'Car,Van,Truck', 'Petrol,Diesel,Hybrid', '0812233445', 'contact@kandycare.lk')
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Van,Truck', engine_types='Petrol,Diesel,Hybrid', phone='0812233445', email='contact@kandycare.lk';
 
 -- Garage 3: Galle Tire & Wheel Alignment
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types)
-VALUES (3, 6, 'Galle Tire & Wheel Alignment', 'Mohamed Sajid', 'Authorised dealer for premium tires. Specializing in computerised wheel alignment, wheel balancing, and tire puncture repairs.', '210, Matara Road', 'Galle', 'Galle', 'APPROVED', 6.0367, 80.2222, 'Car,Bike,Van', 'Petrol,Diesel,EV,Hybrid')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Bike,Van', engine_types='Petrol,Diesel,EV,Hybrid';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
+VALUES (3, 6, 'Galle Tire & Wheel Alignment', 'Mohamed Sajid', 'Authorised dealer for premium tires. Specializing in computerised wheel alignment, wheel balancing, and tire puncture repairs.', '210, Matara Road', 'Galle', 'Galle', 'APPROVED', 6.0367, 80.2222, 'Car,Bike,Van', 'Petrol,Diesel,EV,Hybrid', '0912233445', 'galletire@gmail.com')
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Bike,Van', engine_types='Petrol,Diesel,EV,Hybrid', phone='0912233445', email='galletire@gmail.com';
 
 -- Garage 4: Lanka Diesel Engineers (PENDING Admin approval)
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types)
-VALUES (4, 7, 'Lanka Diesel Engineers', 'Thusitha Perera', 'Expert repair and servicing for diesel injection pumps, turbochargers, and heavy engine overhauls.', '45, High Level Road, Maharagama', 'Maharagama', 'Colombo', 'PENDING', 6.8488, 79.9265, 'Van,Truck', 'Diesel')
-ON DUPLICATE KEY UPDATE vehicle_types='Van,Truck', engine_types='Diesel';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
+VALUES (4, 7, 'Lanka Diesel Engineers', 'Thusitha Perera', 'Expert repair and servicing for diesel injection pumps, turbochargers, and heavy engine overhauls.', '45, High Level Road, Maharagama', 'Maharagama', 'Colombo', 'PENDING', 6.8488, 79.9265, 'Van,Truck', 'Diesel', '0777665544', 'lankadiesel@gmail.com')
+ON DUPLICATE KEY UPDATE vehicle_types='Van,Truck', engine_types='Diesel', phone='0777665544', email='lankadiesel@gmail.com';
 
 
 -- 4. Insert Offered Services
@@ -213,4 +213,23 @@ ON DUPLICATE KEY UPDATE description=description;
 INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
 VALUES (11, 1, 'Alternator failure near Kurunegala Clock Tower', 'Kurunegala', 'COMPLETED', '0711122334', '2026-05-25 11:00:00', 7.4875, 80.3647, 'WP CAD-4321', 'Clock Tower Road, Kurunegala')
 ON DUPLICATE KEY UPDATE description=description;
+
+
+-- 11. Insert Seed Spare Part Bookings
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
+VALUES (1, 1, 1, 2, 24000.00, 'PICKED_UP', '2026-06-10 09:00:00', '2026-06-11 10:00:00', 'Need genuine ones')
+ON DUPLICATE KEY UPDATE status=status;
+
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
+VALUES (2, 2, 3, 1, 35000.00, 'PICKED_UP', '2026-06-12 14:00:00', '2026-06-13 11:00:00', 'Please keep ready')
+ON DUPLICATE KEY UPDATE status=status;
+
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
+VALUES (3, 1, 5, 1, 18000.00, 'PICKED_UP', '2026-06-13 16:00:00', '2026-06-14 10:00:00', 'Left side mirror')
+ON DUPLICATE KEY UPDATE status=status;
+
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, notes)
+VALUES (4, 2, 1, 1, 12000.00, 'READY_FOR_PICKUP', '2026-06-14 11:00:00', 'Active booking')
+ON DUPLICATE KEY UPDATE status=status;
+
 
