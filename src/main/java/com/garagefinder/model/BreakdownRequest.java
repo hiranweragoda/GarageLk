@@ -46,6 +46,9 @@ public class BreakdownRequest {
 
     private String address;
 
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
     // Constructors
     public BreakdownRequest() {}
 
@@ -61,6 +64,14 @@ public class BreakdownRequest {
     }
 
     // Getters and Setters
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
     public Long getId() {
         return id;
     }
