@@ -276,6 +276,11 @@
             await this.checkAuth();
             this.initMap();
 
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('emergency') === 'true') {
+                this.openEmergencyModal();
+            }
+
             // Set search listeners for garages
             const btnSearch = document.getElementById('btn-search');
             if (btnSearch) {
@@ -302,10 +307,33 @@
             if (searchPartModel) searchPartModel.addEventListener('keypress', handlePartEnter);
             if (searchPartYear) searchPartYear.addEventListener('keypress', handlePartEnter);
 
-            this.loadGarages();
+            if (urlParams.get('search') === 'parts') {
+                this.setSearchMode('parts');
+            } else {
+                this.loadGarages();
+            }
+            this.loadAboutStats();
 
             if (this.currentUser && this.currentUser.role === 'CUSTOMER') {
                 this.loadHomepageActiveBreakdown();
+            }
+        },
+
+        async loadAboutStats() {
+            try {
+                const res = await fetch('/api/garages/stats');
+                if (res.ok) {
+                    const stats = await res.json();
+                    const elGarages = document.getElementById('stat-garages');
+                    const elCustomers = document.getElementById('stat-customers');
+                    const elBookings = document.getElementById('stat-bookings');
+
+                    if (elGarages) elGarages.innerText = `${stats.verifiedGarages}+`;
+                    if (elCustomers) elCustomers.innerText = `${stats.customers}+`;
+                    if (elBookings) elBookings.innerText = `${stats.bookings.toLocaleString()}+`;
+                }
+            } catch (err) {
+                console.error("Failed to load about stats:", err);
             }
         },
 
@@ -415,8 +443,9 @@
                                             <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-approved' : 'badge-pending'}">${p.quantity} Available</span>
                                         </p>
                                         <hr style="border:0; border-top:1px solid var(--border-color); margin:8px 0;">
-                                        <div class="garage-address" style="margin-top:4px;">
-                                            <i class="fa-solid fa-store"></i> <strong>${shop.shopName}</strong>${distText}
+                                        <div class="garage-address" style="margin-top:4px; display:flex; justify-content:space-between; align-items:center;">
+                                            <span><i class="fa-solid fa-store"></i> <strong>${shop.shopName}</strong>${distText}</span>
+                                            <span style="color:#f59e0b; font-weight:700; font-size:0.9rem; white-space:nowrap;"><i class="fa-solid fa-star"></i> ${shop.rating ? shop.rating.toFixed(1) : '0.0'}</span>
                                         </div>
                                         <div class="garage-address">
                                             <i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}
@@ -442,7 +471,10 @@
                                 const marker = L.marker([shop.latitude, shop.longitude]).addTo(this.map);
                                 marker.bindPopup(`
                                     <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 180px;">
-                                        <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading);">${shop.shopName}</h4>
+                                        <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading); display:flex; justify-content:space-between; align-items:center;">
+                                            <span>${shop.shopName}</span>
+                                            <span style="color:#f59e0b; margin-left: 10px; white-space: nowrap;"><i class="fa-solid fa-star"></i> ${shop.rating ? shop.rating.toFixed(1) : '0.0'}</span>
+                                        </h4>
                                         <p style="font-size:0.8rem; margin-bottom:6px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}</p>
                                         <p style="font-size:0.8rem; margin-bottom:8px; color:var(--primary); font-weight:600;"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</p>
                                         <div style="font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--border-color); padding-top:4px;">
@@ -468,8 +500,9 @@
                                 <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400'}" class="garage-card-img" alt="${s.shopName}">
                                 <div class="garage-card-content">
                                     <div>
-                                        <div class="garage-header">
-                                            <h3 class="garage-title">${s.shopName}</h3>
+                                        <div class="garage-header" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                                            <h3 class="garage-title" style="margin:0;">${s.shopName}</h3>
+                                            <span style="color:#f59e0b; font-weight:700; font-size: 0.95rem; white-space: nowrap;"><i class="fa-solid fa-star"></i> ${s.rating ? s.rating.toFixed(1) : '0.0'}</span>
                                         </div>
                                         <div class="garage-address">
                                             <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}${distText}
@@ -495,7 +528,10 @@
                                 const marker = L.marker([s.latitude, s.longitude]).addTo(this.map);
                                 marker.bindPopup(`
                                     <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 150px;">
-                                        <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading);">${s.shopName}</h4>
+                                        <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading); display:flex; justify-content:space-between; align-items:center;">
+                                            <span>${s.shopName}</span>
+                                            <span style="color:#f59e0b; margin-left: 10px; white-space: nowrap;"><i class="fa-solid fa-star"></i> ${s.rating ? s.rating.toFixed(1) : '0.0'}</span>
+                                        </h4>
                                         <p style="font-size:0.85rem; margin-bottom:8px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${s.city}</p>
                                         <a href="shop.html?id=${s.id}" class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; width:100%; text-align:center; color:white;">View Shop</a>
                                     </div>
@@ -918,6 +954,7 @@
                 const data = await res.json();
                 this.renderShopProfile(data.shop);
                 this.renderShopParts(data.parts);
+                this.renderShopReviews(data.reviews);
 
             } catch (err) {
                 console.error("Error loading shop details:", err);
@@ -951,6 +988,9 @@
                                 <span><i class="fa-solid fa-envelope" style="color:var(--primary)"></i> ${s.email || 'N/A'}</span>
                             </div>
                         </div>
+                        <div class="garage-rating" style="font-size: 1.25rem; padding: 0.5rem 1rem;">
+                            <i class="fa-solid fa-star"></i> ${s.rating ? s.rating.toFixed(1) : '0.0'} (${s.reviewCount || 0})
+                        </div>
                     </div>
                     <p style="color:var(--text-secondary); margin-top:1rem; font-size:1.05rem; line-height:1.6;">${s.description || 'Quality automotive spare parts.'}</p>
                 </div>
@@ -969,9 +1009,24 @@
             parts.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'garage-card';
+
+                let reserveBtnHtml = '';
+                if (!this.currentUser || this.currentUser.role === 'CUSTOMER') {
+                    const disabledStr = p.quantity <= 0 ? 'disabled' : '';
+                    reserveBtnHtml = `
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-primary btn-sm" style="width: 100%; font-size: 0.85rem;" 
+                                onclick="window.GarageLK.openReservePartModal(${p.id}, '${(p.partName || '').replace(/'/g, "\\'")}', ${p.price}, ${p.quantity})" 
+                                ${disabledStr} unique-id="reserve-btn-${p.id}">
+                                <i class="fa-solid fa-cart-shopping"></i> Reserve Part
+                            </button>
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
                     <img src="${p.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=400'}" class="garage-card-img" alt="${p.partName}">
-                    <div class="garage-card-content">
+                    <div class="garage-card-content" style="display: flex; flex-direction: column; justify-content: space-between; height: calc(100% - 150px);">
                         <div>
                             <div class="garage-header">
                                 <h3 class="garage-title" style="color:var(--primary); font-size:1.15rem; font-weight:700; margin:0;">${p.partName}</h3>
@@ -982,9 +1037,39 @@
                                 <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-approved' : 'badge-pending'}">${p.quantity} Available</span>
                             </p>
                         </div>
+                        ${reserveBtnHtml}
                     </div>
                 `;
                 container.appendChild(card);
+            });
+        },
+
+        renderShopReviews(reviews) {
+            const container = document.getElementById('reviews-container');
+            if (!container) return;
+            if (!reviews || reviews.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted); padding:1rem 0;">No reviews yet. Be the first to reserve and rate!</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            reviews.forEach(r => {
+                let stars = '';
+                for (let i = 1; i <= 5; i++) {
+                    stars += i <= r.rating ? '<i class="fa-solid fa-star"></i>' : '<i class="fa-regular fa-star"></i>';
+                }
+
+                const item = document.createElement('div');
+                item.className = 'review-item';
+                item.innerHTML = `
+                    <div class="review-header">
+                        <span class="review-user">${r.user.fullName || r.user.username}</span>
+                        <span class="review-rating">${stars}</span>
+                    </div>
+                    <p class="review-comment">${r.comment || ''}</p>
+                    <span class="review-date">${new Date(r.createdAt).toLocaleDateString()}</span>
+                `;
+                container.appendChild(item);
             });
         },
 
@@ -1128,6 +1213,7 @@
                 this.switchDashboardTab('customer-bookings');
                 this.loadCustomerBookings();
                 this.loadCustomerBreakdowns();
+                this.loadCustomerReservations();
             } else if (role === 'GARAGE_OWNER') {
                 this.switchDashboardTab('owner-garages');
                 await this.loadOwnerGarages();
@@ -1145,6 +1231,7 @@
                 this.switchDashboardTab('shop-my-shops');
                 await this.loadShopMyShops();
                 this.loadShopInventoryDropdown();
+                this.loadShopReservations();
             } else if (role === 'ADMIN') {
                 this.switchDashboardTab('admin-garage-approvals');
                 this.loadAdminApprovals();
@@ -1168,6 +1255,9 @@
                     </div>
                     <button class="sidebar-btn active" id="side-customer-bookings" onclick="window.GarageLK.switchDashboardTab('customer-bookings')">
                         <i class="fa-solid fa-list-check"></i> My Appointments
+                    </button>
+                    <button class="sidebar-btn" id="side-customer-reservations" onclick="window.GarageLK.switchDashboardTab('customer-reservations'); window.GarageLK.loadCustomerReservations();">
+                        <i class="fa-solid fa-gears"></i> Part Reservations
                     </button>
                     <button class="sidebar-btn" id="side-customer-breakdowns" onclick="window.GarageLK.switchDashboardTab('customer-breakdowns'); window.GarageLK.loadCustomerBreakdowns();">
                         <i class="fa-solid fa-truck-medical"></i> Emergency Assist
@@ -1215,6 +1305,12 @@
                     </button>
                     <button class="sidebar-btn" id="side-shop-inventory" onclick="window.GarageLK.switchDashboardTab('shop-inventory'); window.GarageLK.loadShopInventoryDropdown();">
                         <i class="fa-solid fa-gears"></i> Manage Inventory
+                    </button>
+                    <button class="sidebar-btn" id="side-shop-reservations" onclick="window.GarageLK.switchDashboardTab('shop-reservations'); window.GarageLK.loadShopReservations();">
+                        <i class="fa-solid fa-cart-flatbed-suitcase"></i> Part Reservations
+                    </button>
+                    <button class="sidebar-btn" id="side-shop-analytics" onclick="window.GarageLK.switchDashboardTab('shop-analytics'); window.GarageLK.loadShopAnalytics();">
+                        <i class="fa-solid fa-chart-line"></i> Analytics (Sales Reports)
                     </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Settings
@@ -1264,65 +1360,124 @@
         // --- CUSTOMER DATA LOADER ---
         async loadCustomerBookings() {
             const list = document.getElementById('customer-bookings-list');
+            const completedList = document.getElementById('customer-completed-bookings-list');
+            
             list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading bookings...</p>';
+            if (completedList) {
+                completedList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading completed history...</p>';
+            }
 
             try {
                 const res = await fetch('/api/bookings/my');
                 const bookings = await res.json();
                 if (!res.ok) throw new Error("Load failed");
 
-                if (bookings.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have no appointment history yet.</p>';
-                    return;
-                }
+                const activeBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'APPROVED');
+                const completedBookings = bookings.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
 
-                list.innerHTML = '';
-                bookings.forEach(b => {
-                    const item = document.createElement('div');
-                    item.className = 'table-item';
+                // 1. Render Active Bookings
+                if (activeBookings.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active bookings found.</p>';
+                } else {
+                    list.innerHTML = '';
+                    activeBookings.forEach(b => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
 
-                    let statusBadgeClass = 'badge-pending';
-                    if (b.status === 'APPROVED') statusBadgeClass = 'badge-approved';
-                    else if (b.status === 'COMPLETED') statusBadgeClass = 'badge-completed';
-                    else if (b.status === 'CANCELLED') statusBadgeClass = 'badge-cancelled';
+                        let statusBadgeClass = 'badge-pending';
+                        if (b.status === 'APPROVED') statusBadgeClass = 'badge-approved';
 
-                    // Review button if completed
-                    let actionHtml = '';
-                    if (b.status === 'COMPLETED') {
-                        actionHtml = `
-                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.openReviewModal(${b.id})" unique-id="review-btn-${b.id}">
-                                <i class="fa-solid fa-star"></i> Write Review
-                            </button>
-                        `;
-                    } else if (b.status === 'PENDING' || b.status === 'APPROVED') {
-                        actionHtml = `
+                        let actionHtml = `
                             <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
                                 onclick="window.GarageLK.updateBookingStatus(${b.id}, 'CANCELLED')" unique-id="cancel-btn-${b.id}">
                                 Cancel
                             </button>
                         `;
-                    }
 
-                    item.innerHTML = `
-                        <div style="flex:1;">
-                            <h4 style="font-weight:700;">${b.garage.name}</h4>
-                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
-                            </p>
-                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
-                                <strong>Details:</strong> ${b.description}
-                            </p>
-                        </div>
-                        <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
-                            <span class="badge ${statusBadgeClass}">${b.status}</span>
-                            <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
-                            ${actionHtml}
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+                        item.innerHTML = `
+                            <div style="flex:1;">
+                                <h4 style="font-weight:700;">${b.garage.name}</h4>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                    <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
+                                </p>
+                                <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                                    <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
+                                    <strong>Details:</strong> ${b.description}
+                                </p>
+                            </div>
+                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                                <span class="badge ${statusBadgeClass}">${b.status}</span>
+                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                ${actionHtml}
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+
+                // 2. Render Completed Bookings
+                if (completedList) {
+                    if (completedBookings.length === 0) {
+                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed appointments found.</p>';
+                    } else {
+                        completedList.innerHTML = '';
+                        completedBookings.forEach(b => {
+                            const item = document.createElement('div');
+                            item.className = 'table-item';
+
+                            const reviewBtnContainerId = `review-btn-container-${b.id}`;
+
+                            let badgeClass = 'badge-completed';
+                            if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
+
+                            item.innerHTML = `
+                                <div style="flex:1;">
+                                    <h4 style="font-weight:700;">${b.garage.name}</h4>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                        <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                                        <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
+                                        <strong>Details:</strong> ${b.description}
+                                    </p>
+                                </div>
+                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 150px;">
+                                    <span class="badge ${badgeClass}">${b.status}</span>
+                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                    <div id="${reviewBtnContainerId}" style="display:inline-block; margin-top:0.25rem;"></div>
+                                </div>
+                            `;
+                            completedList.appendChild(item);
+
+                            if (b.status === 'COMPLETED') {
+                                // Load rated check for garage
+                                setTimeout(async () => {
+                                    const btnContainer = document.getElementById(reviewBtnContainerId);
+                                    if (btnContainer) {
+                                        try {
+                                            const existsRes = await fetch(`/api/reviews/booking/${b.id}/exists`);
+                                            if (existsRes.ok) {
+                                                const check = await existsRes.json();
+                                                if (!check.exists) {
+                                                    btnContainer.innerHTML = `
+                                                        <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
+                                                            onclick="window.GarageLK.openReviewModal(${b.id})" unique-id="review-btn-${b.id}">
+                                                            <i class="fa-solid fa-star"></i> Write Review
+                                                        </button>
+                                                    `;
+                                                } else {
+                                                    btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Garage Reviewed</span>`;
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error(e);
+                                        }
+                                    }
+                                }, 0);
+                            }
+                        });
+                    }
+                }
 
             } catch (err) {
                 console.error("Error loading customer bookings:", err);
@@ -1417,7 +1572,6 @@
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading garages.</p>';
             }
         },
-
         async loadOwnerBookings() {
             const list = document.getElementById('owner-bookings-list');
             const completedList = document.getElementById('owner-completed-bookings-list');
@@ -1433,8 +1587,8 @@
                 const bookings = await res.json();
                 if (!res.ok) throw new Error();
 
-                const activeBookings = bookings.filter(b => b.status !== 'COMPLETED');
-                const completedBookings = bookings.filter(b => b.status === 'COMPLETED');
+                const activeBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'APPROVED');
+                const completedBookings = bookings.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
 
                 // 1. Render Active Bookings
                 if (activeBookings.length === 0) {
@@ -1504,10 +1658,18 @@
                         completedBookings.forEach(b => {
                             const item = document.createElement('div');
                             item.className = 'table-item';
+
+                            let titleHtml = `<h4 style="font-weight:700; margin-bottom:0; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Appointment</h4>`;
+                            let badgeClass = 'badge-completed';
+                            if (b.status === 'CANCELLED') {
+                                titleHtml = `<h4 style="font-weight:700; margin-bottom:0; color:var(--danger);"><i class="fa-solid fa-circle-xmark"></i> Cancelled Appointment</h4>`;
+                                badgeClass = 'badge-cancelled';
+                            }
+
                             item.innerHTML = `
                                 <div style="flex:1;">
                                     <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
-                                        <h4 style="font-weight:700; margin-bottom:0; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Appointment</h4>
+                                        ${titleHtml}
                                         <span style="font-size:0.8rem; color:var(--text-muted);">at <strong>${b.garage.name}</strong></span>
                                     </div>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
@@ -1520,7 +1682,7 @@
                                     </p>
                                 </div>
                                 <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 180px;">
-                                    <span class="badge badge-completed">${b.status}</span>
+                                    <span class="badge ${badgeClass}">${b.status}</span>
                                     <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
                                     <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
                                         <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
@@ -1534,7 +1696,6 @@
                         });
                     }
                 }
-
             } catch (err) {
                 console.error("Error loading owner bookings:", err);
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading bookings.</p>';
@@ -2461,10 +2622,31 @@
             let hasCoords = !isNaN(initialLat) && !isNaN(initialLng);
             
             const cityCoords = {
+                'ampara': [7.3019, 81.6747],
+                'anuradhapura': [8.3114, 80.4037],
+                'badulla': [6.9934, 81.0550],
+                'batticaloa': [7.7311, 81.6747],
                 'colombo': [6.9271, 79.8612],
-                'kandy': [7.2906, 80.6337],
                 'galle': [6.0535, 80.2117],
-                'kurunegala': [7.4863, 80.3647]
+                'gampaha': [7.0873, 80.0144],
+                'hambantota': [6.1246, 81.1185],
+                'jaffna': [9.6615, 80.0255],
+                'kalutara': [6.5854, 79.9607],
+                'kandy': [7.2906, 80.6337],
+                'kegalle': [7.2514, 80.3464],
+                'kilinochchi': [9.3803, 80.4037],
+                'kurunegala': [7.4863, 80.3647],
+                'mannar': [8.9811, 79.9044],
+                'matale': [7.4682, 80.6244],
+                'matara': [5.9549, 80.5550],
+                'moneragala': [6.8714, 81.3486],
+                'mullaitivu': [9.2667, 80.8144],
+                'nuwara eliya': [6.9497, 80.7891],
+                'polonnaruwa': [7.9397, 81.0003],
+                'puttalam': [8.0362, 79.8283],
+                'ratnapura': [6.6828, 80.3992],
+                'trincomalee': [8.5873, 81.2152],
+                'vavuniya': [8.7514, 80.4972]
             };
             
             if (!hasCoords) {
@@ -2625,77 +2807,116 @@
 
         async loadCustomerBreakdowns() {
             const list = document.getElementById('customer-breakdowns-list');
+            const completedList = document.getElementById('customer-completed-breakdowns-list');
             if (!list) return;
+            
             list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading requests...</p>';
+            if (completedList) {
+                completedList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading completed history...</p>';
+            }
 
             try {
                 const res = await fetch('/api/breakdowns/my');
                 const breakdowns = await res.json();
                 if (!res.ok) throw new Error();
 
-                if (breakdowns.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No emergency assistance requests found.</p>';
-                    return;
-                }
+                const activeBreakdowns = breakdowns.filter(b => b.status !== 'COMPLETED');
+                const completedBreakdowns = breakdowns.filter(b => b.status === 'COMPLETED');
 
-                list.innerHTML = '';
-                breakdowns.forEach(b => {
-                    const item = document.createElement('div');
-                    item.className = 'table-item';
+                // 1. Render Active Emergencies
+                if (activeBreakdowns.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active emergency requests found.</p>';
+                } else {
+                    list.innerHTML = '';
+                    activeBreakdowns.forEach(b => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
 
-                    let badgeClass = 'badge-pending';
-                    let responseHtml = '<span style="color:var(--text-muted); font-size:0.85rem;">Searching for response...</span>';
-                    if (b.status === 'ACCEPTED') {
-                        badgeClass = 'badge-approved';
-                        responseHtml = `
-                            <div style="font-size:0.85rem; color:var(--secondary); font-weight:500;">
-                                <i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy.name}</strong> <br>
-                                ${b.assignedMechanic ? `<i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone})</strong> <br>` : ''}
-                                <i class="fa-solid fa-phone"></i> Call Rescue: <strong>${b.acceptedBy.phone || 'N/A'}</strong>
-                            </div>
-                        `;
-                    } else if (b.status === 'COMPLETED') {
-                        badgeClass = 'badge-completed';
-                        responseHtml = `
-                            <div style="font-size:0.85rem; color:var(--success); font-weight:500;">
-                                <i class="fa-solid fa-check-double"></i> Resolved by <strong>${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</strong>
-                                ${b.assignedMechanic ? `<br><i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone || 'N/A'})</strong>` : ''}
-                            </div>
-                        `;
-                    }
+                        let badgeClass = 'badge-pending';
+                        let responseHtml = '<span style="color:var(--text-muted); font-size:0.85rem;">Searching for response...</span>';
+                        if (b.status === 'ACCEPTED') {
+                            badgeClass = 'badge-approved';
+                            responseHtml = `
+                                <div style="font-size:0.85rem; color:var(--secondary); font-weight:500;">
+                                    <i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy.name}</strong> <br>
+                                    ${b.assignedMechanic ? `<i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone})</strong> <br>` : ''}
+                                    <i class="fa-solid fa-phone"></i> Call Rescue: <strong>${b.acceptedBy.phone || 'N/A'}</strong>
+                                </div>
+                            `;
+                        }
 
-                    let actionHtml = '';
-                    if (b.status !== 'COMPLETED') {
-                        actionHtml = `
+                        let actionHtml = `
                             <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:var(--border-color);" 
                                 onclick="window.GarageLK.completeBreakdown(${b.id})" unique-id="resolve-breakdown-${b.id}">
                                 Mark Resolved
                             </button>
                         `;
-                    }
 
-                    item.innerHTML = `
-                        <div style="flex:1;">
-                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert</h4>
-                                <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
+                        item.innerHTML = `
+                            <div style="flex:1;">
+                                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                                    <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert</h4>
+                                    <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
+                                </div>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                    <i class="fa-solid fa-location-dot"></i> <strong>Where:</strong> ${b.address}, ${b.city}
+                                </p>
+                                <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3; margin-bottom:8px;">
+                                    <strong>Vehicle:</strong> ${b.vehicleNo} <br>
+                                    <strong>Description:</strong> ${b.description}
+                                </p>
+                                ${responseHtml}
                             </div>
-                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                <i class="fa-solid fa-location-dot"></i> <strong>Where:</strong> ${b.address}, ${b.city}
-                            </p>
-                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3; margin-bottom:8px;">
-                                <strong>Vehicle:</strong> ${b.vehicleNo} <br>
-                                <strong>Description:</strong> ${b.description}
-                            </p>
-                            ${responseHtml}
-                        </div>
-                        <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 140px;">
-                            <span class="badge ${badgeClass}">${b.status === 'ACCEPTED' ? 'RESCUE DISPATCHED' : b.status}</span>
-                            ${actionHtml}
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 140px;">
+                                <span class="badge ${badgeClass}">${b.status === 'ACCEPTED' ? 'RESCUE DISPATCHED' : b.status}</span>
+                                ${actionHtml}
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+
+                // 2. Render Completed / Resolved Emergencies
+                if (completedList) {
+                    if (completedBreakdowns.length === 0) {
+                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed emergency history found.</p>';
+                    } else {
+                        completedList.innerHTML = '';
+                        completedBreakdowns.forEach(b => {
+                            const item = document.createElement('div');
+                            item.className = 'table-item';
+
+                            const badgeClass = 'badge-completed';
+                            const responseHtml = `
+                                <div style="font-size:0.85rem; color:var(--success); font-weight:500;">
+                                    <i class="fa-solid fa-check-double"></i> Resolved by <strong>${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</strong>
+                                    ${b.assignedMechanic ? `<br><i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone || 'N/A'})</strong>` : ''}
+                                </div>
+                            `;
+
+                            item.innerHTML = `
+                                <div style="flex:1;">
+                                    <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                                        <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert</h4>
+                                        <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
+                                    </div>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                        <i class="fa-solid fa-location-dot"></i> <strong>Where:</strong> ${b.address}, ${b.city}
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3; margin-bottom:8px;">
+                                        <strong>Vehicle:</strong> ${b.vehicleNo} <br>
+                                        <strong>Description:</strong> ${b.description}
+                                    </p>
+                                    ${responseHtml}
+                                </div>
+                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 140px;">
+                                    <span class="badge ${badgeClass}">${b.status}</span>
+                                </div>
+                            `;
+                            completedList.appendChild(item);
+                        });
+                    }
+                }
 
             } catch (err) {
                 console.error("Error loading customer breakdowns:", err);
@@ -3661,25 +3882,32 @@
             }
 
             if (breakdownsByCityCanvas) {
-                const cities = ['Colombo', 'Kandy', 'Galle', 'Kurunegala'];
-                const cityCounts = { 'Colombo': 0, 'Kandy': 0, 'Galle': 0, 'Kurunegala': 0 };
-
+                const cityCounts = {};
                 breakdowns.forEach(b => {
                     if (b.city) {
-                        const cityName = b.city.trim().toLowerCase();
-                        if (cityName.includes('colombo')) {
-                            cityCounts['Colombo']++;
-                        } else if (cityName.includes('kandy')) {
-                            cityCounts['Kandy']++;
-                        } else if (cityName.includes('galle')) {
-                            cityCounts['Galle']++;
-                        } else if (cityName.includes('kurunegala')) {
-                            cityCounts['Kurunegala']++;
-                        }
+                        const cityName = b.city.trim();
+                        const formattedName = cityName.charAt(0).toUpperCase() + cityName.slice(1).toLowerCase();
+                        cityCounts[formattedName] = (cityCounts[formattedName] || 0) + 1;
                     }
                 });
 
-                const chartData = cities.map(city => cityCounts[city]);
+                let cities = Object.keys(cityCounts).sort((a, b) => cityCounts[b] - cityCounts[a]);
+                if (cities.length === 0) {
+                    cities = ['Colombo', 'Kandy', 'Galle', 'Kurunegala'];
+                }
+                const chartData = cities.map(city => cityCounts[city] || 0);
+
+                const baseColors = [
+                    '#f87171', // soft red
+                    '#fb923c', // soft orange
+                    '#fbbf24', // soft yellow
+                    '#38bdf8', // soft blue
+                    '#a855f7', // soft purple
+                    '#4ade80', // soft green
+                    '#f472b6', // soft pink
+                    '#2dd4bf', // soft teal
+                    '#60a5fa'  // soft indigo
+                ];
 
                 this.breakdownsByCityChart = new Chart(breakdownsByCityCanvas, {
                     type: 'bar',
@@ -3688,12 +3916,7 @@
                         datasets: [{
                             label: 'Number of Requests',
                             data: chartData,
-                            backgroundColor: [
-                                '#f87171', // soft red for Colombo
-                                '#fb923c', // soft orange for Kandy
-                                '#fbbf24', // soft yellow for Galle
-                                '#38bdf8'  // soft blue for Kurunegala
-                            ],
+                            backgroundColor: cities.map((_, i) => baseColors[i % baseColors.length]),
                             borderRadius: 6,
                             borderWidth: 0,
                             barThickness: 18
@@ -4867,6 +5090,784 @@
             }
         },
 
+        // --- SPARE PART BOOKINGS / RESERVATIONS ---
+        openReservePartModal(partId, partName, price, maxQty) {
+            if (!this.currentUser) {
+                this.showToast('Please sign in to reserve spare parts.', 'error');
+                setTimeout(() => { window.location.href = 'auth.html'; }, 1000);
+                return;
+            }
+
+            document.getElementById('reserve-part-id').value = partId;
+            document.getElementById('reserve-part-name').value = partName;
+            document.getElementById('reserve-part-price').value = price.toFixed(2);
+            
+            const qtyInput = document.getElementById('reserve-quantity');
+            qtyInput.value = 1;
+            qtyInput.max = maxQty;
+
+            document.getElementById('reserve-notes').value = '';
+            
+            const pickupInput = document.getElementById('reserve-pickup-date');
+            if (pickupInput) {
+                const now = new Date();
+                const tzoffset = now.getTimezoneOffset() * 60000;
+                const localISOTime = (new Date(now.getTime() - tzoffset)).toISOString().slice(0, 16);
+                pickupInput.min = localISOTime;
+                pickupInput.value = localISOTime;
+            }
+
+            this.updateReserveTotalPrice();
+            this.openModal('modal-reserve-part');
+        },
+
+        updateReserveTotalPrice() {
+            const price = parseFloat(document.getElementById('reserve-part-price').value || 0);
+            const qty = parseInt(document.getElementById('reserve-quantity').value || 1);
+            const total = price * qty;
+            document.getElementById('reserve-total-price').textContent = `LKR ${total.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        },
+
+        async submitPartReservation(e) {
+            e.preventDefault();
+            const partId = parseInt(document.getElementById('reserve-part-id').value);
+            const quantity = parseInt(document.getElementById('reserve-quantity').value);
+            const pickupDate = document.getElementById('reserve-pickup-date').value;
+            const notes = document.getElementById('reserve-notes').value.trim();
+
+            try {
+                const res = await fetch('/api/spare-parts/bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ partId, quantity, pickupDate, notes })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    this.showToast('Spare part reserved successfully!', 'success');
+                    this.closeModal('modal-reserve-part');
+                    
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const shopId = urlParams.get('id');
+                    if (shopId) {
+                        this.initShopDetails();
+                    } else {
+                        this.loadCustomerReservations();
+                        this.switchDashboardTab('customer-reservations');
+                    }
+                } else {
+                    this.showToast(data.message || 'Reservation failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error reserving part:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async loadCustomerReservations() {
+            const list = document.getElementById('customer-reservations-list');
+            const completedList = document.getElementById('customer-picked-up-list');
+            if (!list) return;
+            
+            list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading reservations...</p>';
+            if (completedList) {
+                completedList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading completed history...</p>';
+            }
+
+            try {
+                const res = await fetch('/api/spare-parts/bookings/my');
+                const bookings = await res.json();
+                if (!res.ok) throw new Error();
+
+                const pendingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'READY_FOR_PICKUP');
+                const completedBookings = bookings.filter(b => b.status === 'PICKED_UP' || b.status === 'CANCELLED');
+
+                // 1. Render Pending Reservations
+                if (pendingBookings.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have no pending reservations.</p>';
+                } else {
+                    list.innerHTML = '';
+                    pendingBookings.forEach(b => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
+
+                        let badgeClass = 'badge-pending';
+                        if (b.status === 'READY_FOR_PICKUP') badgeClass = 'badge-approved';
+
+                        let actionHtml = `
+                            <button class="btn btn-outline btn-danger" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
+                                onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'CANCELLED')" unique-id="cancel-part-btn-${b.id}">
+                                Cancel Reservation
+                            </button>
+                        `;
+
+                        const formattedPickup = new Date(b.pickupDate).toLocaleString();
+
+                        item.innerHTML = `
+                            <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                                <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
+                                <div>
+                                    <h4 style="font-weight:700; margin:0;">${b.sparePart.partName}</h4>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
+                                        <strong>Shop:</strong> ${b.sparePart.shop.shopName} &bull; <strong>Quantity:</strong> ${b.quantity} unit(s)
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
+                                        <strong>Pickup Estimation:</strong> ${formattedPickup} <br>
+                                        ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                    </p>
+                                </div>
+                            </div>
+                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
+                                <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
+                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                ${actionHtml}
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+
+                // 2. Render Completed / Picked-Up Reservations
+                if (completedList) {
+                    if (completedBookings.length === 0) {
+                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have no completed reservations.</p>';
+                    } else {
+                        completedList.innerHTML = '';
+                        completedBookings.forEach(b => {
+                            const item = document.createElement('div');
+                            item.className = 'table-item';
+
+                            let badgeClass = 'badge-pending';
+                            if (b.status === 'PICKED_UP') badgeClass = 'badge-completed';
+                            else if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
+
+                            let actionHtml = '';
+                            if (b.status === 'PICKED_UP') {
+                                actionHtml = `<div id="rate-shop-btn-container-${b.id}" style="display:inline-block;"></div>`;
+                            }
+
+                            const formattedPickup = new Date(b.pickupDate).toLocaleString();
+
+                            item.innerHTML = `
+                                <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                                    <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
+                                    <div>
+                                        <h4 style="font-weight:700; margin:0;">${b.sparePart.partName}</h4>
+                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
+                                            <strong>Shop:</strong> ${b.sparePart.shop.shopName} &bull; <strong>Quantity:</strong> ${b.quantity} unit(s)
+                                        </p>
+                                        <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
+                                            <strong>Pickup Estimation:</strong> ${formattedPickup} <br>
+                                            ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
+                                    <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
+                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                    ${actionHtml}
+                                </div>
+                            `;
+                            completedList.appendChild(item);
+
+                            if (b.status === 'PICKED_UP') {
+                                const rateBtnContainerId = `rate-shop-btn-container-${b.id}`;
+                                const shopName = b.sparePart.shop.shopName;
+                                setTimeout(async () => {
+                                    const btnContainer = document.getElementById(rateBtnContainerId);
+                                    if (btnContainer) {
+                                        try {
+                                            const existsRes = await fetch(`/api/shop-reviews/booking/${b.id}/exists`);
+                                            if (existsRes.ok) {
+                                                const check = await existsRes.json();
+                                                if (!check.exists) {
+                                                    btnContainer.innerHTML = `
+                                                        <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                                            onclick="window.GarageLK.openShopReviewModal(${b.id}, '${shopName.replace(/'/g, "\\'")}')" 
+                                                            unique-id="rate-shop-btn-${b.id}">
+                                                            <i class="fa-solid fa-star"></i> Write Review
+                                                        </button>
+                                                    `;
+                                                } else {
+                                                    btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Shop Reviewed</span>`;
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error(e);
+                                        }
+                                    }
+                                }, 0);
+                            }
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading customer reservations:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading reservations.</p>';
+            }
+        },
+
+        async loadShopReservations() {
+            const list = document.getElementById('shop-reservations-list');
+            const completedList = document.getElementById('shop-completed-reservations-list');
+            if (!list) return;
+
+            list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading reservations...</p>';
+            if (completedList) {
+                completedList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading history...</p>';
+            }
+
+            try {
+                const res = await fetch('/api/spare-parts/bookings/shop');
+                const bookings = await res.json();
+                if (!res.ok) throw new Error();
+
+                const incomingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'READY_FOR_PICKUP');
+                const completedBookings = bookings.filter(b => b.status === 'PICKED_UP' || b.status === 'CANCELLED');
+
+                if (incomingBookings.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No incoming spare part reservations.</p>';
+                } else {
+                    list.innerHTML = '';
+                    incomingBookings.forEach(b => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
+
+                        let badgeClass = 'badge-pending';
+                        if (b.status === 'READY_FOR_PICKUP') badgeClass = 'badge-approved';
+
+                        let actionHtml = '';
+                        if (b.status === 'PENDING') {
+                            actionHtml = `
+                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'READY_FOR_PICKUP')" unique-id="ready-btn-${b.id}">
+                                    Mark Ready
+                                </button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'CANCELLED')" unique-id="reject-res-btn-${b.id}">
+                                    Reject / Cancel
+                                </button>
+                            `;
+                        } else if (b.status === 'READY_FOR_PICKUP') {
+                            actionHtml = `
+                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:var(--success);" 
+                                    onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'PICKED_UP')" unique-id="picked-btn-${b.id}">
+                                    Mark Picked Up
+                                </button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'CANCELLED')" unique-id="reject-res-btn-${b.id}">
+                                    Cancel
+                                </button>
+                            `;
+                        }
+
+                        const formattedPickup = new Date(b.pickupDate).toLocaleString();
+                        const cust = b.customer.user;
+
+                        item.innerHTML = `
+                            <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                                <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
+                                <div>
+                                    <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
+                                        <strong>Customer:</strong> ${cust.fullName || cust.username} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
+                                        <strong>Requested Pickup:</strong> ${formattedPickup} <br>
+                                        ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                    </p>
+                                </div>
+                            </div>
+                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
+                                <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
+                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                                    ${actionHtml}
+                                </div>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+
+                if (completedList) {
+                    if (completedBookings.length === 0) {
+                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed reservation history.</p>';
+                    } else {
+                        completedList.innerHTML = '';
+                        completedBookings.forEach(b => {
+                            const item = document.createElement('div');
+                            item.className = 'table-item';
+
+                            let badgeClass = b.status === 'PICKED_UP' ? 'badge-completed' : 'badge-cancelled';
+
+                            let actionHtml = `
+                                <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.deleteSparePartBookingHistory(${b.id})" unique-id="delete-part-booking-btn-${b.id}">
+                                    <i class="fa-solid fa-trash-can"></i> Delete
+                                </button>
+                            `;
+
+                            const formattedPickup = new Date(b.pickupDate).toLocaleString();
+                            const cust = b.customer.user;
+
+                            item.innerHTML = `
+                                <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                                    <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
+                                    <div>
+                                        <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
+                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
+                                            <strong>Customer:</strong> ${cust.fullName || cust.username} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
+                                        </p>
+                                        <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
+                                            <strong>Requested Pickup:</strong> ${formattedPickup} <br>
+                                            ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
+                                    <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
+                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                    <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                                        ${actionHtml}
+                                    </div>
+                                </div>
+                            `;
+                            completedList.appendChild(item);
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading shop reservations:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading reservations.</p>';
+            }
+        },
+
+        async deleteSparePartBookingHistory(id) {
+            if (!confirm('Are you sure you want to delete this reservation from your history?')) return;
+            try {
+                const res = await fetch(`/api/spare-parts/bookings/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    this.showToast('Reservation history item deleted successfully.', 'success');
+                    this.loadShopReservations();
+                } else {
+                    this.showToast(data.message || 'Deletion failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error deleting reservation history:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async updatePartReservationStatus(bookingId, status) {
+            const confirmMsg = status === 'CANCELLED' ? 'Are you sure you want to cancel this reservation?' : `Change status to ${status.replace(/_/g, ' ')}?`;
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const res = await fetch(`/api/spare-parts/bookings/${bookingId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    this.showToast(data.message || 'Status updated successfully', 'success');
+                    if (this.currentUser.role === 'CUSTOMER') {
+                        this.loadCustomerReservations();
+                    } else if (this.currentUser.role === 'SHOP_OWNER') {
+                        this.loadShopReservations();
+                    }
+                } else {
+                    this.showToast(data.message || 'Action failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error updating reservation status:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+
+
+        // --- SHOP SALES ANALYTICS ---
+        async loadShopAnalytics() {
+            try {
+                // Populate shop selector dropdown first
+                const select = document.getElementById('shop-analytics-select');
+                if (select) {
+                    select.innerHTML = '<option value="">All Shops</option>';
+                    if (this.ownerShops && this.ownerShops.length > 0) {
+                        this.ownerShops.forEach(s => {
+                            const suffix = s.status === 'APPROVED' ? '' : ` (${s.status})`;
+                            select.innerHTML += `<option value="${s.id}">${s.shopName}${suffix}</option>`;
+                        });
+                    }
+                }
+
+                // If no date type filter select value exists, default to 'all'
+                const dateTypeEl = document.getElementById('shop-analytics-date-type');
+                if (dateTypeEl && !dateTypeEl.value) {
+                    dateTypeEl.value = 'all';
+                }
+
+                // Toggle date filters display dynamically
+                this.toggleShopDateFilterType();
+
+                const res = await fetch('/api/spare-parts/bookings/shop');
+                if (res.ok) {
+                    this.shopBookingsList = await res.json();
+                } else {
+                    this.shopBookingsList = [];
+                }
+
+                this.filterShopAnalytics();
+            } catch (err) {
+                console.error("Error loading shop analytics:", err);
+            }
+        },
+
+        toggleShopDateFilterType() {
+            const dateTypeEl = document.getElementById('shop-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            
+            const dayContainer = document.getElementById('container-shop-analytics-day');
+            const monthContainer = document.getElementById('container-shop-analytics-month');
+            
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(Date.now() - tzoffset)).toISOString();
+            
+            if (dateType === 'all') {
+                if (dayContainer) dayContainer.style.display = 'none';
+                if (monthContainer) monthContainer.style.display = 'none';
+            } else if (dateType === 'day') {
+                if (dayContainer) dayContainer.style.display = 'flex';
+                if (monthContainer) monthContainer.style.display = 'none';
+                const dayInput = document.getElementById('shop-analytics-date-day');
+                if (dayInput && !dayInput.value) {
+                    dayInput.value = localISOTime.split('T')[0];
+                }
+            } else if (dateType === 'month') {
+                if (dayContainer) dayContainer.style.display = 'none';
+                if (monthContainer) monthContainer.style.display = 'flex';
+                const monthInput = document.getElementById('shop-analytics-date-month');
+                if (monthInput && !monthInput.value) {
+                    monthInput.value = localISOTime.substring(0, 7);
+                }
+            }
+            
+            this.filterShopAnalytics();
+        },
+
+        filterShopAnalytics() {
+            if (!this.shopBookingsList) return;
+
+            const shopSelect = document.getElementById('shop-analytics-select');
+            const selectedShopId = shopSelect ? shopSelect.value : '';
+
+            const dateTypeEl = document.getElementById('shop-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            const targetDay = document.getElementById('shop-analytics-date-day') ? document.getElementById('shop-analytics-date-day').value : '';
+            const targetMonth = document.getElementById('shop-analytics-date-month') ? document.getElementById('shop-analytics-date-month').value : '';
+
+            // Filter bookings: only PICKED_UP (sold) bookings for the shop/month
+            let filtered = this.shopBookingsList.filter(b => b.status === 'PICKED_UP');
+
+            if (selectedShopId) {
+                filtered = filtered.filter(b => b.sparePart && b.sparePart.shop && b.sparePart.shop.id === parseInt(selectedShopId, 10));
+            }
+
+            if (dateType === 'day' && targetDay) {
+                filtered = filtered.filter(b => b.bookingDate && b.bookingDate.substring(0, 10) === targetDay);
+            } else if (dateType === 'month' && targetMonth) {
+                filtered = filtered.filter(b => b.bookingDate && b.bookingDate.substring(0, 7) === targetMonth);
+            }
+
+            let totalQuantity = 0;
+            let totalRevenue = 0.0;
+            const partSalesMap = {}; // partName -> quantity
+            const partRevenueMap = {}; // partName -> revenue
+
+            filtered.forEach(b => {
+                const partName = (b.sparePart && b.sparePart.partName) || 'Unknown Part';
+                const qty = b.quantity || 0;
+                const price = b.totalPrice || 0.0;
+
+                totalQuantity += qty;
+                totalRevenue += price;
+
+                partSalesMap[partName] = (partSalesMap[partName] || 0) + qty;
+                partRevenueMap[partName] = (partRevenueMap[partName] || 0.0) + price;
+            });
+
+            // Update stats cards
+            const totalRevEl = document.getElementById('shop-stat-total-revenue');
+            if (totalRevEl) totalRevEl.textContent = `LKR ${totalRevenue.toFixed(2)}`;
+            
+            const totalSalesEl = document.getElementById('shop-stat-total-sales');
+            if (totalSalesEl) totalSalesEl.textContent = totalQuantity;
+
+            // Find top selling part
+            let topPart = 'N/A';
+            let maxSales = 0;
+            Object.entries(partSalesMap).forEach(([partName, sales]) => {
+                if (sales > maxSales) {
+                    maxSales = sales;
+                    topPart = partName;
+                }
+            });
+            const fastMovingEl = document.getElementById('shop-stat-fast-moving');
+            if (fastMovingEl) fastMovingEl.textContent = topPart;
+
+            // Render/Update charts
+            const isDarkMode = !document.body.classList.contains('light-mode');
+            const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+            const gridColor = isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+            // 1. Fast-Moving Parts Bar Chart
+            const salesCanvas = document.getElementById('chart-shop-sales');
+            if (salesCanvas) {
+                if (window.shopSalesChart) window.shopSalesChart.destroy();
+
+                const partNames = Object.keys(partSalesMap);
+                const salesCounts = Object.values(partSalesMap);
+
+                window.shopSalesChart = new Chart(salesCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: partNames.length > 0 ? partNames : ['No Data'],
+                        datasets: [{
+                            label: 'Quantity Sold',
+                            data: salesCounts.length > 0 ? salesCounts : [0],
+                            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                            borderColor: 'rgb(6, 182, 212)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 11 } }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 11 }, stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Revenue Share Pie Chart
+            const revenueCanvas = document.getElementById('chart-shop-revenue');
+            if (revenueCanvas) {
+                if (window.shopRevenueChart) window.shopRevenueChart.destroy();
+
+                const partNames = Object.keys(partRevenueMap);
+                const revenues = Object.values(partRevenueMap);
+                const hasData = revenues.length > 0;
+
+                const chartColors = [
+                    'rgba(16, 185, 129, 0.75)', // emerald
+                    'rgba(6, 182, 212, 0.75)',  // cyan
+                    'rgba(99, 102, 241, 0.75)',  // indigo
+                    'rgba(245, 158, 11, 0.75)',  // amber
+                    'rgba(239, 68, 68, 0.75)',   // red
+                    'rgba(168, 85, 247, 0.75)',  // purple
+                    'rgba(236, 72, 153, 0.75)'   // pink
+                ];
+                const borderColors = [
+                    'rgb(16, 185, 129)',
+                    'rgb(6, 182, 212)',
+                    'rgb(99, 102, 241)',
+                    'rgb(245, 158, 11)',
+                    'rgb(239, 68, 68)',
+                    'rgb(168, 85, 247)',
+                    'rgb(236, 72, 153)'
+                ];
+
+                window.shopRevenueChart = new Chart(revenueCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels: hasData ? partNames : ['No Data'],
+                        datasets: [{
+                            data: hasData ? revenues : [1],
+                            backgroundColor: hasData ? chartColors.slice(0, partNames.length) : ['rgba(148, 163, 184, 0.25)'],
+                            borderColor: hasData ? borderColors.slice(0, partNames.length) : ['rgba(148, 163, 184, 0.4)'],
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Outfit', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+
+        exportShopAnalyticsToExcel() {
+            if (!this.shopBookingsList) return;
+
+            const shopSelect = document.getElementById('shop-analytics-select');
+            const selectedShopId = shopSelect ? shopSelect.value : '';
+
+            const dateTypeEl = document.getElementById('shop-analytics-date-type');
+            const dateType = dateTypeEl ? dateTypeEl.value : 'all';
+            const targetDay = document.getElementById('shop-analytics-date-day') ? document.getElementById('shop-analytics-date-day').value : '';
+            const targetMonth = document.getElementById('shop-analytics-date-month') ? document.getElementById('shop-analytics-date-month').value : '';
+
+            // Filter bookings
+            let filtered = this.shopBookingsList.filter(b => b.status === 'PICKED_UP');
+
+            if (selectedShopId) {
+                filtered = filtered.filter(b => b.sparePart && b.sparePart.shop && b.sparePart.shop.id === parseInt(selectedShopId, 10));
+            }
+
+            if (dateType === 'day' && targetDay) {
+                filtered = filtered.filter(b => b.bookingDate && b.bookingDate.substring(0, 10) === targetDay);
+            } else if (dateType === 'month' && targetMonth) {
+                filtered = filtered.filter(b => b.bookingDate && b.bookingDate.substring(0, 7) === targetMonth);
+            }
+
+            // Map spare part sales data to excel rows
+            const salesSheetData = filtered.map(b => ({
+                'Reservation ID': b.id,
+                'Shop Name': b.sparePart && b.sparePart.shop ? b.sparePart.shop.shopName : 'N/A',
+                'Part Name': b.sparePart ? b.sparePart.partName : 'N/A',
+                'Vehicle Model': b.sparePart ? b.sparePart.vehicleModel : 'N/A',
+                'Vehicle Year': b.sparePart ? b.sparePart.vehicleYear : 'N/A',
+                'Customer Name': b.customer && b.customer.user ? (b.customer.user.fullName || b.customer.user.username) : 'N/A',
+                'Customer Email': b.customer && b.customer.user ? b.customer.user.email : 'N/A',
+                'Customer Phone': b.customer && b.customer.user ? b.customer.user.phone : 'N/A',
+                'Quantity': b.quantity,
+                'Price Per Unit (LKR)': b.sparePart ? b.sparePart.price : 0.0,
+                'Total Price (LKR)': b.totalPrice,
+                'Booking Date': b.bookingDate ? b.bookingDate.replace('T', ' ') : 'N/A',
+                'Pickup Date': b.pickupDate ? b.pickupDate.replace('T', ' ') : 'N/A',
+                'Status': b.status,
+                'Notes': b.notes || 'N/A'
+            }));
+
+            let totalQuantity = 0;
+            let totalRevenue = 0.0;
+            filtered.forEach(b => {
+                totalQuantity += b.quantity || 0;
+                totalRevenue += b.totalPrice || 0.0;
+            });
+
+            let dateRangeStr = 'All Time';
+            if (dateType === 'day') {
+                dateRangeStr = `Day: ${targetDay}`;
+            } else if (dateType === 'month') {
+                dateRangeStr = `Month: ${targetMonth}`;
+            }
+
+            const summarySheetData = [
+                { 'Metric': 'Export Date', 'Value': new Date().toISOString().split('T')[0] },
+                { 'Metric': 'Selected Shop', 'Value': selectedShopId ? (shopSelect?.options[shopSelect.selectedIndex]?.text || selectedShopId) : 'All Shops' },
+                { 'Metric': 'Date Range', 'Value': dateRangeStr },
+                { 'Metric': 'Total Completed Sales', 'Value': filtered.length },
+                { 'Metric': 'Total Parts Sold', 'Value': totalQuantity },
+                { 'Metric': 'Total Revenue', 'Value': `LKR ${totalRevenue.toFixed(2)}` }
+            ];
+
+            const wb = XLSX.utils.book_new();
+
+            const wsSummary = XLSX.utils.json_to_sheet(summarySheetData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, 'Overview Summary');
+
+            const wsSales = XLSX.utils.json_to_sheet(salesSheetData);
+            XLSX.utils.book_append_sheet(wb, wsSales, 'Completed Parts Sales');
+
+            XLSX.writeFile(wb, `shop_sales_analytics_${new Date().toISOString().split('T')[0]}.xlsx`);
+            this.showToast('Excel file downloaded successfully!', 'success');
+        },
+
+        downloadShopAnalyticsPDF() {
+            const element = document.getElementById('section-shop-analytics');
+            if (!element) return;
+
+            const dateStr = new Date().toISOString().split('T')[0];
+            this.showToast("Generating PDF report...", "success");
+
+            const isDarkMode = !document.body.classList.contains('light-mode');
+            const bgHex = isDarkMode ? '#0f172a' : '#ffffff';
+
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5], // in inches
+                filename: `GarageLK_Shop_Sales_Analytics_${dateStr}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: bgHex
+                },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(element).save()
+                .then(() => {
+                    this.showToast("PDF report downloaded successfully!", "success");
+                })
+                .catch(err => {
+                    console.error("PDF generation failed:", err);
+                    this.showToast("Failed to generate PDF", "error");
+                });
+        },
+
+        // --- SHOP RATING (BY CUSTOMERS) ---
+        openShopReviewModal(bookingId, shopName) {
+            document.getElementById('rate-shop-booking-id').value = bookingId;
+            document.getElementById('rate-shop-name').value = shopName;
+            document.getElementById('rate-shop-rating').value = '5';
+            document.getElementById('rate-shop-comment').value = '';
+            this.openModal('modal-shop-review');
+        },
+
+        async submitShopReview(e) {
+            e.preventDefault();
+            const bookingId = parseInt(document.getElementById('rate-shop-booking-id').value);
+            const starRating = parseInt(document.getElementById('rate-shop-rating').value);
+            const comment = document.getElementById('rate-shop-comment').value.trim();
+
+            try {
+                const res = await fetch('/api/shop-reviews', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId, starRating, comment })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    this.showToast('Shop review submitted successfully!', 'success');
+                    this.closeModal('modal-shop-review');
+                    this.loadCustomerReservations();
+                } else {
+                    this.showToast(data.message || 'Failed to submit review', 'error');
+                }
+            } catch (err) {
+                console.error("Error submitting shop review:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
         // --- THEME / MODE CONTROLLER ---
         initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'night';
@@ -4893,6 +5894,12 @@
             }
             if (document.getElementById('admin-breakdowns-list')) {
                 this.loadAdminMonitor();
+            }
+            if (typeof this.filterOwnerAnalytics === 'function' && this.ownerBookingsList) {
+                this.filterOwnerAnalytics();
+            }
+            if (typeof this.filterShopAnalytics === 'function' && this.shopBookingsList) {
+                this.filterShopAnalytics();
             }
         },
 

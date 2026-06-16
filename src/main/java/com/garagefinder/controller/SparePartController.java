@@ -3,9 +3,11 @@ package com.garagefinder.controller;
 import com.garagefinder.model.SparePart;
 import com.garagefinder.model.SparePartShop;
 import com.garagefinder.model.User;
+import com.garagefinder.model.ShopReview;
 import com.garagefinder.repository.SparePartRepository;
 import com.garagefinder.repository.SparePartShopRepository;
 import com.garagefinder.repository.UserRepository;
+import com.garagefinder.repository.ShopReviewRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,11 +22,13 @@ public class SparePartController {
     private final SparePartShopRepository shopRepository;
     private final SparePartRepository partRepository;
     private final UserRepository userRepository;
+    private final ShopReviewRepository shopReviewRepository;
 
-    public SparePartController(SparePartShopRepository shopRepository, SparePartRepository partRepository, UserRepository userRepository) {
+    public SparePartController(SparePartShopRepository shopRepository, SparePartRepository partRepository, UserRepository userRepository, ShopReviewRepository shopReviewRepository) {
         this.shopRepository = shopRepository;
         this.partRepository = partRepository;
         this.userRepository = userRepository;
+        this.shopReviewRepository = shopReviewRepository;
     }
 
     // Helper method to calculate distance in kilometers between two coordinates (Haversine formula)
@@ -83,6 +87,13 @@ public class SparePartController {
             shopMap.put("longitude", shop.getLongitude());
             shopMap.put("imageUrl", shop.getImageUrl());
             
+            Double avg = shopReviewRepository.findAverageRatingByShopId(shop.getId());
+            Long count = shopReviewRepository.countByShopId(shop.getId());
+            double ratingVal = avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0;
+            shopMap.put("averageRating", ratingVal);
+            shopMap.put("rating", ratingVal);
+            shopMap.put("reviewCount", count);
+
             double distance = 0.0;
             if (lat != null && lng != null && shop.getLatitude() != null && shop.getLongitude() != null) {
                 distance = calculateDistance(lat, lng, shop.getLatitude(), shop.getLongitude());
@@ -133,6 +144,13 @@ public class SparePartController {
             map.put("phone", s.getPhone());
             map.put("email", s.getEmail());
 
+            Double avg = shopReviewRepository.findAverageRatingByShopId(s.getId());
+            Long count = shopReviewRepository.countByShopId(s.getId());
+            double ratingVal = avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0;
+            map.put("averageRating", ratingVal);
+            map.put("rating", ratingVal);
+            map.put("reviewCount", count);
+
             double distance = 0.0;
             if (lat != null && lng != null && s.getLatitude() != null && s.getLongitude() != null) {
                 distance = calculateDistance(lat, lng, s.getLatitude(), s.getLongitude());
@@ -157,9 +175,54 @@ public class SparePartController {
         SparePartShop shop = shopOpt.get();
         List<SparePart> parts = partRepository.findByShopId(id);
 
+        Double avgRating = shopReviewRepository.findAverageRatingByShopId(id);
+        Long reviewCount = shopReviewRepository.countByShopId(id);
+
+        List<ShopReview> reviews = shopReviewRepository.findByShopIdOrderByCreatedAtDesc(id);
+        List<Map<String, Object>> reviewsList = new ArrayList<>();
+        for (ShopReview r : reviews) {
+            Map<String, Object> rMap = new HashMap<>();
+            rMap.put("id", r.getId());
+            rMap.put("rating", r.getStarRating());
+            rMap.put("comment", r.getComment());
+            rMap.put("createdAt", r.getCreatedAt());
+            
+            Map<String, Object> uMap = new HashMap<>();
+            User u = r.getCustomer().getUser();
+            uMap.put("username", u.getUsername());
+            uMap.put("fullName", u.getFullName());
+            rMap.put("user", uMap);
+            
+            reviewsList.add(rMap);
+        }
+
+        Map<String, Object> shopMap = new LinkedHashMap<>();
+        shopMap.put("id", shop.getId());
+        shopMap.put("shopName", shop.getShopName());
+        shopMap.put("name", shop.getShopName());
+        shopMap.put("ownerName", shop.getOwnerName());
+        shopMap.put("description", shop.getDescription());
+        shopMap.put("address", shop.getAddress());
+        shopMap.put("city", shop.getCity());
+        shopMap.put("district", shop.getDistrict());
+        shopMap.put("status", shop.getStatus());
+        shopMap.put("latitude", shop.getLatitude());
+        shopMap.put("longitude", shop.getLongitude());
+        shopMap.put("imageUrl", shop.getImageUrl());
+        shopMap.put("phone", shop.getPhone());
+        shopMap.put("email", shop.getEmail());
+        
+        double ratingVal = avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 0.0;
+        shopMap.put("averageRating", ratingVal);
+        shopMap.put("rating", ratingVal);
+        shopMap.put("reviewCount", reviewCount);
+
         Map<String, Object> response = new HashMap<>();
-        response.put("shop", shop);
+        response.put("shop", shopMap);
         response.put("parts", parts);
+        response.put("reviews", reviewsList);
+        response.put("averageRating", ratingVal);
+        response.put("reviewCount", reviewCount);
         return ResponseEntity.ok(response);
     }
 
