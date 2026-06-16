@@ -293,6 +293,17 @@ header {
     z-index: 100;
 }
 
+.user-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: transparent;
+}
+
+
 .user-menu:hover .user-dropdown {
     display: flex;
 }
@@ -1533,4 +1544,29 @@ body.light-mode .social-icon:hover {
 #modal-map-picker {
     z-index: 3000;
 }
+
+/* Star Rating Picker */
+.star-rating-picker {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 1.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.star-rating-picker .star-icon {
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.star-rating-picker .star-icon:hover {
+    transform: scale(1.25);
+}
+
+.star-rating-picker .star-icon.active {
+    color: #f59e0b; /* Amber gold color for active stars */
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+}
+
 

@@ -609,9 +609,9 @@
                     if (active.status === 'ACCEPTED') {
                         responseHtml = `
                             <div style="margin-top: 10px; padding: 10px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: var(--radius-md);">
-                                <strong style="color: var(--secondary);"><i class="fa-solid fa-truck-pickup"></i> Dispatched Garage:</strong> ${active.acceptedBy.name} <br>
+                                <strong style="color: var(--secondary);"><i class="fa-solid fa-truck-pickup"></i> Dispatched Garage:</strong> ${active.acceptedBy ? active.acceptedBy.name : 'Unknown Garage'} <br>
                                 ${active.assignedMechanic ? `<strong style="color: var(--secondary);"><i class="fa-solid fa-user-gear"></i> Assigned Mechanic:</strong> ${active.assignedMechanic.name} (${active.assignedMechanic.phone}) <br>` : ''}
-                                <strong style="color: var(--secondary);"><i class="fa-solid fa-phone"></i> Call Rescue:</strong> <a href="tel:${active.acceptedBy.phone}" style="color: var(--secondary); font-weight:700; text-decoration: underline;">${active.acceptedBy.phone || 'N/A'}</a>
+                                <strong style="color: var(--secondary);"><i class="fa-solid fa-phone"></i> Call Rescue:</strong> <a href="tel:${active.acceptedBy ? active.acceptedBy.phone : ''}" style="color: var(--secondary); font-weight:700; text-decoration: underline;">${active.acceptedBy ? (active.acceptedBy.phone || 'N/A') : 'N/A'}</a>
                             </div>
                         `;
                     }
@@ -1240,6 +1240,7 @@
 
             // Initialize drag and drop image upload handlers
             this.initImageUploads();
+            this.initStarPickers();
         },
 
         buildDashboardSidebar() {
@@ -1407,7 +1408,7 @@
                             </div>
                             <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
                                 <span class="badge ${statusBadgeClass}">${b.status}</span>
-                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
                                 ${actionHtml}
                             </div>
                         `;
@@ -1443,7 +1444,7 @@
                                 </div>
                                 <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 150px;">
                                     <span class="badge ${badgeClass}">${b.status}</span>
-                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
                                     <div id="${reviewBtnContainerId}" style="display:inline-block; margin-top:0.25rem;"></div>
                                 </div>
                             `;
@@ -1637,7 +1638,7 @@
                             </div>
                             <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 180px;">
                                 <span class="badge ${badgeClass}">${b.status}</span>
-                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
                                 <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
                                     ${actionHtml}
                                 </div>
@@ -1683,7 +1684,7 @@
                                 </div>
                                 <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 180px;">
                                     <span class="badge ${badgeClass}">${b.status}</span>
-                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
                                     <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
                                         <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
                                             onclick="window.GarageLK.deleteBookingHistory(${b.id})" unique-id="delete-booking-btn-${b.id}">
@@ -2852,9 +2853,9 @@
                             badgeClass = 'badge-approved';
                             responseHtml = `
                                 <div style="font-size:0.85rem; color:var(--secondary); font-weight:500;">
-                                    <i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy.name}</strong> <br>
+                                    <i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy ? b.acceptedBy.name : 'Unknown Garage'}</strong> <br>
                                     ${b.assignedMechanic ? `<i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone})</strong> <br>` : ''}
-                                    <i class="fa-solid fa-phone"></i> Call Rescue: <strong>${b.acceptedBy.phone || 'N/A'}</strong>
+                                    <i class="fa-solid fa-phone"></i> Call Rescue: <strong>${b.acceptedBy ? (b.acceptedBy.phone || 'N/A') : 'N/A'}</strong>
                                 </div>
                             `;
                         }
@@ -3526,7 +3527,7 @@
                 let detailHtml = '<span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> Pending Dispatcher</span>';
                 if (b.status === 'ACCEPTED') {
                     badgeClass = 'badge-approved';
-                    detailHtml = `<span style="color:var(--secondary); font-size:0.85rem;"><i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy.name}</strong></span>`;
+                    detailHtml = `<span style="color:var(--secondary); font-size:0.85rem;"><i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy ? b.acceptedBy.name : 'Unknown Garage'}</strong></span>`;
                 } else if (b.status === 'COMPLETED') {
                     badgeClass = 'badge-completed';
                     detailHtml = `<span style="color:var(--success); font-size:0.85rem;"><i class="fa-solid fa-circle-check"></i> Resolved by ${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</span>`;
@@ -4391,12 +4392,18 @@
         openReviewModal(bookingId) {
             document.getElementById('review-booking-id').value = bookingId;
             document.getElementById('review-breakdown-id').value = '';
+            const ratingInput = document.getElementById('review-rating');
+            if (ratingInput) ratingInput.value = '5';
+            this.setStarPickerValue('garage-star-picker', 5);
             this.openModal('modal-review');
         },
 
         openBreakdownReviewModal(breakdownId) {
             document.getElementById('review-booking-id').value = '';
             document.getElementById('review-breakdown-id').value = breakdownId;
+            const ratingInput = document.getElementById('review-rating');
+            if (ratingInput) ratingInput.value = '5';
+            this.setStarPickerValue('garage-star-picker', 5);
             this.openModal('modal-review');
         },
 
@@ -4544,6 +4551,65 @@
                 console.error("Error deleting garage:", err);
                 this.showToast('Connection error', 'error');
             }
+        },
+
+        initStarPickers() {
+            const bindPicker = (pickerId, hiddenInputId) => {
+                const picker = document.getElementById(pickerId);
+                const hiddenInput = document.getElementById(hiddenInputId);
+                if (!picker || !hiddenInput) return;
+
+                const stars = picker.querySelectorAll('.star-icon');
+
+                const updateStars = (val) => {
+                    stars.forEach(star => {
+                        const starVal = parseInt(star.getAttribute('data-value'), 10);
+                        if (starVal <= val) {
+                            star.classList.add('active');
+                        } else {
+                            star.classList.remove('active');
+                        }
+                    });
+                };
+
+                stars.forEach(star => {
+                    star.addEventListener('mouseenter', () => {
+                        const val = parseInt(star.getAttribute('data-value'), 10);
+                        updateStars(val);
+                    });
+
+                    star.addEventListener('click', () => {
+                        const val = parseInt(star.getAttribute('data-value'), 10);
+                        hiddenInput.value = val;
+                        updateStars(val);
+                    });
+                });
+
+                picker.addEventListener('mouseleave', () => {
+                    const currentVal = parseInt(hiddenInput.value, 10) || 5;
+                    updateStars(currentVal);
+                });
+
+                // Set initial state
+                updateStars(parseInt(hiddenInput.value, 10) || 5);
+            };
+
+            bindPicker('garage-star-picker', 'review-rating');
+            bindPicker('shop-star-picker', 'rate-shop-rating');
+        },
+
+        setStarPickerValue(pickerId, val) {
+            const picker = document.getElementById(pickerId);
+            if (!picker) return;
+            const stars = picker.querySelectorAll('.star-icon');
+            stars.forEach(star => {
+                const starVal = parseInt(star.getAttribute('data-value'), 10);
+                if (starVal <= val) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
         },
 
         // --- IMAGE UPLOADS CONTROLLER ---
@@ -5304,7 +5370,7 @@
                             </div>
                             <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
                                 <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
-                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
                                 ${actionHtml}
                             </div>
                         `;
@@ -5349,7 +5415,7 @@
                                 </div>
                                 <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
                                     <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
-                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
                                     ${actionHtml}
                                 </div>
                             `;
@@ -5465,7 +5531,7 @@
                             </div>
                             <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
                                 <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
-                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
                                 <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
                                     ${actionHtml}
                                 </div>
@@ -5512,7 +5578,7 @@
                                 </div>
                                 <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
                                     <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
-                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${b.totalPrice.toFixed(2)}</span>
+                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
                                     <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
                                         ${actionHtml}
                                     </div>
@@ -5922,6 +5988,7 @@
             document.getElementById('rate-shop-booking-id').value = bookingId;
             document.getElementById('rate-shop-name').value = shopName;
             document.getElementById('rate-shop-rating').value = '5';
+            this.setStarPickerValue('shop-star-picker', 5);
             document.getElementById('rate-shop-comment').value = '';
             this.openModal('modal-shop-review');
         },
