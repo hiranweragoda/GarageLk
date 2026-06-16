@@ -141,35 +141,51 @@
                 <section id="section-owner-analytics" class="dashboard-section">
                     <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-chart-line"></i>
                         Analytics Overview</h2>
-                    
-                    <div data-html2pdf-ignore="true" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+
+                    <div data-html2pdf-ignore="true"
+                        style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
                         <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
                             <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                <label for="owner-analytics-garage-select" style="font-weight: 600; white-space: nowrap; text-transform: uppercase;">Filter by Garage:</label>
-                                <select id="owner-analytics-garage-select" class="form-control" onchange="window.GarageLK.filterOwnerAnalytics()" style="width:180px; padding:0.5rem;" unique-id="garage-analytics-select">
+                                <label for="owner-analytics-garage-select"
+                                    style="font-weight: 600; white-space: nowrap; text-transform: uppercase;">Filter by
+                                    Garage:</label>
+                                <select id="owner-analytics-garage-select" class="form-control"
+                                    onchange="window.GarageLK.filterOwnerAnalytics()"
+                                    style="width:180px; padding:0.5rem;" unique-id="garage-analytics-select">
                                     <option value="">All Garages</option>
                                 </select>
                             </div>
                             <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                <label for="owner-analytics-date-type" style="font-weight: 600; white-space: nowrap; text-transform: uppercase;">Date Filter:</label>
-                                <select id="owner-analytics-date-type" class="form-control" onchange="window.GarageLK.toggleDateFilterType()" style="width:160px; padding:0.5rem;" unique-id="analytics-date-type">
+                                <label for="owner-analytics-date-type"
+                                    style="font-weight: 600; white-space: nowrap; text-transform: uppercase;">Date
+                                    Filter:</label>
+                                <select id="owner-analytics-date-type" class="form-control"
+                                    onchange="window.GarageLK.toggleDateFilterType()"
+                                    style="width:160px; padding:0.5rem;" unique-id="analytics-date-type">
                                     <option value="all">All Time</option>
                                     <option value="day">Specific Day</option>
                                     <option value="month">Specific Month</option>
                                 </select>
                             </div>
                             <div id="container-analytics-day" style="display: none; gap: 0.5rem; align-items: center;">
-                                <input type="date" id="owner-analytics-date-day" class="form-control" onchange="window.GarageLK.filterOwnerAnalytics()" style="width:150px; padding:0.5rem;" unique-id="analytics-date-day">
+                                <input type="date" id="owner-analytics-date-day" class="form-control"
+                                    onchange="window.GarageLK.filterOwnerAnalytics()"
+                                    style="width:150px; padding:0.5rem;" unique-id="analytics-date-day">
                             </div>
-                            <div id="container-analytics-month" style="display: none; gap: 0.5rem; align-items: center;">
-                                <input type="month" id="owner-analytics-date-month" class="form-control" onchange="window.GarageLK.filterOwnerAnalytics()" style="width:160px; padding:0.5rem;" unique-id="analytics-date-month">
+                            <div id="container-analytics-month"
+                                style="display: none; gap: 0.5rem; align-items: center;">
+                                <input type="month" id="owner-analytics-date-month" class="form-control"
+                                    onchange="window.GarageLK.filterOwnerAnalytics()"
+                                    style="width:160px; padding:0.5rem;" unique-id="analytics-date-month">
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.75rem;">
-                            <button class="btn btn-outline" onclick="window.GarageLK.exportOwnerAnalyticsToExcel()" unique-id="btn-owner-analytics-excel">
+                            <button class="btn btn-outline" onclick="window.GarageLK.exportOwnerAnalyticsToExcel()"
+                                unique-id="btn-owner-analytics-excel">
                                 <i class="fa-solid fa-file-excel" style="color:var(--success);"></i> Export Excel
                             </button>
-                            <button class="btn btn-primary" onclick="window.GarageLK.downloadOwnerAnalyticsPDF()" unique-id="btn-owner-analytics-pdf">
+                            <button class="btn btn-primary" onclick="window.GarageLK.downloadOwnerAnalyticsPDF()"
+                                unique-id="btn-owner-analytics-pdf">
                                 <i class="fa-solid fa-file-pdf"></i> Download PDF
                             </button>
                         </div>
@@ -185,7 +201,8 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon" style="color: var(--secondary); background: rgba(6, 182, 212, 0.1);">
-                                <i class="fa-solid fa-hand-holding-dollar"></i></div>
+                                <i class="fa-solid fa-hand-holding-dollar"></i>
+                            </div>
                             <div class="stat-info">
                                 <h3 id="stat-total-revenue">LKR 0.00</h3>
                                 <p>Total Revenue</p>
@@ -193,33 +210,41 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.1);">
-                                <i class="fa-solid fa-check-double"></i></div>
+                                <i class="fa-solid fa-check-double"></i>
+                            </div>
                             <div class="stat-info">
                                 <h3 id="stat-completed-bookings">0</h3>
                                 <p>Completed</p>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.1);"><i class="fa-solid fa-truck-pickup"></i></div>
+                            <div class="stat-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.1);"><i
+                                    class="fa-solid fa-truck-pickup"></i></div>
                             <div class="stat-info">
                                 <h3 id="stat-completed-breakdowns">0</h3>
                                 <p>Completed Rescues</p>
                             </div>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
                         <!-- Bookings Revenue Chart (Bar) -->
                         <div class="data-table-container" style="padding: 1.5rem; border-radius: var(--radius-lg);">
-                            <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-chart-bar" style="color: var(--primary); margin-right: 0.5rem;"></i>Bookings Revenue (LKR)</h3>
-                            <div style="position: relative; height: 260px; display: flex; align-items: center; justify-content: center;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-chart-bar"
+                                    style="color: var(--primary); margin-right: 0.5rem;"></i>Bookings Revenue (LKR)</h3>
+                            <div
+                                style="position: relative; height: 260px; display: flex; align-items: center; justify-content: center;">
                                 <canvas id="chart-owner-revenue"></canvas>
                             </div>
                         </div>
 
                         <!-- Completion Stats Overview Chart (Pie) -->
                         <div class="data-table-container" style="padding: 1.5rem; border-radius: var(--radius-lg);">
-                            <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-chart-pie" style="color: var(--secondary); margin-right: 0.5rem;"></i>Completed Bookings vs Rescues</h3>
-                            <div style="position: relative; height: 260px; display: flex; align-items: center; justify-content: center;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-chart-pie"
+                                    style="color: var(--secondary); margin-right: 0.5rem;"></i>Completed Bookings vs
+                                Rescues</h3>
+                            <div
+                                style="position: relative; height: 260px; display: flex; align-items: center; justify-content: center;">
                                 <canvas id="chart-owner-completions"></canvas>
                             </div>
                         </div>
@@ -270,7 +295,8 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon" style="color: var(--secondary); background: rgba(6, 182, 212, 0.1);">
-                                <i class="fa-solid fa-warehouse"></i></div>
+                                <i class="fa-solid fa-warehouse"></i>
+                            </div>
                             <div class="stat-info">
                                 <h3 id="admin-stat-garages">0</h3>
                                 <p>Total Garages</p>
@@ -278,7 +304,8 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.1);">
-                                <i class="fa-solid fa-calendar-check"></i></div>
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </div>
                             <div class="stat-info">
                                 <h3 id="admin-stat-bookings">0</h3>
                                 <p>Total Bookings</p>
@@ -408,23 +435,30 @@
     <!-- Add/Edit Service Modal (Owner) -->
     <div class="modal-overlay" id="modal-add-service">
         <div class="modal-content">
-            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-add-service')"><i class="fa-solid fa-xmark"></i></span>
-            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;" id="modal-service-title"><i class="fa-solid fa-wrench"></i> Add New Service</h3>
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-add-service')"><i
+                    class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;" id="modal-service-title"><i
+                    class="fa-solid fa-wrench"></i> Add New Service</h3>
             <form onsubmit="window.GarageLK.handleAddService(event)">
                 <input type="hidden" id="service-id">
                 <div class="form-group">
                     <label for="service-name">Service Name</label>
-                    <input type="text" id="service-name" class="form-control" placeholder="e.g. Engine Oil Change" required unique-id="service-name-input">
+                    <input type="text" id="service-name" class="form-control" placeholder="e.g. Engine Oil Change"
+                        required unique-id="service-name-input">
                 </div>
                 <div class="form-group">
                     <label for="service-desc">Description</label>
-                    <textarea id="service-desc" class="form-control" rows="3" placeholder="Describe what this service entails..." required unique-id="service-desc-textarea"></textarea>
+                    <textarea id="service-desc" class="form-control" rows="3"
+                        placeholder="Describe what this service entails..." required
+                        unique-id="service-desc-textarea"></textarea>
                 </div>
                 <div class="form-group">
                     <label for="service-price">Price (LKR)</label>
-                    <input type="number" step="0.01" id="service-price" class="form-control" placeholder="e.g. 2500" required unique-id="service-price-input">
+                    <input type="number" step="0.01" id="service-price" class="form-control" placeholder="e.g. 2500"
+                        required unique-id="service-price-input">
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;" id="btn-save-service" unique-id="service-submit-btn">Add Service</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="btn-save-service"
+                    unique-id="service-submit-btn">Add Service</button>
             </form>
         </div>
     </div>

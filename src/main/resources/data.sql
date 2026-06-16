@@ -1,4 +1,4 @@
-﻿-- Seed data for Garage Finder Sri Lanka
+-- Seed data for Garage Finder Sri Lanka
 
 -- 1. Insert Users
 -- Default Admin (password: admin)
@@ -91,7 +91,7 @@ INSERT INTO offered_services (id, garage_id, service_type, price) VALUES (10, 3,
 INSERT INTO offered_services (id, garage_id, service_type, price) VALUES (12, 3, 'Tinkering', 22000.00) ON DUPLICATE KEY UPDATE price=price;
 
 
--- 5. Insert Seed Bookings (COMPLETED â€” required for reviews to be possible)
+-- 5. Insert Seed Bookings (COMPLETED — required for reviews to be possible)
 INSERT INTO bookings (id, customer_id, garage_id, service_type, booking_date, status, price, notes)
 VALUES (1, 1, 1, 'General Service', '2026-04-10 09:00:00', 'COMPLETED', 12500.00, 'Full A/C service and oil change')
 ON DUPLICATE KEY UPDATE status=status;
@@ -213,5 +213,23 @@ ON DUPLICATE KEY UPDATE description=description;
 INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
 VALUES (11, 1, 'Alternator failure near Kurunegala Clock Tower', 'Kurunegala', 'COMPLETED', '0711122334', '2026-05-25 11:00:00', 7.4875, 80.3647, 'WP CAD-4321', 'Clock Tower Road, Kurunegala')
 ON DUPLICATE KEY UPDATE description=description;
+
+
+-- 11. Insert Seed Spare Part Bookings
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
+VALUES (1, 1, 1, 2, 24000.00, 'PICKED_UP', '2026-06-10 09:00:00', '2026-06-11 10:00:00', 'Need genuine ones')
+ON DUPLICATE KEY UPDATE status=status;
+
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
+VALUES (2, 2, 3, 1, 35000.00, 'PICKED_UP', '2026-06-12 14:00:00', '2026-06-13 11:00:00', 'Please keep ready')
+ON DUPLICATE KEY UPDATE status=status;
+
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
+VALUES (3, 1, 5, 1, 18000.00, 'PICKED_UP', '2026-06-13 16:00:00', '2026-06-14 10:00:00', 'Left side mirror')
+ON DUPLICATE KEY UPDATE status=status;
+
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, notes)
+VALUES (4, 2, 1, 1, 12000.00, 'READY_FOR_PICKUP', '2026-06-14 11:00:00', 'Active booking')
+ON DUPLICATE KEY UPDATE status=status;
 
 

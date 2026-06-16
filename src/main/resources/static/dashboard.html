@@ -51,11 +51,21 @@
                     <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-list-check"></i> My Appointments</h2>
                     <div class="data-table-container">
                         <div class="table-header-row">
-                            <h3 style="font-size: 1.1rem;">Appointment History</h3>
-                            <span>Track your bookings and submit reviews</span>
+                            <h3 style="font-size: 1.1rem;">Active Appointments</h3>
+                            <span>Track your current booking requests</span>
                         </div>
                         <div class="table-list" id="customer-bookings-list">
                             <!-- Dynamic items -->
+                        </div>
+                    </div>
+
+                    <div class="data-table-container" style="margin-top: 2rem;">
+                        <div class="table-header-row">
+                            <h3 style="font-size: 1.1rem;">Completed Appointments History</h3>
+                            <span>Track and view your completed bookings and submit reviews</span>
+                        </div>
+                        <div class="table-list" id="customer-completed-bookings-list">
+                            <!-- Dynamic completed items -->
                         </div>
                     </div>
                 </section>
@@ -65,11 +75,45 @@
                     <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: #f87171;"><i class="fa-solid fa-truck-medical"></i> Emergency Assist Requests</h2>
                     <div class="data-table-container">
                         <div class="table-header-row">
-                            <h3 style="font-size: 1.1rem;">Emergency Log</h3>
-                            <span>Track dispatched help and coordinate rescues</span>
+                            <h3 style="font-size: 1.1rem;">Active Emergencies</h3>
+                            <span>Track active dispatched help and coordinate rescues</span>
                         </div>
                         <div class="table-list" id="customer-breakdowns-list">
                             <!-- Dynamic items -->
+                        </div>
+                    </div>
+
+                    <div class="data-table-container" style="margin-top: 2rem;">
+                        <div class="table-header-row">
+                            <h3 style="font-size: 1.1rem;">Resolved Emergency Log</h3>
+                            <span>History of your resolved and completed assist requests</span>
+                        </div>
+                        <div class="table-list" id="customer-completed-breakdowns-list">
+                            <!-- Dynamic completed items -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CUSTOMER: Spare Part Reservations Panel -->
+                <section id="section-customer-reservations" class="dashboard-section">
+                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-gears"></i> Spare Part Reservations</h2>
+                    <div class="data-table-container">
+                        <div class="table-header-row">
+                            <h3 style="font-size: 1.1rem;">Pending Reservations</h3>
+                            <span>Track your current reservations and pickup status</span>
+                        </div>
+                        <div class="table-list" id="customer-reservations-list">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+
+                    <div class="data-table-container" style="margin-top: 2rem;">
+                        <div class="table-header-row">
+                            <h3 style="font-size: 1.1rem;">Picked-Up Reservations</h3>
+                            <span>View your completed and picked up spare parts</span>
+                        </div>
+                        <div class="table-list" id="customer-picked-up-list">
+                            <!-- Dynamic completed items -->
                         </div>
                     </div>
                 </section>
@@ -326,6 +370,110 @@
                         </div>
                         <div class="table-list" id="shop-inventory-list">
                             <p style="color:var(--text-muted); text-align:center; padding:2rem;">Please select a shop to manage inventory.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SHOP OWNER: Part Reservations Panel -->
+                <section id="section-shop-reservations" class="dashboard-section">
+                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-cart-flatbed-suitcase"></i> Manage Part Reservations</h2>
+                    <div class="data-table-container">
+                        <div class="table-header-row">
+                            <h3 style="font-size: 1.1rem;">Incoming Booking Requests</h3>
+                            <span>Fulfill orders and notify customer when ready for pickup</span>
+                        </div>
+                        <div class="table-list" id="shop-reservations-list">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+
+                    <div class="data-table-container" style="margin-top: 2rem;">
+                        <div class="table-header-row">
+                            <h3 style="font-size: 1.1rem;">Completed Reservations History</h3>
+                            <span>Track picked up or cancelled spare part orders</span>
+                        </div>
+                        <div class="table-list" id="shop-completed-reservations-list">
+                            <!-- Dynamic completed history items -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SHOP OWNER: Analytics Panel -->
+                <section id="section-shop-analytics" class="dashboard-section">
+                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-chart-line"></i> Analytics (Sales Reports)</h2>
+                    
+                    <div data-html2pdf-ignore="true" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <label for="shop-analytics-select" style="font-weight: 600; white-space: nowrap; text-transform: uppercase;">Filter by Shop:</label>
+                                <select id="shop-analytics-select" class="form-control" onchange="window.GarageLK.filterShopAnalytics()" style="width:180px; padding:0.5rem;" unique-id="shop-analytics-select">
+                                    <option value="">All Shops</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <label for="shop-analytics-date-type" style="font-weight: 600; white-space: nowrap; text-transform: uppercase;">Date Filter:</label>
+                                <select id="shop-analytics-date-type" class="form-control" onchange="window.GarageLK.toggleShopDateFilterType()" style="width:160px; padding:0.5rem;" unique-id="shop-analytics-date-type">
+                                    <option value="all">All Time</option>
+                                    <option value="day">Specific Day</option>
+                                    <option value="month">Specific Month</option>
+                                </select>
+                            </div>
+                            <div id="container-shop-analytics-day" style="display: none; gap: 0.5rem; align-items: center;">
+                                <input type="date" id="shop-analytics-date-day" class="form-control" onchange="window.GarageLK.filterShopAnalytics()" style="width:150px; padding:0.5rem;" unique-id="shop-analytics-date-day">
+                            </div>
+                            <div id="container-shop-analytics-month" style="display: none; gap: 0.5rem; align-items: center;">
+                                <input type="month" id="shop-analytics-date-month" class="form-control" onchange="window.GarageLK.filterShopAnalytics()" style="width:160px; padding:0.5rem;" unique-id="shop-analytics-date-month">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button class="btn btn-outline" onclick="window.GarageLK.exportShopAnalyticsToExcel()" unique-id="btn-shop-analytics-excel">
+                                <i class="fa-solid fa-file-excel" style="color:var(--success);"></i> Export Excel
+                            </button>
+                            <button class="btn btn-primary" onclick="window.GarageLK.downloadShopAnalyticsPDF()" unique-id="btn-shop-analytics-pdf">
+                                <i class="fa-solid fa-file-pdf"></i> Download PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                            <div class="stat-info">
+                                <h3 id="shop-stat-total-revenue">LKR 0.00</h3>
+                                <p>Total Revenue</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="color: var(--secondary); background: rgba(6, 182, 212, 0.1);"><i class="fa-solid fa-cart-flatbed-suitcase"></i></div>
+                            <div class="stat-info">
+                                <h3 id="shop-stat-total-sales">0</h3>
+                                <p>Total Parts Sold</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.1);"><i class="fa-solid fa-fire"></i></div>
+                            <div class="stat-info">
+                                <h3 id="shop-stat-fast-moving" style="font-size: 1.25rem;">N/A</h3>
+                                <p>Top Selling Part</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                        <!-- Fast-Moving Parts (Bar Chart) -->
+                        <div class="data-table-container" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-chart-bar" style="color: var(--primary); margin-right: 0.5rem;"></i>Fast-Moving Parts (Quantity Sold)</h3>
+                            <div style="position: relative; height: 280px; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="chart-shop-sales"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Revenue Share by Part (Pie Chart) -->
+                        <div class="data-table-container" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-chart-pie" style="color: var(--secondary); margin-right: 0.5rem;"></i>Revenue Share by Part (LKR)</h3>
+                            <div style="position: relative; height: 280px; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="chart-shop-revenue"></canvas>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -608,6 +756,38 @@
         </div>
     </div>
 
+
+
+    <!-- Rate Spare Part Shop Modal (Customer) -->
+    <div class="modal-overlay" id="modal-shop-review">
+        <div class="modal-content">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-shop-review')"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-star"></i> Rate Spare Part Shop</h3>
+            <form onsubmit="window.GarageLK.submitShopReview(event)">
+                <input type="hidden" id="rate-shop-booking-id">
+                <div class="form-group">
+                    <label>Shop Name</label>
+                    <input type="text" id="rate-shop-name" class="form-control" readonly style="background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: not-allowed;" unique-id="rate-shop-name-input">
+                </div>
+                <div class="form-group">
+                    <label for="rate-shop-rating">Rating (1 to 5 Stars)</label>
+                    <select id="rate-shop-rating" class="form-control" required unique-id="rate-shop-rating-select">
+                        <option value="5">5 Stars (Excellent Shop)</option>
+                        <option value="4">4 Stars (Good Shop)</option>
+                        <option value="3">3 Stars (Average)</option>
+                        <option value="2">2 Stars (Poor Shop)</option>
+                        <option value="1">1 Star (Very Bad Shop)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="rate-shop-comment">Review Feedback / Comments</label>
+                    <textarea id="rate-shop-comment" class="form-control" rows="4" placeholder="Describe the shop service, parts condition, etc..." required unique-id="rate-shop-comment-textarea"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="rate-shop-submit-btn">Submit Shop Review</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Register Garage Modal (Owner) -->
     <div class="modal-overlay" id="modal-add-garage">
         <div class="modal-content">
@@ -628,12 +808,7 @@
                 </div>
                 <div class="form-group">
                     <label for="garage-city">City</label>
-                    <select id="garage-city" class="form-control" required unique-id="garage-city-select">
-                        <option value="Colombo">Colombo</option>
-                        <option value="Kandy">Kandy</option>
-                        <option value="Galle">Galle</option>
-                        <option value="Kurunegala">Kurunegala</option>
-                    </select>
+                    <input type="text" id="garage-city" class="form-control" placeholder="Select or type district..." required list="districts-list" unique-id="garage-city-select">
                 </div>
                 <div class="form-group">
                     <label for="garage-phone">Contact Phone</label>
@@ -703,12 +878,7 @@
                 </div>
                 <div class="form-group">
                     <label for="edit-garage-city">City</label>
-                    <select id="edit-garage-city" class="form-control" required unique-id="edit-garage-city-select">
-                        <option value="Colombo">Colombo</option>
-                        <option value="Kandy">Kandy</option>
-                        <option value="Galle">Galle</option>
-                        <option value="Kurunegala">Kurunegala</option>
-                    </select>
+                    <input type="text" id="edit-garage-city" class="form-control" placeholder="Select or type district..." required list="districts-list" unique-id="edit-garage-city-select">
                 </div>
                 <div class="form-group">
                     <label for="edit-garage-phone">Contact Phone</label>
@@ -875,12 +1045,7 @@
                 </div>
                 <div class="form-group">
                     <label for="shop-city">City</label>
-                    <select id="shop-city" class="form-control" required unique-id="shop-city-select">
-                        <option value="Colombo">Colombo</option>
-                        <option value="Kandy">Kandy</option>
-                        <option value="Galle">Galle</option>
-                        <option value="Kurunegala">Kurunegala</option>
-                    </select>
+                    <input type="text" id="shop-city" class="form-control" placeholder="Select or type district..." required list="districts-list" unique-id="shop-city-select">
                 </div>
                 <div class="form-group">
                     <label for="shop-phone">Contact Phone</label>
@@ -1014,9 +1179,105 @@
     <div class="toast-container" id="toast-container"></div>
 
     <!-- Footer -->
+    <datalist id="districts-list">
+        <option value="Ampara"></option>
+        <option value="Anuradhapura"></option>
+        <option value="Badulla"></option>
+        <option value="Batticaloa"></option>
+        <option value="Colombo"></option>
+        <option value="Galle"></option>
+        <option value="Gampaha"></option>
+        <option value="Hambantota"></option>
+        <option value="Jaffna"></option>
+        <option value="Kalutara"></option>
+        <option value="Kandy"></option>
+        <option value="Kegalle"></option>
+        <option value="Kilinochchi"></option>
+        <option value="Kurunegala"></option>
+        <option value="Mannar"></option>
+        <option value="Matale"></option>
+        <option value="Matara"></option>
+        <option value="Moneragala"></option>
+        <option value="Mullaitivu"></option>
+        <option value="Nuwara Eliya"></option>
+        <option value="Polonnaruwa"></option>
+        <option value="Puttalam"></option>
+        <option value="Ratnapura"></option>
+        <option value="Trincomalee"></option>
+        <option value="Vavuniya"></option>
+    </datalist>
+
     <footer>
-        <div class="max-width">
-            <p>&copy; 2026 GarageLK. All rights reserved.</p>
+        <div class="footer-container">
+            <div class="footer-column brand-col">
+                <a href="/index.html" class="logo" style="font-size: 1.5rem; margin-bottom: 1rem; display: inline-flex; text-decoration: none;">
+                    <i class="fa-solid fa-gears"></i>Garage<span>LK</span>
+                </a>
+                <p>Sri Lanka's premier digital gateway connecting vehicle owners with elite automotive service centers and genuine spare part suppliers.</p>
+                <div class="social-links">
+                    <a href="#" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" class="social-icon" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" class="social-icon" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="social-icon" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="#" class="social-icon" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="/index.html">Home</a></li>
+                    <li><a href="/index.html#about">About Us</a></li>
+                    <li><a href="/index.html#map">Find Garages</a></li>
+                    <li><a href="/index.html?search=parts#map">Find Spare Parts</a></li>
+                    <li><a href="/dashboard.html">Dashboard</a></li>
+                    <li><a href="/auth.html">Join as Partner</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Contact Us</h3>
+                <ul class="contact-info">
+                    <li>
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span>142, Baseline Road, Borella, Colombo 08, Sri Lanka</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-phone"></i>
+                        <div>
+                            <a href="tel:+94112345678">+94 11 234 5678</a><br>
+                            <a href="tel:+94771234567">+94 77 123 4567</a>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-envelope"></i>
+                        <div>
+                            <a href="mailto:support@garagelk.com">support@garagelk.com</a><br>
+                            <a href="mailto:info@garagelk.com">info@garagelk.com</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Emergency Services</h3>
+                <p style="font-size: 0.85rem; margin-bottom: 1rem;">Stranded on the road? Request immediate assistance from nearby mechanics.</p>
+                <button class="btn btn-emergency" onclick="window.location.href='/index.html?emergency=true'" style="padding: 0.6rem 1.2rem; font-size: 0.85rem; width: 100%; border-radius: 4px;" unique-id="footer-emergency-btn">
+                    <i class="fa-solid fa-triangle-exclamation"></i> 24/7 Roadside Assist
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="footer-bottom-container">
+                <p>&copy; 2026 GarageLK. All rights reserved.</p>
+                <p class="premium-tagline">Designed with premium aesthetics for optimal user experience.</p>
+                <div class="footer-bottom-links">
+                    <a href="#">Terms of Service</a>
+                    <span class="separator">&bull;</span>
+                    <a href="#">Privacy Policy</a>
+                </div>
+            </div>
         </div>
     </footer>
 
