@@ -2551,23 +2551,37 @@
 
         async submitReview(e) {
             e.preventDefault();
-            const bookingId = document.getElementById('review-booking-id').value;
+            const bookingIdVal = document.getElementById('review-booking-id').value;
+            const breakdownIdVal = document.getElementById('review-breakdown-id').value;
             const rating = parseFloat(document.getElementById('review-rating').value);
             const comment = document.getElementById('review-comment').value.trim();
+
+            const payload = { rating, comment };
+            if (bookingIdVal) {
+                payload.bookingId = bookingIdVal;
+            } else if (breakdownIdVal) {
+                payload.breakdownRequestId = breakdownIdVal;
+            }
 
             try {
                 const res = await fetch('/api/reviews', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookingId, rating, comment })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
                 if (res.ok) {
                     this.showToast('Review submitted successfully!', 'success');
                     this.closeModal('modal-review');
-                    this.loadCustomerBookings();
+                    if (bookingIdVal) {
+                        this.loadCustomerBookings();
+                    } else {
+                        this.loadCustomerBreakdowns();
+                    }
                     e.target.reset();
+                    document.getElementById('review-booking-id').value = '';
+                    document.getElementById('review-breakdown-id').value = '';
                 } else {
                     this.showToast(data.message || 'Submission failed', 'error');
                 }
@@ -2921,11 +2935,38 @@
                                     </p>
                                     ${responseHtml}
                                 </div>
-                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 140px;">
+                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 150px;">
                                     <span class="badge ${badgeClass}">${b.status}</span>
+                                    <div id="breakdown-review-btn-container-${b.id}" style="display:inline-block; margin-top:0.25rem;"></div>
                                 </div>
                             `;
                             completedList.appendChild(item);
+
+                            if (b.status === 'COMPLETED' && b.acceptedBy) {
+                                setTimeout(async () => {
+                                    const btnContainer = document.getElementById(`breakdown-review-btn-container-${b.id}`);
+                                    if (btnContainer) {
+                                        try {
+                                            const existsRes = await fetch(`/api/reviews/breakdown/${b.id}/exists`);
+                                            if (existsRes.ok) {
+                                                const check = await existsRes.json();
+                                                if (!check.exists) {
+                                                    btnContainer.innerHTML = `
+                                                        <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
+                                                            onclick="window.GarageLK.openBreakdownReviewModal(${b.id})" unique-id="breakdown-review-btn-${b.id}">
+                                                            <i class="fa-solid fa-star"></i> Write Review
+                                                        </button>
+                                                    `;
+                                                } else {
+                                                    btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Garage Reviewed</span>`;
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error(e);
+                                        }
+                                    }
+                                }, 0);
+                            }
                         });
                     }
                 }
@@ -4349,6 +4390,13 @@
         // Review triggers
         openReviewModal(bookingId) {
             document.getElementById('review-booking-id').value = bookingId;
+            document.getElementById('review-breakdown-id').value = '';
+            this.openModal('modal-review');
+        },
+
+        openBreakdownReviewModal(breakdownId) {
+            document.getElementById('review-booking-id').value = '';
+            document.getElementById('review-breakdown-id').value = breakdownId;
             this.openModal('modal-review');
         },
 

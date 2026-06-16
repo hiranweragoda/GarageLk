@@ -16,11 +16,13 @@ public class ReviewController {
     private final ReviewRepository reviewRepository;
     private final BookingRepository bookingRepository;
     private final CustomerRepository customerRepository;
+    private final BreakdownRequestRepository breakdownRequestRepository;
 
-    public ReviewController(ReviewRepository reviewRepository, BookingRepository bookingRepository, CustomerRepository customerRepository) {
+    public ReviewController(ReviewRepository reviewRepository, BookingRepository bookingRepository, CustomerRepository customerRepository, BreakdownRequestRepository breakdownRequestRepository) {
         this.reviewRepository = reviewRepository;
         this.bookingRepository = bookingRepository;
         this.customerRepository = customerRepository;
+        this.breakdownRequestRepository = breakdownRequestRepository;
     }
 
     // Submit a review (Customer only, for a COMPLETED booking, one per booking)
@@ -36,30 +38,59 @@ public class ReviewController {
             return ResponseEntity.badRequest().body(Map.of("message", "Customer profile not found"));
         }
 
-        if (payload.get("bookingId") == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "bookingId is required"));
-        }
-        Long bookingId = Long.parseLong(payload.get("bookingId").toString());
-        Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
-        if (bookingOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Booking not found"));
-        }
+        Long bookingId = null;
+        Long breakdownRequestId = null;
 
-        Booking booking = bookingOpt.get();
-
-        // Only COMPLETED bookings can be reviewed
-        if (!"COMPLETED".equals(booking.getStatus())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "You can only review completed services"));
+        if (payload.containsKey("bookingId") && payload.get("bookingId") != null && !payload.get("bookingId").toString().isEmpty()) {
+            bookingId = Long.parseLong(payload.get("bookingId").toString());
+        }
+        if (payload.containsKey("breakdownRequestId") && payload.get("breakdownRequestId") != null && !payload.get("breakdownRequestId").toString().isEmpty()) {
+            breakdownRequestId = Long.parseLong(payload.get("breakdownRequestId").toString());
         }
 
-        // Ensure this customer owns this booking
-        if (!booking.getCustomer().getId().equals(customerOpt.get().getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        if (bookingId == null && breakdownRequestId == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Either bookingId or breakdownRequestId is required"));
         }
 
-        // One review per booking
-        if (reviewRepository.existsByBookingId(bookingId)) {
-            return ResponseEntity.badRequest().body(Map.of("message", "You have already reviewed this service"));
+        Garage garage = null;
+        Booking booking = null;
+        BreakdownRequest breakdownRequest = null;
+
+        if (bookingId != null) {
+            Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
+            if (bookingOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Booking not found"));
+            }
+            booking = bookingOpt.get();
+            if (!"COMPLETED".equals(booking.getStatus())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "You can only review completed services"));
+            }
+            if (!booking.getCustomer().getId().equals(customerOpt.get().getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+            }
+            if (reviewRepository.existsByBookingId(bookingId)) {
+                return ResponseEntity.badRequest().body(Map.of("message", "You have already reviewed this service"));
+            }
+            garage = booking.getGarage();
+        } else {
+            Optional<BreakdownRequest> requestOpt = breakdownRequestRepository.findById(breakdownRequestId);
+            if (requestOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Emergency request not found"));
+            }
+            breakdownRequest = requestOpt.get();
+            if (!"COMPLETED".equals(breakdownRequest.getStatus())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "You can only review completed rescues"));
+            }
+            if (!breakdownRequest.getCustomer().getId().equals(customerOpt.get().getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+            }
+            if (reviewRepository.existsByBreakdownRequestId(breakdownRequestId)) {
+                return ResponseEntity.badRequest().body(Map.of("message", "You have already reviewed this rescue"));
+            }
+            garage = breakdownRequest.getAssignedGarage();
+            if (garage == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "No garage responded to this emergency"));
+            }
         }
 
         Object ratingVal = payload.get("rating") != null ? payload.get("rating") : payload.get("starRating");
@@ -74,7 +105,12 @@ public class ReviewController {
 
         String comment = payload.get("comment") != null ? payload.get("comment").toString().trim() : "";
 
-        Review review = new Review(customerOpt.get(), booking.getGarage(), booking, starRating, comment);
+        Review review;
+        if (booking != null) {
+            review = new Review(customerOpt.get(), garage, booking, starRating, comment);
+        } else {
+            review = new Review(customerOpt.get(), garage, breakdownRequest, starRating, comment);
+        }
         reviewRepository.save(review);
 
         return ResponseEntity.ok(Map.of("message", "Review submitted successfully! Thank you for your feedback."));
@@ -95,7 +131,7 @@ public class ReviewController {
             item.put("createdAt", r.getCreatedAt());
             item.put("customerName", r.getCustomer().getUser().getUsername());
             item.put("vehicleType", r.getCustomer().getVehicleType());
-            item.put("serviceType", r.getBooking().getServiceType());
+            item.put("serviceType", r.getBooking() != null ? r.getBooking().getServiceType() : "Emergency Rescue");
             result.add(item);
         }
 
@@ -123,5 +159,15 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
         return ResponseEntity.ok(Map.of("exists", reviewRepository.existsByBookingId(bookingId)));
+    }
+
+    // Check if a specific breakdown request has already been reviewed
+    @GetMapping("/breakdown/{requestId}/exists")
+    public ResponseEntity<?> reviewExistsForBreakdown(@PathVariable Long requestId, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+        return ResponseEntity.ok(Map.of("exists", reviewRepository.existsByBreakdownRequestId(requestId)));
     }
 }
