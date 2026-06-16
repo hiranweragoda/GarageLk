@@ -1415,7 +1415,7 @@
 
                         let actionHtml = `
                             <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.updateBookingStatus(${b.id}, 'CANCELLED')" unique-id="cancel-btn-${b.id}">
+                                onclick="window.GarageLK.openCancellationModal(${b.id}, 'BOOKING')" unique-id="cancel-btn-${b.id}">
                                 Cancel
                             </button>
                         `;
@@ -1456,6 +1456,10 @@
                             let badgeClass = 'badge-completed';
                             if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
 
+                            const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                                : '';
+
                             item.innerHTML = `
                                 <div style="flex:1;">
                                     <h4 style="font-weight:700;">${b.garage.name}</h4>
@@ -1465,6 +1469,7 @@
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
                                         <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
                                         <strong>Details:</strong> ${b.description}
+                                        ${reasonHtml}
                                     </p>
                                 </div>
                                 <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 150px;">
@@ -2892,7 +2897,7 @@
                                     Mark Resolved
                                 </button>
                                 <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:var(--danger); border-color:var(--danger);" 
-                                    onclick="window.GarageLK.cancelBreakdown(${b.id})" unique-id="cancel-breakdown-${b.id}">
+                                    onclick="window.GarageLK.openCancellationModal(${b.id}, 'BREAKDOWN')" unique-id="cancel-breakdown-${b.id}">
                                     Cancel
                                 </button>
                             </div>
@@ -2933,10 +2938,14 @@
                             item.className = 'table-item';
 
                             const badgeClass = b.status === 'CANCELLED' ? 'badge-cancelled' : 'badge-completed';
+                            const reasonText = (b.status === 'CANCELLED' && b.cancellationReason) 
+                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                                : '';
                             const responseHtml = b.status === 'CANCELLED'
                                 ? `
                                     <div style="font-size:0.85rem; color:var(--danger); font-weight:500;">
                                         <i class="fa-solid fa-ban"></i> Request Cancelled by Customer
+                                        ${reasonText}
                                     </div>
                                   `
                                 : `
@@ -5372,7 +5381,7 @@
 
                         let actionHtml = `
                             <button class="btn btn-outline btn-danger" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'CANCELLED')" unique-id="cancel-part-btn-${b.id}">
+                                onclick="window.GarageLK.openCancellationModal(${b.id}, 'PART_RESERVATION')" unique-id="cancel-part-btn-${b.id}">
                                 Cancel Reservation
                             </button>
                         `;
@@ -5424,6 +5433,10 @@
 
                             const formattedPickup = new Date(b.pickupDate).toLocaleString();
 
+                            const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                                : '';
+
                             item.innerHTML = `
                                 <div style="flex:1; display:flex; gap:1rem; align-items:center;">
                                     <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
@@ -5435,6 +5448,7 @@
                                         <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
                                             <strong>Pickup Estimation:</strong> ${formattedPickup} <br>
                                             ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                            ${reasonHtml}
                                         </p>
                                     </div>
                                 </div>
@@ -6104,6 +6118,127 @@
                 ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
             L.tileLayer(tilesUrl, { maxZoom: 20 }).addTo(this.map);
+        },
+
+        cancellationReasons: {
+            BOOKING: [
+                "Found a better price elsewhere",
+                "Rescheduled for a different date/time",
+                "Changed my mind / no longer needed",
+                "Vehicle issue resolved independently",
+                "Garage location is too far/inconvenient"
+            ],
+            PART_RESERVATION: [
+                "Purchased the part from another shop",
+                "Part no longer required for my vehicle",
+                "Found a cheaper alternative",
+                "Ordered wrong compatibility by mistake",
+                "Delay in pickup date / scheduling conflict"
+            ],
+            BREAKDOWN: [
+                "Vehicle started / resolved the issue myself",
+                "Found another mechanic/tow truck nearby",
+                "Long wait time / helper taking too long",
+                "Friends/family arrived to help",
+                "Decided to call a personal contact/insurance tow"
+            ]
+        },
+
+        openCancellationModal(id, type) {
+            document.getElementById('cancel-item-id').value = id;
+            document.getElementById('cancel-item-type').value = type;
+            
+            const selectEl = document.getElementById('cancel-reason-select');
+            if (!selectEl) return;
+            selectEl.innerHTML = '';
+            
+            const reasons = this.cancellationReasons[type] || [];
+            reasons.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                selectEl.appendChild(opt);
+            });
+            
+            this.openModal('modal-cancellation');
+        },
+
+        async submitCancellation(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('cancel-item-id').value);
+            const type = document.getElementById('cancel-item-type').value;
+            const reason = document.getElementById('cancel-reason-select').value;
+            
+            this.closeModal('modal-cancellation');
+            
+            if (type === 'BOOKING') {
+                await this.performBookingCancellation(id, reason);
+            } else if (type === 'PART_RESERVATION') {
+                await this.performPartReservationCancellation(id, reason);
+            } else if (type === 'BREAKDOWN') {
+                await this.performBreakdownCancellation(id, reason);
+            }
+        },
+
+        async performBookingCancellation(id, cancellationReason) {
+            try {
+                const res = await fetch(`/api/bookings/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'CANCELLED', cancellationReason })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    this.showToast('Appointment cancelled successfully', 'success');
+                    this.loadCustomerBookings();
+                } else {
+                    this.showToast(data.message || 'Cancellation failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error cancelling booking:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async performPartReservationCancellation(bookingId, cancellationReason) {
+            try {
+                const res = await fetch(`/api/spare-parts/bookings/${bookingId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'CANCELLED', cancellationReason })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    this.showToast('Reservation cancelled successfully', 'success');
+                    this.loadCustomerReservations();
+                } else {
+                    this.showToast(data.message || 'Cancellation failed', 'error');
+                }
+            } catch (err) {
+                console.error("Error cancelling reservation:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
+        async performBreakdownCancellation(id, cancellationReason) {
+            try {
+                const res = await fetch(`/api/breakdowns/${id}/cancel`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cancellationReason })
+                });
+                if (res.ok) {
+                    this.showToast('Emergency request cancelled.', 'success');
+                    this.loadCustomerBreakdowns();
+                } else {
+                    this.showToast('Failed to cancel request', 'error');
+                }
+            } catch (err) {
+                console.error("Error cancelling breakdown:", err);
+                this.showToast('Connection error', 'error');
+            }
         },
 
         initLiveDateTime() {

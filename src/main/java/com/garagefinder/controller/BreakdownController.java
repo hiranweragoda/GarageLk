@@ -227,7 +227,10 @@ public class BreakdownController {
 
     // Cancel an emergency request (Customer or Admin)
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelBreakdown(@PathVariable Long id, HttpSession session) {
+    public ResponseEntity<?> cancelBreakdown(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, Object> payload,
+            HttpSession session) {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
@@ -256,6 +259,9 @@ public class BreakdownController {
         }
 
         request.setStatus("CANCELLED");
+        if (payload != null && payload.get("cancellationReason") != null) {
+            request.setCancellationReason(payload.get("cancellationReason").toString());
+        }
         if (request.getAssignedMechanic() != null) {
             Mechanic mechanic = request.getAssignedMechanic();
             mechanic.setStatus("AVAILABLE");

@@ -1281,6 +1281,33 @@
         </div>
     </footer>
 
+    <!-- Cancellation Modal (Customer) -->
+    <div class="modal-overlay" id="modal-cancellation">
+        <div class="modal-content" style="max-width: 450px;">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-cancellation')"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--danger);"><i class="fa-solid fa-circle-xmark"></i> Cancel Service</h3>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Please select a reason for canceling your request. This helps us improve our service.
+            </p>
+            <form onsubmit="window.GarageLK.submitCancellation(event)">
+                <input type="hidden" id="cancel-item-id">
+                <input type="hidden" id="cancel-item-type"> <!-- 'BOOKING', 'PART_RESERVATION', 'BREAKDOWN' -->
+                
+                <div class="form-group">
+                    <label for="cancel-reason-select">Reason for Cancellation</label>
+                    <select id="cancel-reason-select" class="form-control" required style="background: rgba(0,0,0,0.3); color: var(--text-primary);">
+                        <!-- Dynamic options will be populated by JS -->
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn btn-outline" style="flex: 1;" onclick="window.GarageLK.closeModal('modal-cancellation')">Go Back</button>
+                    <button type="submit" class="btn btn-danger" style="flex: 1; background: var(--danger); color: white;" unique-id="confirm-cancel-btn">Cancel Service</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- SheetJS for Excel Exports -->

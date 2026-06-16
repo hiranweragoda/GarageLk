@@ -190,6 +190,9 @@ public class SparePartBookingController {
         }
 
         booking.setStatus(newStatus);
+        if ("CANCELLED".equals(newStatus) && payload.get("cancellationReason") != null) {
+            booking.setCancellationReason(payload.get("cancellationReason").toString());
+        }
         bookingRepository.save(booking);
 
         return ResponseEntity.ok(Map.of("message", "Booking status updated to " + newStatus));

@@ -37,6 +37,9 @@ public class SparePartBooking {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
     public SparePartBooking() {}
 
     public SparePartBooking(Customer customer, SparePart sparePart, Integer quantity, Double totalPrice, String status, LocalDateTime pickupDate, String notes) {
@@ -51,6 +54,14 @@ public class SparePartBooking {
     }
 
     // Getters and Setters
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
     public Long getId() {
         return id;
     }

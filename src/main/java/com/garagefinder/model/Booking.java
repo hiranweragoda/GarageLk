@@ -48,6 +48,9 @@ public class Booking {
     @Column(name = "total_price")
     private Double totalPrice;
 
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
     // Constructors
     public Booking() {}
 
@@ -62,6 +65,14 @@ public class Booking {
     }
 
     // Getters and Setters
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
     public Long getId() {
         return id;
     }
