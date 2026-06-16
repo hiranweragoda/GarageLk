@@ -14,6 +14,7 @@ public interface GarageRepository extends JpaRepository<Garage, Long> {
     List<Garage> findByStatus(String status);
     List<Garage> findByDistrictAndStatus(String district, String status);
     List<Garage> findByCityAndStatus(String city, String status);
+    long countByStatus(String status);
 
     @Query("SELECT DISTINCT g FROM Garage g JOIN OfferedService os ON os.garage.id = g.id WHERE os.serviceType = :serviceType AND g.status = :status")
     List<Garage> findByServiceTypeAndStatus(@Param("serviceType") String serviceType, @Param("status") String status);

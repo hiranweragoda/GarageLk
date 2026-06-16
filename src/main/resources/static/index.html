@@ -60,13 +60,7 @@
                 </div>
                 <div class="search-input-group">
                     <i class="fa-solid fa-location-dot"></i>
-                    <select id="search-city" unique-id="city-dropdown">
-                        <option value="">All Cities</option>
-                        <option value="Colombo">Colombo</option>
-                        <option value="Kandy">Kandy</option>
-                        <option value="Galle">Galle</option>
-                        <option value="Kurunegala">Kurunegala</option>
-                    </select>
+                    <input type="text" id="search-city" placeholder="All Districts" list="districts-list" unique-id="city-dropdown" style="border: none; background: transparent; width: 100%; height: 100%; color: var(--text-secondary); outline: none;">
                 </div>
                 <button class="btn btn-primary" id="btn-search" unique-id="search-submit">
                     <i class="fa-solid fa-magnifying-glass"></i> Find
@@ -89,13 +83,7 @@
                 </div>
                 <div class="search-input-group">
                     <i class="fa-solid fa-location-dot"></i>
-                    <select id="search-part-city" unique-id="part-city-dropdown">
-                        <option value="">All Cities</option>
-                        <option value="Colombo">Colombo</option>
-                        <option value="Kandy">Kandy</option>
-                        <option value="Galle">Galle</option>
-                        <option value="Kurunegala">Kurunegala</option>
-                    </select>
+                    <input type="text" id="search-part-city" placeholder="All Districts" list="districts-list" unique-id="part-city-dropdown" style="border: none; background: transparent; width: 100%; height: 100%; color: var(--text-secondary); outline: none;">
                 </div>
                 <button class="btn btn-primary" id="btn-search-parts" onclick="window.GarageLK.loadSpareParts()" unique-id="part-search-submit">
                     <i class="fa-solid fa-magnifying-glass"></i> Find Parts
@@ -179,7 +167,7 @@
                     <div class="about-stat-card">
                         <i class="fa-solid fa-warehouse"
                             style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem; display: block;"></i>
-                        <span
+                        <span id="stat-garages"
                             style="font-size: 1.8rem; font-weight: 800; color: white; display: block; font-family: var(--font-heading); margin-bottom: 0.25rem;">15+</span>
                         <span
                             style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Verified
@@ -188,7 +176,7 @@
                     <div class="about-stat-card">
                         <i class="fa-solid fa-users"
                             style="font-size: 2rem; color: var(--secondary); margin-bottom: 1rem; display: block;"></i>
-                        <span
+                        <span id="stat-customers"
                             style="font-size: 1.8rem; font-weight: 800; color: white; display: block; font-family: var(--font-heading); margin-bottom: 0.25rem;">500+</span>
                         <span
                             style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Happy
@@ -197,7 +185,7 @@
                     <div class="about-stat-card">
                         <i class="fa-solid fa-screwdriver-wrench"
                             style="font-size: 2rem; color: var(--accent); margin-bottom: 1rem; display: block;"></i>
-                        <span
+                        <span id="stat-bookings"
                             style="font-size: 1.8rem; font-weight: 800; color: white; display: block; font-family: var(--font-heading); margin-bottom: 0.25rem;">2,000+</span>
                         <span
                             style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Services
@@ -218,10 +206,76 @@
     </main>
 
     <footer>
-        <div class="max-width">
-            <p>&copy; 2026 GarageLK. All rights reserved.</p>
-            <p>Designed with premium aesthetics for optimal user experience. <a href="#">Terms of Service</a> &bull; <a
-                    href="#">Privacy Policy</a></p>
+        <div class="footer-container">
+            <div class="footer-column brand-col">
+                <a href="/index.html" class="logo" style="font-size: 1.5rem; margin-bottom: 1rem; display: inline-flex; text-decoration: none;">
+                    <i class="fa-solid fa-gears"></i>Garage<span>LK</span>
+                </a>
+                <p>Sri Lanka's premier digital gateway connecting vehicle owners with elite automotive service centers and genuine spare part suppliers.</p>
+                <div class="social-links">
+                    <a href="#" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" class="social-icon" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" class="social-icon" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="social-icon" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="#" class="social-icon" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="/index.html">Home</a></li>
+                    <li><a href="/index.html#about">About Us</a></li>
+                    <li><a href="/index.html#map">Find Garages</a></li>
+                    <li><a href="/index.html?search=parts#map">Find Spare Parts</a></li>
+                    <li><a href="/dashboard.html">Dashboard</a></li>
+                    <li><a href="/auth.html">Join as Partner</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Contact Us</h3>
+                <ul class="contact-info">
+                    <li>
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span>142, Baseline Road, Borella, Colombo 08, Sri Lanka</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-phone"></i>
+                        <div>
+                            <a href="tel:+94112345678">+94 11 234 5678</a><br>
+                            <a href="tel:+94771234567">+94 77 123 4567</a>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-envelope"></i>
+                        <div>
+                            <a href="mailto:support@garagelk.com">support@garagelk.com</a><br>
+                            <a href="mailto:info@garagelk.com">info@garagelk.com</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Emergency Services</h3>
+                <p style="font-size: 0.85rem; margin-bottom: 1rem;">Stranded on the road? Request immediate assistance from nearby mechanics.</p>
+                <button class="btn btn-emergency" onclick="window.GarageLK.openEmergencyModal()" style="padding: 0.6rem 1.2rem; font-size: 0.85rem; width: 100%; border-radius: 4px;" unique-id="footer-emergency-btn">
+                    <i class="fa-solid fa-triangle-exclamation"></i> 24/7 Roadside Assist
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="footer-bottom-container">
+                <p>&copy; 2026 GarageLK. All rights reserved.</p>
+                <p class="premium-tagline">Designed with premium aesthetics for optimal user experience.</p>
+                <div class="footer-bottom-links">
+                    <a href="#">Terms of Service</a>
+                    <span class="separator">&bull;</span>
+                    <a href="#">Privacy Policy</a>
+                </div>
+            </div>
         </div>
     </footer>
 
@@ -249,12 +303,7 @@
                 <div class="form-group" style="display:flex; align-items:flex-end; gap:0.5rem;">
                     <div style="flex:1;">
                         <label for="breakdown-city">Nearest City</label>
-                        <select id="breakdown-city" class="form-control" required unique-id="breakdown-city-select">
-                            <option value="Colombo">Colombo</option>
-                            <option value="Kandy">Kandy</option>
-                            <option value="Galle">Galle</option>
-                            <option value="Kurunegala">Kurunegala</option>
-                        </select>
+                        <input type="text" id="breakdown-city" class="form-control" placeholder="Select or type district..." required list="districts-list" unique-id="breakdown-city-select">
                     </div>
                     <button type="button" class="btn btn-outline" onclick="window.GarageLK.detectLocation()"
                         style="height:42px; border-color:var(--border-color);" unique-id="detect-gps-btn">
@@ -283,6 +332,34 @@
             </form>
         </div>
     </div>
+
+    <datalist id="districts-list">
+        <option value="Ampara"></option>
+        <option value="Anuradhapura"></option>
+        <option value="Badulla"></option>
+        <option value="Batticaloa"></option>
+        <option value="Colombo"></option>
+        <option value="Galle"></option>
+        <option value="Gampaha"></option>
+        <option value="Hambantota"></option>
+        <option value="Jaffna"></option>
+        <option value="Kalutara"></option>
+        <option value="Kandy"></option>
+        <option value="Kegalle"></option>
+        <option value="Kilinochchi"></option>
+        <option value="Kurunegala"></option>
+        <option value="Mannar"></option>
+        <option value="Matale"></option>
+        <option value="Matara"></option>
+        <option value="Moneragala"></option>
+        <option value="Mullaitivu"></option>
+        <option value="Nuwara Eliya"></option>
+        <option value="Polonnaruwa"></option>
+        <option value="Puttalam"></option>
+        <option value="Ratnapura"></option>
+        <option value="Trincomalee"></option>
+        <option value="Vavuniya"></option>
+    </datalist>
 
     <div class="toast-container" id="toast-container"></div>
 

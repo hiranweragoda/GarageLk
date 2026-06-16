@@ -1,4 +1,4 @@
--- Seed data for Garage Finder Sri Lanka
+﻿-- Seed data for Garage Finder Sri Lanka
 
 -- 1. Insert Users
 -- Default Admin (password: admin)
@@ -49,26 +49,26 @@ VALUES (2, 3, 'CP LG-8899', 'Honda Vezel (Hybrid)', 'Hybrid')
 ON DUPLICATE KEY UPDATE vehicle_no=vehicle_no;
 
 
--- 3. Insert Garages (with vehicle_types and engine_types)
+-- 3. Insert Garages (with vehicle_types, engine_types, phone, and email)
 -- Garage 1: Colombo Hybrid Motors
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types)
-VALUES (1, 4, 'Colombo Hybrid Motors', 'Priyantha De Silva', 'Specialized hybrid vehicle maintenance, battery testing, scan reports, and general servicing for Toyota and Honda models.', '142, Baseline Road, Borella', 'Colombo 08', 'Colombo', 'APPROVED', 6.9242, 79.8732, 'Car,Van', 'Hybrid,Petrol')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Van', engine_types='Hybrid,Petrol';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
+VALUES (1, 4, 'Colombo Hybrid Motors', 'Priyantha De Silva', 'Specialized hybrid vehicle maintenance, battery testing, scan reports, and general servicing for Toyota and Honda models.', '142, Baseline Road, Borella', 'Colombo 08', 'Colombo', 'APPROVED', 6.9242, 79.8732, 'Car,Van', 'Hybrid,Petrol', '0112233445', 'info@colombohybrid.lk')
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Van', engine_types='Hybrid,Petrol', phone='0112233445', email='info@colombohybrid.lk';
 
 -- Garage 2: Kandy Auto Care & Towing
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types)
-VALUES (2, 5, 'Kandy Auto Care & Towing', 'Ranjith Alwis', 'Full-service garage including engine diagnostics, AC repairs, breakdown support, and 24/7 towing services in the hill country.', '88, William Gopallawa Mawatha', 'Kandy', 'Kandy', 'APPROVED', 7.2842, 80.6234, 'Car,Van,Truck', 'Petrol,Diesel,Hybrid')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Van,Truck', engine_types='Petrol,Diesel,Hybrid';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
+VALUES (2, 5, 'Kandy Auto Care & Towing', 'Ranjith Alwis', 'Full-service garage including engine diagnostics, AC repairs, breakdown support, and 24/7 towing services in the hill country.', '88, William Gopallawa Mawatha', 'Kandy', 'Kandy', 'APPROVED', 7.2842, 80.6234, 'Car,Van,Truck', 'Petrol,Diesel,Hybrid', '0812233445', 'contact@kandycare.lk')
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Van,Truck', engine_types='Petrol,Diesel,Hybrid', phone='0812233445', email='contact@kandycare.lk';
 
 -- Garage 3: Galle Tire & Wheel Alignment
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types)
-VALUES (3, 6, 'Galle Tire & Wheel Alignment', 'Mohamed Sajid', 'Authorised dealer for premium tires. Specializing in computerised wheel alignment, wheel balancing, and tire puncture repairs.', '210, Matara Road', 'Galle', 'Galle', 'APPROVED', 6.0367, 80.2222, 'Car,Bike,Van', 'Petrol,Diesel,EV,Hybrid')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Bike,Van', engine_types='Petrol,Diesel,EV,Hybrid';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
+VALUES (3, 6, 'Galle Tire & Wheel Alignment', 'Mohamed Sajid', 'Authorised dealer for premium tires. Specializing in computerised wheel alignment, wheel balancing, and tire puncture repairs.', '210, Matara Road', 'Galle', 'Galle', 'APPROVED', 6.0367, 80.2222, 'Car,Bike,Van', 'Petrol,Diesel,EV,Hybrid', '0912233445', 'galletire@gmail.com')
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Bike,Van', engine_types='Petrol,Diesel,EV,Hybrid', phone='0912233445', email='galletire@gmail.com';
 
 -- Garage 4: Lanka Diesel Engineers (PENDING Admin approval)
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types)
-VALUES (4, 7, 'Lanka Diesel Engineers', 'Thusitha Perera', 'Expert repair and servicing for diesel injection pumps, turbochargers, and heavy engine overhauls.', '45, High Level Road, Maharagama', 'Maharagama', 'Colombo', 'PENDING', 6.8488, 79.9265, 'Van,Truck', 'Diesel')
-ON DUPLICATE KEY UPDATE vehicle_types='Van,Truck', engine_types='Diesel';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
+VALUES (4, 7, 'Lanka Diesel Engineers', 'Thusitha Perera', 'Expert repair and servicing for diesel injection pumps, turbochargers, and heavy engine overhauls.', '45, High Level Road, Maharagama', 'Maharagama', 'Colombo', 'PENDING', 6.8488, 79.9265, 'Van,Truck', 'Diesel', '0777665544', 'lankadiesel@gmail.com')
+ON DUPLICATE KEY UPDATE vehicle_types='Van,Truck', engine_types='Diesel', phone='0777665544', email='lankadiesel@gmail.com';
 
 
 -- 4. Insert Offered Services
@@ -91,7 +91,7 @@ INSERT INTO offered_services (id, garage_id, service_type, price) VALUES (10, 3,
 INSERT INTO offered_services (id, garage_id, service_type, price) VALUES (12, 3, 'Tinkering', 22000.00) ON DUPLICATE KEY UPDATE price=price;
 
 
--- 5. Insert Seed Bookings (COMPLETED — required for reviews to be possible)
+-- 5. Insert Seed Bookings (COMPLETED â€” required for reviews to be possible)
 INSERT INTO bookings (id, customer_id, garage_id, service_type, booking_date, status, price, notes)
 VALUES (1, 1, 1, 'General Service', '2026-04-10 09:00:00', 'COMPLETED', 12500.00, 'Full A/C service and oil change')
 ON DUPLICATE KEY UPDATE status=status;
@@ -213,4 +213,5 @@ ON DUPLICATE KEY UPDATE description=description;
 INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
 VALUES (11, 1, 'Alternator failure near Kurunegala Clock Tower', 'Kurunegala', 'COMPLETED', '0711122334', '2026-05-25 11:00:00', 7.4875, 80.3647, 'WP CAD-4321', 'Clock Tower Road, Kurunegala')
 ON DUPLICATE KEY UPDATE description=description;
+
 
