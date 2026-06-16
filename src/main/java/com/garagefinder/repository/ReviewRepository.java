@@ -16,6 +16,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     boolean existsByBookingId(Long bookingId);
 
+    Optional<Review> findByBreakdownRequestId(Long breakdownRequestId);
+
+    boolean existsByBreakdownRequestId(Long breakdownRequestId);
+
     @Query("SELECT AVG(r.starRating) FROM Review r WHERE r.garage.id = :garageId")
     Double findAverageRatingByGarageId(@Param("garageId") Long garageId);
 

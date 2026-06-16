@@ -20,8 +20,12 @@ public class Review {
     private Garage garage;
 
     @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "booking_id", nullable = false, unique = true)
+    @JoinColumn(name = "booking_id", nullable = true, unique = true)
     private Booking booking;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "breakdown_request_id", nullable = true, unique = true)
+    private BreakdownRequest breakdownRequest;
 
     @Column(name = "star_rating", nullable = false)
     private Integer starRating; // 1 to 5
@@ -44,6 +48,15 @@ public class Review {
         this.createdAt = LocalDateTime.now();
     }
 
+    public Review(Customer customer, Garage garage, BreakdownRequest breakdownRequest, Integer starRating, String comment) {
+        this.customer = customer;
+        this.garage = garage;
+        this.breakdownRequest = breakdownRequest;
+        this.starRating = starRating;
+        this.comment = comment;
+        this.createdAt = LocalDateTime.now();
+    }
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -56,6 +69,9 @@ public class Review {
 
     public Booking getBooking() { return booking; }
     public void setBooking(Booking booking) { this.booking = booking; }
+
+    public BreakdownRequest getBreakdownRequest() { return breakdownRequest; }
+    public void setBreakdownRequest(BreakdownRequest breakdownRequest) { this.breakdownRequest = breakdownRequest; }
 
     public Integer getStarRating() { return starRating; }
     public void setStarRating(Integer starRating) { this.starRating = starRating; }
