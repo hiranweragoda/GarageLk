@@ -430,8 +430,13 @@
                                 ? ` (${p.distance.toFixed(1)} km away)` 
                                 : '';
 
+                            // Sanitize image urls and handle fallback
+                            const partImg = (p.imageUrl && p.imageUrl.trim() !== '' && p.imageUrl !== 'break') ? p.imageUrl : '';
+                            const shopImg = (shop.imageUrl && shop.imageUrl.trim() !== '' && shop.imageUrl !== 'break') ? shop.imageUrl : '';
+                            const initialImg = partImg || shopImg || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400';
+
                             card.innerHTML = `
-                                <img src="${p.imageUrl || shop.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400'}" class="garage-card-img" alt="${p.partName}">
+                                <img src="${initialImg}" class="garage-card-img" alt="${p.partName}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=400';">
                                 <div class="garage-card-content">
                                     <div>
                                         <div class="garage-header">
@@ -440,7 +445,7 @@
                                         </div>
                                         <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px; margin-top:4px;">
                                             <strong>Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear})<br>
-                                            <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-approved' : 'badge-pending'}">${p.quantity} Available</span>
+                                            <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-completed' : 'badge-cancelled'}">${p.quantity > 0 ? `${p.quantity} Available` : 'Out of Stock'}</span>
                                         </p>
                                         <hr style="border:0; border-top:1px solid var(--border-color); margin:8px 0;">
                                         <div class="garage-address" style="margin-top:4px; display:flex; justify-content:space-between; align-items:center;">
@@ -456,7 +461,7 @@
                                         <a href="shop.html?id=${shop.id}" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.85rem;">View Shop</a>
                                     </div>
                                 </div>
-                            `;
+                             `;
 
                             card.addEventListener('click', () => {
                                 if (shop.latitude && shop.longitude) {
@@ -470,7 +475,7 @@
                                 renderedShopIds.add(shop.id);
                                 const marker = L.marker([shop.latitude, shop.longitude]).addTo(this.map);
                                 marker.bindPopup(`
-                                    <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 180px;">
+                                    <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 165px;">
                                         <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading); display:flex; justify-content:space-between; align-items:center;">
                                             <span>${shop.shopName}</span>
                                             <span style="color:#f59e0b; margin-left: 10px; white-space: nowrap;"><i class="fa-solid fa-star"></i> ${shop.rating ? shop.rating.toFixed(1) : '0.0'}</span>
@@ -496,8 +501,10 @@
                                 ? ` (${s.distance.toFixed(1)} km away)` 
                                 : '';
 
+                            const shopImg = (s.imageUrl && s.imageUrl.trim() !== '' && s.imageUrl !== 'break') ? s.imageUrl : 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400';
+
                             card.innerHTML = `
-                                <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400'}" class="garage-card-img" alt="${s.shopName}">
+                                <img src="${shopImg}" class="garage-card-img" alt="${s.shopName}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400';">
                                 <div class="garage-card-content">
                                     <div>
                                         <div class="garage-header" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
@@ -1008,13 +1015,13 @@
 
             parts.forEach(p => {
                 const card = document.createElement('div');
-                card.className = 'garage-card';
+                card.className = 'part-card';
 
                 let reserveBtnHtml = '';
                 if (!this.currentUser || this.currentUser.role === 'CUSTOMER') {
                     const disabledStr = p.quantity <= 0 ? 'disabled' : '';
                     reserveBtnHtml = `
-                        <div style="margin-top: 1rem;">
+                        <div class="part-card-footer">
                             <button class="btn btn-primary btn-sm" style="width: 100%; font-size: 0.85rem;" 
                                 onclick="window.GarageLK.openReservePartModal(${p.id}, '${(p.partName || '').replace(/'/g, "\\'")}', ${p.price}, ${p.quantity})" 
                                 ${disabledStr} unique-id="reserve-btn-${p.id}">
@@ -1024,18 +1031,36 @@
                     `;
                 }
 
+                // Render image tag with onerror event
+                const imgUrl = p.imageUrl && p.imageUrl.trim() !== '' && p.imageUrl !== 'break' ? p.imageUrl : '';
+                const imgHtml = imgUrl 
+                    ? `<img src="${imgUrl}" class="part-card-img" alt="${p.partName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
+                    : '';
+                const placeholderDisplay = imgUrl ? 'none' : 'flex';
+
                 card.innerHTML = `
-                    <img src="${p.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=400'}" class="garage-card-img" alt="${p.partName}">
-                    <div class="garage-card-content" style="display: flex; flex-direction: column; justify-content: space-between; height: calc(100% - 150px);">
+                    <div class="part-card-img-wrapper">
+                        ${imgHtml}
+                        <div class="part-card-placeholder" style="display: ${placeholderDisplay};">
+                            <i class="fa-solid fa-gears"></i>
+                            <span>No Image Available</span>
+                        </div>
+                    </div>
+                    <div class="part-card-content">
                         <div>
-                            <div class="garage-header">
-                                <h3 class="garage-title" style="color:var(--primary); font-size:1.15rem; font-weight:700; margin:0;">${p.partName}</h3>
-                                <div style="font-size:1.2rem; font-weight:800; color:var(--accent);">${p.price.toLocaleString('en-LK', { style: 'currency', currency: 'LKR' })}</div>
+                            <div class="part-card-header">
+                                <h3 class="part-card-title">${p.partName}</h3>
+                                <div class="part-card-price">LKR ${p.price.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                             </div>
-                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px; margin-top:4px;">
+                            <div class="part-card-details">
                                 <strong>Compatibility:</strong> ${p.vehicleModel} (${p.vehicleYear})<br>
-                                <strong>Stock:</strong> <span class="badge ${p.quantity > 0 ? 'badge-approved' : 'badge-pending'}">${p.quantity} Available</span>
-                            </p>
+                                <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <strong>Stock:</strong>
+                                    <span class="badge ${p.quantity > 0 ? 'badge-completed' : 'badge-cancelled'}">
+                                        ${p.quantity > 0 ? `${p.quantity} Available` : 'Out of Stock'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                         ${reserveBtnHtml}
                     </div>
