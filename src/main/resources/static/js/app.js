@@ -1697,6 +1697,10 @@
                                 badgeClass = 'badge-cancelled';
                             }
 
+                            const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                                : '';
+
                             item.innerHTML = `
                                 <div style="flex:1;">
                                     <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
@@ -1710,6 +1714,7 @@
                                         <strong>Customer:</strong> ${b.user.fullName || b.user.username} <br>
                                         <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
                                         <strong>Details:</strong> ${b.description}
+                                        ${reasonHtml}
                                     </p>
                                 </div>
                                 <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 180px;">
@@ -3147,10 +3152,20 @@
                 history.forEach(b => {
                     const item = document.createElement('div');
                     item.className = 'table-item';
+
+                    let titleHtml = `<h4 style="font-weight:700; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Rescue</h4>`;
+                    if (b.status === 'CANCELLED') {
+                        titleHtml = `<h4 style="font-weight:700; color:var(--danger);"><i class="fa-solid fa-circle-xmark"></i> Cancelled Request</h4>`;
+                    }
+
+                    const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                        ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                        : '';
+
                     item.innerHTML = `
                         <div style="flex:1;">
                             <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                <h4 style="font-weight:700; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Rescue</h4>
+                                ${titleHtml}
                                 <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
                             </div>
                             <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
@@ -3161,6 +3176,7 @@
                                 <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
                                 ${b.assignedMechanic ? `<strong>Mechanic:</strong> ${b.assignedMechanic.name} (${b.assignedMechanic.phone}) <br>` : ''}
                                 <strong>Problem:</strong> ${b.description}
+                                ${reasonHtml}
                             </p>
                         </div>
                         <div>
@@ -3567,7 +3583,10 @@
                     detailHtml = `<span style="color:var(--success); font-size:0.85rem;"><i class="fa-solid fa-circle-check"></i> Resolved by ${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</span>`;
                 } else if (b.status === 'CANCELLED') {
                     badgeClass = 'badge-cancelled';
-                    detailHtml = `<span style="color:var(--danger); font-size:0.85rem;"><i class="fa-solid fa-ban"></i> Cancelled by Customer</span>`;
+                    const reasonHtml = b.cancellationReason 
+                        ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                        : '';
+                    detailHtml = `<span style="color:var(--danger); font-size:0.85rem;"><i class="fa-solid fa-ban"></i> Cancelled by Customer${reasonHtml}</span>`;
                 }
 
                 item.innerHTML = `
@@ -5601,6 +5620,10 @@
                             const formattedPickup = new Date(b.pickupDate).toLocaleString();
                             const cust = b.customer.user;
 
+                            const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                                : '';
+
                             item.innerHTML = `
                                 <div style="flex:1; display:flex; gap:1rem; align-items:center;">
                                     <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
@@ -5610,8 +5633,9 @@
                                             <strong>Customer:</strong> ${cust.fullName || cust.username} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
                                         </p>
                                         <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
-                                            <strong>Requested Pickup:</strong> ${formattedPickup} <br>
-                                            ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                            <strong>Requested Pickup:</strong> ${formattedPickup}
+                                            ${b.notes ? `<br><strong>Notes:</strong> ${b.notes}` : ''}
+                                            ${reasonHtml}
                                         </p>
                                     </div>
                                 </div>
