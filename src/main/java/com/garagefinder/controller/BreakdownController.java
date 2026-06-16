@@ -225,6 +225,47 @@ public class BreakdownController {
         return ResponseEntity.ok(Map.of("message", "Breakdown request resolved"));
     }
 
+    // Cancel an emergency request (Customer or Admin)
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelBreakdown(@PathVariable Long id, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        Optional<BreakdownRequest> requestOpt = breakdownRequestRepository.findById(id);
+        if (requestOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        BreakdownRequest request = requestOpt.get();
+
+        // Check authorization (only the customer who filed it or admin can cancel)
+        boolean authorized = false;
+        if ("ADMIN".equals(user.getRole())) {
+            authorized = true;
+        } else if ("CUSTOMER".equals(user.getRole())) {
+            Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
+            if (customerOpt.isPresent() && request.getCustomer().getId().equals(customerOpt.get().getId())) {
+                authorized = true;
+            }
+        }
+
+        if (!authorized) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        }
+
+        request.setStatus("CANCELLED");
+        if (request.getAssignedMechanic() != null) {
+            Mechanic mechanic = request.getAssignedMechanic();
+            mechanic.setStatus("AVAILABLE");
+            mechanicRepository.save(mechanic);
+        }
+        breakdownRequestRepository.save(request);
+
+        return ResponseEntity.ok(Map.of("message", "Breakdown request cancelled successfully"));
+    }
+
     // Get active accepted breakdown requests assigned to owner's garages
     @GetMapping("/assigned")
     public ResponseEntity<?> getAssignedBreakdowns(HttpSession session) {
@@ -264,7 +305,7 @@ public class BreakdownController {
         List<Long> garageIds = garages.stream().map(Garage::getId).toList();
         List<BreakdownRequest> history = breakdownRequestRepository.findByAssignedGarageIdIn(garageIds);
         List<BreakdownRequest> completed = history.stream()
-                .filter(r -> "COMPLETED".equals(r.getStatus()))
+                .filter(r -> "COMPLETED".equals(r.getStatus()) || "CANCELLED".equals(r.getStatus()))
                 .sorted((a, b) -> b.getCreatedTime().compareTo(a.getCreatedTime()))
                 .toList();
 
@@ -291,7 +332,7 @@ public class BreakdownController {
             authorized = true;
         } else if ("GARAGE_OWNER".equals(user.getRole())) {
             List<Garage> garages = garageRepository.findByUserId(user.getId());
-            if (request.getAssignedGarage() != null && "COMPLETED".equals(request.getStatus())) {
+            if (request.getAssignedGarage() != null && ("COMPLETED".equals(request.getStatus()) || "CANCELLED".equals(request.getStatus()))) {
                 authorized = garages.stream().anyMatch(g -> g.getId().equals(request.getAssignedGarage().getId()));
             }
         }
@@ -320,7 +361,7 @@ public class BreakdownController {
         List<Long> garageIds = garages.stream().map(Garage::getId).toList();
         List<BreakdownRequest> history = breakdownRequestRepository.findByAssignedGarageIdIn(garageIds);
         List<BreakdownRequest> completed = history.stream()
-                .filter(r -> "COMPLETED".equals(r.getStatus()))
+                .filter(r -> "COMPLETED".equals(r.getStatus()) || "CANCELLED".equals(r.getStatus()))
                 .toList();
 
         breakdownRequestRepository.deleteAll(completed);

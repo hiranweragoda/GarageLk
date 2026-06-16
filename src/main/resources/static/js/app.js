@@ -2820,8 +2820,8 @@
                 const breakdowns = await res.json();
                 if (!res.ok) throw new Error();
 
-                const activeBreakdowns = breakdowns.filter(b => b.status !== 'COMPLETED');
-                const completedBreakdowns = breakdowns.filter(b => b.status === 'COMPLETED');
+                const activeBreakdowns = breakdowns.filter(b => b.status !== 'COMPLETED' && b.status !== 'CANCELLED');
+                const completedBreakdowns = breakdowns.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
 
                 // 1. Render Active Emergencies
                 if (activeBreakdowns.length === 0) {
@@ -2846,10 +2846,16 @@
                         }
 
                         let actionHtml = `
-                            <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:var(--border-color);" 
-                                onclick="window.GarageLK.completeBreakdown(${b.id})" unique-id="resolve-breakdown-${b.id}">
-                                Mark Resolved
-                            </button>
+                            <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+                                <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:var(--border-color);" 
+                                    onclick="window.GarageLK.completeBreakdown(${b.id})" unique-id="resolve-breakdown-${b.id}">
+                                    Mark Resolved
+                                </button>
+                                <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:var(--danger); border-color:var(--danger);" 
+                                    onclick="window.GarageLK.cancelBreakdown(${b.id})" unique-id="cancel-breakdown-${b.id}">
+                                    Cancel
+                                </button>
+                            </div>
                         `;
 
                         item.innerHTML = `
@@ -2886,13 +2892,19 @@
                             const item = document.createElement('div');
                             item.className = 'table-item';
 
-                            const badgeClass = 'badge-completed';
-                            const responseHtml = `
-                                <div style="font-size:0.85rem; color:var(--success); font-weight:500;">
-                                    <i class="fa-solid fa-check-double"></i> Resolved by <strong>${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</strong>
-                                    ${b.assignedMechanic ? `<br><i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone || 'N/A'})</strong>` : ''}
-                                </div>
-                            `;
+                            const badgeClass = b.status === 'CANCELLED' ? 'badge-cancelled' : 'badge-completed';
+                            const responseHtml = b.status === 'CANCELLED'
+                                ? `
+                                    <div style="font-size:0.85rem; color:var(--danger); font-weight:500;">
+                                        <i class="fa-solid fa-ban"></i> Request Cancelled by Customer
+                                    </div>
+                                  `
+                                : `
+                                    <div style="font-size:0.85rem; color:var(--success); font-weight:500;">
+                                        <i class="fa-solid fa-check-double"></i> Resolved by <strong>${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</strong>
+                                        ${b.assignedMechanic ? `<br><i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone || 'N/A'})</strong>` : ''}
+                                    </div>
+                                  `;
 
                             item.innerHTML = `
                                 <div style="flex:1;">
@@ -3384,6 +3396,28 @@
             }
         },
 
+        async cancelBreakdown(id) {
+            if (!confirm('Are you sure you want to cancel this emergency assist request?')) return;
+            try {
+                const res = await fetch(`/api/breakdowns/${id}/cancel`, { method: 'PUT' });
+                if (res.ok) {
+                    this.showToast('Emergency request cancelled.', 'success');
+
+                    const role = this.currentUser.role;
+                    if (role === 'CUSTOMER') {
+                        this.loadCustomerBreakdowns();
+                    } else if (role === 'ADMIN') {
+                        this.loadAdminMonitor();
+                    }
+                } else {
+                    this.showToast('Failed to cancel request', 'error');
+                }
+            } catch (err) {
+                console.error("Error cancelling breakdown:", err);
+                this.showToast('Connection error', 'error');
+            }
+        },
+
         // --- ADMIN SYSTEM MONITOR ---
         async loadAdminMonitor() {
             const list = document.getElementById('admin-breakdowns-list');
@@ -3455,6 +3489,9 @@
                 } else if (b.status === 'COMPLETED') {
                     badgeClass = 'badge-completed';
                     detailHtml = `<span style="color:var(--success); font-size:0.85rem;"><i class="fa-solid fa-circle-check"></i> Resolved by ${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</span>`;
+                } else if (b.status === 'CANCELLED') {
+                    badgeClass = 'badge-cancelled';
+                    detailHtml = `<span style="color:var(--danger); font-size:0.85rem;"><i class="fa-solid fa-ban"></i> Cancelled by Customer</span>`;
                 }
 
                 item.innerHTML = `
