@@ -739,14 +739,15 @@
                 <input type="hidden" id="review-booking-id">
                 <input type="hidden" id="review-breakdown-id">
                 <div class="form-group">
-                    <label for="review-rating">Rating (1 to 5 Stars)</label>
-                    <select id="review-rating" class="form-control" required unique-id="review-rating-select">
-                        <option value="5.0">5 Stars (Excellent)</option>
-                        <option value="4.0">4 Stars (Good)</option>
-                        <option value="3.0">3 Stars (Average)</option>
-                        <option value="2.0">2 Stars (Poor)</option>
-                        <option value="1.0">1 Star (Terrible)</option>
-                    </select>
+                    <label style="display: block; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 0.5rem;">Rating (1 to 5 Stars)</label>
+                    <div class="star-rating-picker" id="garage-star-picker" unique-id="garage-star-picker-div">
+                        <i class="fa-solid fa-star star-icon active" data-value="1"></i>
+                        <i class="fa-solid fa-star star-icon active" data-value="2"></i>
+                        <i class="fa-solid fa-star star-icon active" data-value="3"></i>
+                        <i class="fa-solid fa-star star-icon active" data-value="4"></i>
+                        <i class="fa-solid fa-star star-icon active" data-value="5"></i>
+                    </div>
+                    <input type="hidden" id="review-rating" value="5" unique-id="review-rating-hidden-input">
                 </div>
                 <div class="form-group">
                     <label for="review-comment">Your Review Comment</label>
@@ -771,14 +772,15 @@
                     <input type="text" id="rate-shop-name" class="form-control" readonly style="background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: not-allowed;" unique-id="rate-shop-name-input">
                 </div>
                 <div class="form-group">
-                    <label for="rate-shop-rating">Rating (1 to 5 Stars)</label>
-                    <select id="rate-shop-rating" class="form-control" required unique-id="rate-shop-rating-select">
-                        <option value="5">5 Stars (Excellent Shop)</option>
-                        <option value="4">4 Stars (Good Shop)</option>
-                        <option value="3">3 Stars (Average)</option>
-                        <option value="2">2 Stars (Poor Shop)</option>
-                        <option value="1">1 Star (Very Bad Shop)</option>
-                    </select>
+                    <label style="display: block; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 0.5rem;">Rating (1 to 5 Stars)</label>
+                    <div class="star-rating-picker" id="shop-star-picker" unique-id="shop-star-picker-div">
+                        <i class="fa-solid fa-star star-icon active" data-value="1"></i>
+                        <i class="fa-solid fa-star star-icon active" data-value="2"></i>
+                        <i class="fa-solid fa-star star-icon active" data-value="3"></i>
+                        <i class="fa-solid fa-star star-icon active" data-value="4"></i>
+                        <i class="fa-solid fa-star star-icon active" data-value="5"></i>
+                    </div>
+                    <input type="hidden" id="rate-shop-rating" value="5" unique-id="rate-shop-rating-hidden-input">
                 </div>
                 <div class="form-group">
                     <label for="rate-shop-comment">Review Feedback / Comments</label>
