@@ -135,7 +135,13 @@
 
                 <!-- OWNER: Bookings Requests Panel -->
                 <section id="section-owner-bookings" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-calendar-days"></i> Booking Requests</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-calendar-days"></i> Booking Requests</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="owner-booking-search-input" placeholder="Search by customer, vehicle, service..." oninput="window.GarageLK.renderOwnerBookingsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">Customer Appointments</h3>
@@ -357,10 +363,14 @@
                         </div>
                     </div>
                     
-                    <div style="margin-bottom: 1.5rem;">
+                    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
                         <button class="btn btn-primary" onclick="window.GarageLK.openAddPartModal()" id="btn-add-part" style="display:none;" unique-id="add-part-btn">
                             <i class="fa-solid fa-plus"></i> Add Spare Part
                         </button>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="shop-inventory-search-input" placeholder="Search by part name or compatibility..." oninput="window.GarageLK.renderShopInventoryFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
                     </div>
 
                     <div class="data-table-container">
@@ -652,16 +662,22 @@
                     
                     <!-- Admin User Filter Dropdown -->
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                        <div class="form-group" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0; max-width: 400px; flex: 1;">
-                            <label for="admin-user-filter" style="margin-bottom: 0; white-space: nowrap; font-weight: 600; font-size: 1rem;">Filter User Type:</label>
-                            <select id="admin-user-filter" class="form-control" onchange="window.GarageLK.handleAdminUserFilterChange()" style="padding: 0.5rem 1rem; font-weight: 500;" unique-id="admin-user-filter-select">
-                                <option value="ALL">All Users</option>
-                                <option value="CUSTOMER">Customers</option>
-                                <option value="GARAGE_OWNER">Garage Owners</option>
-                                <option value="SHOP_OWNER">Shop Owners</option>
-                                <option value="MECHANIC">Mechanics</option>
-                                <option value="ADMIN">Administrators</option>
-                            </select>
+                        <div style="display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 280px; flex-wrap: wrap;">
+                            <div class="form-group" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0; max-width: 350px; flex: 1;">
+                                <label for="admin-user-filter" style="margin-bottom: 0; white-space: nowrap; font-weight: 600; font-size: 1rem;">Filter User Type:</label>
+                                <select id="admin-user-filter" class="form-control" onchange="window.GarageLK.handleAdminUserFilterChange()" style="padding: 0.5rem 1rem; font-weight: 500;" unique-id="admin-user-filter-select">
+                                    <option value="ALL">All Users</option>
+                                    <option value="CUSTOMER">Customers</option>
+                                    <option value="GARAGE_OWNER">Garage Owners</option>
+                                    <option value="SHOP_OWNER">Shop Owners</option>
+                                    <option value="MECHANIC">Mechanics</option>
+                                    <option value="ADMIN">Administrators</option>
+                                </select>
+                            </div>
+                            <div style="position: relative; max-width: 320px; width: 100%; flex: 1;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                                <input type="text" id="admin-user-search-input" placeholder="Search by name, email, phone..." oninput="window.GarageLK.filterAdminUsers()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                            </div>
                         </div>
                         <button class="btn btn-primary" id="btn-add-admin" onclick="window.GarageLK.openAddAdminModal()" style="display: none; padding: 0.5rem 1.25rem; font-size: 0.9rem; font-weight: 600;" unique-id="btn-add-admin-trigger">
                             <i class="fa-solid fa-user-plus"></i> Add Admin
@@ -1294,8 +1310,8 @@
                 <input type="hidden" id="cancel-item-type"> <!-- 'BOOKING', 'PART_RESERVATION', 'BREAKDOWN' -->
                 
                 <div class="form-group">
-                    <label for="cancel-reason-select">Reason for Cancellation</label>
-                    <select id="cancel-reason-select" class="form-control" required style="background: rgba(0,0,0,0.3); color: var(--text-primary);">
+                    <label for="cancel-reason-select" style="display: block; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 0.5rem;">Reason for Cancellation</label>
+                    <select id="cancel-reason-select" class="form-control" required>
                         <!-- Dynamic options will be populated by JS -->
                     </select>
                 </div>
