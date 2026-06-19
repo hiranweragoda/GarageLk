@@ -4,9 +4,11 @@ import com.garagefinder.model.Booking;
 import com.garagefinder.model.Customer;
 import com.garagefinder.model.Garage;
 import com.garagefinder.model.User;
+import com.garagefinder.model.Notification;
 import com.garagefinder.repository.BookingRepository;
 import com.garagefinder.repository.CustomerRepository;
 import com.garagefinder.repository.GarageRepository;
+import com.garagefinder.repository.NotificationRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +27,13 @@ public class BookingController {
     private final BookingRepository bookingRepository;
     private final CustomerRepository customerRepository;
     private final GarageRepository garageRepository;
+    private final NotificationRepository notificationRepository;
 
-    public BookingController(BookingRepository bookingRepository, CustomerRepository customerRepository, GarageRepository garageRepository) {
+    public BookingController(BookingRepository bookingRepository, CustomerRepository customerRepository, GarageRepository garageRepository, NotificationRepository notificationRepository) {
         this.bookingRepository = bookingRepository;
         this.customerRepository = customerRepository;
         this.garageRepository = garageRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     // Create a new booking (Customer only)
@@ -87,7 +91,26 @@ public class BookingController {
         booking.setDescription(description);
         booking.setTotalPrice(price);
         
+        String bookingCode;
+        String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String pattern = "GBK-" + dateStr + "%";
+        long countToday = bookingRepository.countByBookingCodeLike(pattern);
+        long seq = countToday + 1;
+        do {
+            bookingCode = String.format("GBK-%s%02d", dateStr, seq++);
+        } while (bookingRepository.findByBookingCode(bookingCode).isPresent());
+        booking.setBookingCode(bookingCode);
+        
         bookingRepository.save(booking);
+
+        try {
+            Long ownerUserId = garageOpt.get().getUser().getId();
+            String msg = String.format("New booking request received for %s (Code: %s)", 
+                garageOpt.get().getGarageName(), bookingCode);
+            notificationRepository.save(new Notification(ownerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Booking requested successfully"));
     }
@@ -227,6 +250,15 @@ public class BookingController {
             booking.setCancellationReason(payload.get("cancellationReason").toString());
         }
         bookingRepository.save(booking);
+
+        try {
+            Long customerUserId = booking.getCustomer().getUser().getId();
+            String msg = String.format("Your booking request at %s has been %s. (Code: %s)",
+                booking.getGarage().getGarageName(), newStatus, booking.getBookingCode());
+            notificationRepository.save(new Notification(customerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Booking status updated to " + newStatus));
     }

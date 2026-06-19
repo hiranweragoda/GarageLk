@@ -7,8 +7,11 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+    Optional<Booking> findByBookingCode(String bookingCode);
+    long countByBookingCodeLike(String pattern);
     List<Booking> findByCustomerId(Long customerId);
     List<Booking> findByCustomerIdOrderByBookingDateDesc(Long customerId);
     List<Booking> findByGarageId(Long garageId);

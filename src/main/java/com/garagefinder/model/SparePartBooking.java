@@ -40,6 +40,9 @@ public class SparePartBooking {
     @Column(name = "cancellation_reason")
     private String cancellationReason;
 
+    @Column(name = "booking_code", unique = true, length = 20)
+    private String bookingCode;
+
     public SparePartBooking() {}
 
     public SparePartBooking(Customer customer, SparePart sparePart, Integer quantity, Double totalPrice, String status, LocalDateTime pickupDate, String notes) {
@@ -132,5 +135,13 @@ public class SparePartBooking {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getBookingCode() {
+        return bookingCode;
+    }
+
+    public void setBookingCode(String bookingCode) {
+        this.bookingCode = bookingCode;
     }
 }

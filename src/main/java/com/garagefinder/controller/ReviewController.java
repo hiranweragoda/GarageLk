@@ -1,7 +1,15 @@
 package com.garagefinder.controller;
 
-import com.garagefinder.model.*;
-import com.garagefinder.repository.*;
+import com.garagefinder.model.Booking;
+import com.garagefinder.model.BreakdownRequest;
+import com.garagefinder.model.Customer;
+import com.garagefinder.model.Garage;
+import com.garagefinder.model.Review;
+import com.garagefinder.model.User;
+import com.garagefinder.repository.BookingRepository;
+import com.garagefinder.repository.BreakdownRequestRepository;
+import com.garagefinder.repository.CustomerRepository;
+import com.garagefinder.repository.ReviewRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

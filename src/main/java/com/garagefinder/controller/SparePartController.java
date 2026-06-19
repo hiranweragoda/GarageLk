@@ -4,10 +4,12 @@ import com.garagefinder.model.SparePart;
 import com.garagefinder.model.SparePartShop;
 import com.garagefinder.model.User;
 import com.garagefinder.model.ShopReview;
+import com.garagefinder.model.Notification;
 import com.garagefinder.repository.SparePartRepository;
 import com.garagefinder.repository.SparePartShopRepository;
 import com.garagefinder.repository.UserRepository;
 import com.garagefinder.repository.ShopReviewRepository;
+import com.garagefinder.repository.NotificationRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +25,14 @@ public class SparePartController {
     private final SparePartRepository partRepository;
     private final UserRepository userRepository;
     private final ShopReviewRepository shopReviewRepository;
+    private final NotificationRepository notificationRepository;
 
-    public SparePartController(SparePartShopRepository shopRepository, SparePartRepository partRepository, UserRepository userRepository, ShopReviewRepository shopReviewRepository) {
+    public SparePartController(SparePartShopRepository shopRepository, SparePartRepository partRepository, UserRepository userRepository, ShopReviewRepository shopReviewRepository, NotificationRepository notificationRepository) {
         this.shopRepository = shopRepository;
         this.partRepository = partRepository;
         this.userRepository = userRepository;
         this.shopReviewRepository = shopReviewRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     // Helper method to calculate distance in kilometers between two coordinates (Haversine formula)
@@ -275,6 +279,16 @@ public class SparePartController {
 
         shopRepository.save(shop);
 
+        try {
+            List<User> admins = userRepository.findAll().stream().filter(u -> "ADMIN".equals(u.getRole())).toList();
+            for (User admin : admins) {
+                String msg = String.format("New spare part shop pending approval: %s", name);
+                notificationRepository.save(new Notification(admin.getId(), msg));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return ResponseEntity.ok(Map.of("message", "Spare Part Shop registered successfully. Pending admin approval."));
     }
 
@@ -475,6 +489,14 @@ public class SparePartController {
         shop.setStatus("APPROVED");
         shopRepository.save(shop);
 
+        try {
+            Long ownerUserId = shop.getUser().getId();
+            String msg = String.format("Your shop %s has been APPROVED.", shop.getShopName());
+            notificationRepository.save(new Notification(ownerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return ResponseEntity.ok(Map.of("message", "Shop approved successfully"));
     }
 
@@ -493,6 +515,14 @@ public class SparePartController {
         SparePartShop shop = shopOpt.get();
         shop.setStatus("REJECTED");
         shopRepository.save(shop);
+
+        try {
+            Long ownerUserId = shop.getUser().getId();
+            String msg = String.format("Your shop %s registration has been REJECTED.", shop.getShopName());
+            notificationRepository.save(new Notification(ownerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Shop registration rejected"));
     }
@@ -526,14 +556,29 @@ public class SparePartController {
         if ("APPROVED".equalsIgnoreCase(status)) {
             shop.setStatus("APPROVED");
             shopRepository.save(shop);
+            
+            try {
+                notificationRepository.save(new Notification(shop.getUser().getId(), String.format("Your shop %s has been APPROVED.", shop.getShopName())));
+            } catch (Exception e) { e.printStackTrace(); }
+
             return ResponseEntity.ok(Map.of("message", "Shop approved successfully"));
         } else if ("REJECTED".equalsIgnoreCase(status)) {
             shop.setStatus("REJECTED");
             shopRepository.save(shop);
+            
+            try {
+                notificationRepository.save(new Notification(shop.getUser().getId(), String.format("Your shop %s registration has been REJECTED.", shop.getShopName())));
+            } catch (Exception e) { e.printStackTrace(); }
+
             return ResponseEntity.ok(Map.of("message", "Shop rejected successfully"));
         } else if ("SUSPENDED".equalsIgnoreCase(status)) {
             shop.setStatus("SUSPENDED");
             shopRepository.save(shop);
+            
+            try {
+                notificationRepository.save(new Notification(shop.getUser().getId(), String.format("Your shop %s has been SUSPENDED by the administrator.", shop.getShopName())));
+            } catch (Exception e) { e.printStackTrace(); }
+
             return ResponseEntity.ok(Map.of("message", "Shop suspended successfully"));
         }
 

@@ -49,6 +49,9 @@ public class BreakdownRequest {
     @Column(name = "cancellation_reason")
     private String cancellationReason;
 
+    @Column(name = "breakdown_code", unique = true, length = 20)
+    private String breakdownCode;
+
     // Constructors
     public BreakdownRequest() {}
 
@@ -200,5 +203,13 @@ public class BreakdownRequest {
         accepted.put("name", assignedGarage.getGarageName());
         accepted.put("phone", assignedGarage.getPhone() != null ? assignedGarage.getPhone() : (assignedGarage.getUser() != null ? assignedGarage.getUser().getPhone() : "N/A"));
         return accepted;
+    }
+
+    public String getBreakdownCode() {
+        return breakdownCode;
+    }
+
+    public void setBreakdownCode(String breakdownCode) {
+        this.breakdownCode = breakdownCode;
     }
 }

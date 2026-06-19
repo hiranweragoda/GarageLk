@@ -5,10 +5,12 @@ import com.garagefinder.model.Customer;
 import com.garagefinder.model.Garage;
 import com.garagefinder.model.Mechanic;
 import com.garagefinder.model.User;
+import com.garagefinder.model.Notification;
 import com.garagefinder.repository.BreakdownRequestRepository;
 import com.garagefinder.repository.CustomerRepository;
 import com.garagefinder.repository.GarageRepository;
 import com.garagefinder.repository.MechanicRepository;
+import com.garagefinder.repository.NotificationRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.HashSet;
 
 @RestController
 @RequestMapping("/api/breakdowns")
@@ -26,16 +30,19 @@ public class BreakdownController {
     private final CustomerRepository customerRepository;
     private final GarageRepository garageRepository;
     private final MechanicRepository mechanicRepository;
+    private final NotificationRepository notificationRepository;
 
     public BreakdownController(
             BreakdownRequestRepository breakdownRequestRepository,
             CustomerRepository customerRepository,
             GarageRepository garageRepository,
-            MechanicRepository mechanicRepository) {
+            MechanicRepository mechanicRepository,
+            NotificationRepository notificationRepository) {
         this.breakdownRequestRepository = breakdownRequestRepository;
         this.customerRepository = customerRepository;
         this.garageRepository = garageRepository;
         this.mechanicRepository = mechanicRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     // File an emergency breakdown request (Customer only)
@@ -62,7 +69,36 @@ public class BreakdownController {
         BreakdownRequest request = new BreakdownRequest(customerOpt.get(), description, locationCity, "OPEN", contactPhone, latitude, longitude);
         request.setAddress(address);
         request.setVehicleNo(vehicleNo);
+        
+        String breakdownCode;
+        String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String pattern = "EMB-" + dateStr + "%";
+        long countToday = breakdownRequestRepository.countByBreakdownCodeLike(pattern);
+        long seq = countToday + 1;
+        do {
+            breakdownCode = String.format("EMB-%s%02d", dateStr, seq++);
+        } while (breakdownRequestRepository.findByBreakdownCode(breakdownCode).isPresent());
+        request.setBreakdownCode(breakdownCode);
+
         breakdownRequestRepository.save(request);
+
+        try {
+            List<Garage> garages = garageRepository.findByCityAndStatus(locationCity, "APPROVED");
+            if (garages.isEmpty()) {
+                garages = garageRepository.findByStatus("APPROVED");
+            }
+            Set<Long> notifiedUserIds = new HashSet<>();
+            for (Garage g : garages) {
+                Long ownerUserId = g.getUser().getId();
+                if (notifiedUserIds.add(ownerUserId)) {
+                    String msg = String.format("New emergency breakdown alert in city %s: %s (Code: %s)", 
+                        locationCity, description != null && description.length() > 50 ? description.substring(0, 47) + "..." : description, breakdownCode);
+                    notificationRepository.save(new Notification(ownerUserId, msg));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Emergency breakdown request published. Nearby garages have been notified."));
     }
@@ -176,6 +212,15 @@ public class BreakdownController {
 
         breakdownRequestRepository.save(request);
 
+        try {
+            Long customerUserId = request.getCustomer().getUser().getId();
+            String msg = String.format("Emergency assist request accepted by %s. (Code: %s)",
+                garageOpt.get().getGarageName(), request.getBreakdownCode());
+            notificationRepository.save(new Notification(customerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return ResponseEntity.ok(Map.of("message", "You have successfully responded to this breakdown request"));
     }
 
@@ -221,6 +266,15 @@ public class BreakdownController {
             mechanicRepository.save(mechanic);
         }
         breakdownRequestRepository.save(request);
+
+        try {
+            Long customerUserId = request.getCustomer().getUser().getId();
+            String msg = String.format("Emergency assist request has been completed. (Code: %s)",
+                request.getBreakdownCode());
+            notificationRepository.save(new Notification(customerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Breakdown request resolved"));
     }

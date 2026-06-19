@@ -10,6 +10,8 @@ import com.garagefinder.repository.ReviewRepository;
 import com.garagefinder.repository.UserRepository;
 import com.garagefinder.repository.MechanicRepository;
 import com.garagefinder.repository.CustomerRepository;
+import com.garagefinder.repository.NotificationRepository;
+import com.garagefinder.model.Notification;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,7 @@ public class GarageController {
     private final BreakdownRequestRepository breakdownRequestRepository;
     private final MechanicRepository mechanicRepository;
     private final CustomerRepository customerRepository;
+    private final NotificationRepository notificationRepository;
 
     public GarageController(
             GarageRepository garageRepository,
@@ -45,7 +48,8 @@ public class GarageController {
             BookingRepository bookingRepository,
             BreakdownRequestRepository breakdownRequestRepository,
             MechanicRepository mechanicRepository,
-            CustomerRepository customerRepository) {
+            CustomerRepository customerRepository,
+            NotificationRepository notificationRepository) {
         this.garageRepository = garageRepository;
         this.offeredServiceRepository = offeredServiceRepository;
         this.userRepository = userRepository;
@@ -54,6 +58,7 @@ public class GarageController {
         this.breakdownRequestRepository = breakdownRequestRepository;
         this.mechanicRepository = mechanicRepository;
         this.customerRepository = customerRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @GetMapping("/stats")
@@ -337,6 +342,14 @@ public class GarageController {
         garage.setStatus("APPROVED");
         garageRepository.save(garage);
 
+        try {
+            Long ownerUserId = garage.getUser().getId();
+            String msg = String.format("Your garage %s has been APPROVED.", garage.getGarageName());
+            notificationRepository.save(new Notification(ownerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return ResponseEntity.ok(Map.of("message", "Garage approved successfully"));
     }
 
@@ -355,6 +368,14 @@ public class GarageController {
         Garage garage = garageOpt.get();
         garage.setStatus("REJECTED");
         garageRepository.save(garage);
+
+        try {
+            Long ownerUserId = garage.getUser().getId();
+            String msg = String.format("Your garage %s registration has been REJECTED.", garage.getGarageName());
+            notificationRepository.save(new Notification(ownerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Garage registration rejected"));
     }
@@ -404,6 +425,16 @@ public class GarageController {
         
         garageRepository.save(garage);
 
+        try {
+            List<User> admins = userRepository.findAll().stream().filter(u -> "ADMIN".equals(u.getRole())).toList();
+            for (User admin : admins) {
+                String msg = String.format("New garage registration pending approval: %s", name);
+                notificationRepository.save(new Notification(admin.getId(), msg));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return ResponseEntity.ok(Map.of("message", "Garage registered successfully. Pending admin approval."));
     }
 
@@ -426,11 +457,19 @@ public class GarageController {
             garage.setStatus("APPROVED");
             garageRepository.save(garage);
             
+            try {
+                notificationRepository.save(new Notification(garage.getUser().getId(), String.format("Your garage %s has been APPROVED.", garage.getGarageName())));
+            } catch (Exception e) { e.printStackTrace(); }
+
             return ResponseEntity.ok(Map.of("message", "Garage approved successfully"));
         } else if ("REJECTED".equalsIgnoreCase(status)) {
             garage.setStatus("REJECTED");
             garageRepository.save(garage);
             
+            try {
+                notificationRepository.save(new Notification(garage.getUser().getId(), String.format("Your garage %s registration has been REJECTED.", garage.getGarageName())));
+            } catch (Exception e) { e.printStackTrace(); }
+
             return ResponseEntity.ok(Map.of("message", "Garage rejected successfully"));
         } else if ("CANCELLED".equalsIgnoreCase(status)) {
             garage.setStatus("CANCELLED");
@@ -441,6 +480,10 @@ public class GarageController {
             garage.setStatus("SUSPENDED");
             garageRepository.save(garage);
             
+            try {
+                notificationRepository.save(new Notification(garage.getUser().getId(), String.format("Your garage %s has been SUSPENDED by the administrator.", garage.getGarageName())));
+            } catch (Exception e) { e.printStackTrace(); }
+
             return ResponseEntity.ok(Map.of("message", "Garage suspended successfully"));
         }
 
