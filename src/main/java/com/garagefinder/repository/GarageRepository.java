@@ -36,4 +36,16 @@ public interface GarageRepository extends JpaRepository<Garage, Long> {
         @Param("vehicleType") String vehicleType,
         @Param("engineType") String engineType
     );
+
+    @Query("SELECT DISTINCT g FROM Garage g " +
+           "LEFT JOIN OfferedService os ON os.garage.id = g.id " +
+           "WHERE g.status = 'APPROVED' " +
+           "AND (:city IS NULL OR g.city LIKE CONCAT('%', :city, '%')) " +
+           "AND (:district IS NULL OR g.district = :district) " +
+           "AND (:search IS NULL OR LOWER(g.garageName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(g.description) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(os.serviceType) LIKE LOWER(CONCAT('%', :search, '%')))")
+    List<Garage> searchGarages(
+        @Param("city") String city,
+        @Param("district") String district,
+        @Param("search") String search
+    );
 }

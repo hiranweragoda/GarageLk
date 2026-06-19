@@ -23,6 +23,8 @@
 
     const GarageLK = {
         currentUser: null,
+        customerCoords: null,
+        customerMarker: null,
         map: null,
         markers: [],
         selectedServices: new Map(), // serviceId -> price
@@ -228,7 +230,11 @@
                 if (res.ok) {
                     this.showToast('Welcome back, ' + (data.fullName || data.username), 'success');
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
+                        if (data.user && data.user.role === 'CUSTOMER') {
+                            window.location.href = 'index.html';
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
                     }, 1000);
                 } else {
                     this.showToast(data.message || 'Login failed', 'error');
@@ -274,7 +280,26 @@
         // --- HOMEPAGE / SEARCH PAGE ---
         async initHomepage() {
             await this.checkAuth();
+            
+            // Read cached coordinates if valid (< 30 minutes)
+            try {
+                const cached = localStorage.getItem('customer_coords');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    const age = Date.now() - parsed.timestamp;
+                    if (age < 30 * 60 * 1000) { // 30 minutes
+                        this.customerCoords = { lat: parsed.lat, lng: parsed.lng };
+                    }
+                }
+            } catch (err) {
+                console.warn("Failed to load cached customer coordinates:", err);
+            }
+
             this.initMap();
+
+            if (this.customerCoords) {
+                this.showCustomerLocationOnMap();
+            }
 
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('emergency') === 'true') {
@@ -316,6 +341,77 @@
 
             if (this.currentUser && this.currentUser.role === 'CUSTOMER') {
                 this.loadHomepageActiveBreakdown();
+                
+                // Request customer location in background to update cache/map
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            const newLat = pos.coords.latitude;
+                            const newLng = pos.coords.longitude;
+                            
+                            // Check if coordinates changed significantly (e.g. > 50 meters)
+                            let isSignificantChange = true;
+                            if (this.customerCoords) {
+                                const distanceMoved = this.calculateDistance(
+                                    this.customerCoords.lat,
+                                    this.customerCoords.lng,
+                                    newLat,
+                                    newLng
+                                );
+                                // If moved less than 50 meters (0.05 km), treat it as same location
+                                if (distanceMoved < 0.05) {
+                                    isSignificantChange = false;
+                                }
+                            }
+                            
+                            // Save to local storage cache
+                            try {
+                                localStorage.setItem('customer_coords', JSON.stringify({
+                                    lat: newLat,
+                                    lng: newLng,
+                                    timestamp: Date.now()
+                                }));
+                            } catch (e) {
+                                console.warn("Failed to cache customer coordinates:", e);
+                            }
+                            
+                            if (isSignificantChange) {
+                                this.customerCoords = { lat: newLat, lng: newLng };
+                                this.showCustomerLocationOnMap();
+                                // Reload garages or spare parts with distance sorting
+                                if (urlParams.get('search') === 'parts') {
+                                    this.loadSpareParts();
+                                } else {
+                                    this.loadGarages();
+                                }
+                            }
+                        },
+                        (err) => {
+                            console.warn("Geolocation query failed/denied:", err);
+                            // Fallback default (Colombo) if no cached coordinates are available
+                            if (!this.customerCoords) {
+                                this.customerCoords = { lat: 6.9271, lng: 79.8612 };
+                                this.showCustomerLocationOnMap();
+                                if (urlParams.get('search') === 'parts') {
+                                    this.loadSpareParts();
+                                } else {
+                                    this.loadGarages();
+                                }
+                            }
+                        },
+                        { timeout: 5000, enableHighAccuracy: true }
+                    );
+                } else {
+                    if (!this.customerCoords) {
+                        this.customerCoords = { lat: 6.9271, lng: 79.8612 };
+                        this.showCustomerLocationOnMap();
+                        if (urlParams.get('search') === 'parts') {
+                            this.loadSpareParts();
+                        } else {
+                            this.loadGarages();
+                        }
+                    }
+                }
             }
         },
 
@@ -418,6 +514,9 @@
 
                     container.innerHTML = '';
                     const mapPoints = [];
+                    if (latitude && longitude) {
+                        mapPoints.push([latitude, longitude]);
+                    }
 
                     if (isPartSearch) {
                         const renderedShopIds = new Set();
@@ -426,8 +525,8 @@
                             const card = document.createElement('div');
                             card.className = 'garage-card';
                             
-                            const distText = (latitude && longitude && p.distance !== undefined) 
-                                ? ` (${p.distance.toFixed(1)} km away)` 
+                            const distText = (latitude && longitude && p.distance !== undefined)
+                                ? `<div class="garage-distance" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; margin-top: 4px;"><i class="fa-solid fa-route"></i> ${p.distance.toFixed(1)} km away</div>`
                                 : '';
 
                             // Sanitize image urls and handle fallback
@@ -449,12 +548,13 @@
                                         </p>
                                         <hr style="border:0; border-top:1px solid var(--border-color); margin:8px 0;">
                                         <div class="garage-address" style="margin-top:4px; display:flex; justify-content:space-between; align-items:center;">
-                                            <span><i class="fa-solid fa-store"></i> <strong>${shop.shopName}</strong>${distText}</span>
+                                            <span><i class="fa-solid fa-store"></i> <strong>${shop.shopName}</strong></span>
                                             <span style="color:#f59e0b; font-weight:700; font-size:0.9rem; white-space:nowrap;"><i class="fa-solid fa-star"></i> ${shop.rating ? shop.rating.toFixed(1) : '0.0'}</span>
                                         </div>
                                         <div class="garage-address">
                                             <i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}
                                         </div>
+                                        ${distText}
                                     </div>
                                     <div class="garage-footer" style="margin-top:auto; padding-top:8px;">
                                         <span class="garage-phone"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</span>
@@ -474,6 +574,9 @@
                             if (shop.latitude && shop.longitude && !renderedShopIds.has(shop.id)) {
                                 renderedShopIds.add(shop.id);
                                 const marker = L.marker([shop.latitude, shop.longitude]).addTo(this.map);
+                                const distValText = (latitude && longitude && p.distance !== undefined)
+                                    ? `<p style="font-size:0.8rem; margin-bottom:4px; color:var(--secondary); font-weight:600;"><i class="fa-solid fa-route"></i> ${p.distance.toFixed(1)} km away</p>`
+                                    : '';
                                 marker.bindPopup(`
                                     <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 165px;">
                                         <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading); display:flex; justify-content:space-between; align-items:center;">
@@ -481,6 +584,7 @@
                                             <span style="color:#f59e0b; margin-left: 10px; white-space: nowrap;"><i class="fa-solid fa-star"></i> ${shop.rating ? shop.rating.toFixed(1) : '0.0'}</span>
                                         </h4>
                                         <p style="font-size:0.8rem; margin-bottom:6px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}</p>
+                                        ${distValText}
                                         <p style="font-size:0.8rem; margin-bottom:8px; color:var(--primary); font-weight:600;"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</p>
                                         <div style="font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--border-color); padding-top:4px;">
                                             Stocking: <strong>${p.partName}</strong> for ${p.vehicleModel}
@@ -497,8 +601,8 @@
                             const card = document.createElement('div');
                             card.className = 'garage-card';
                             
-                            const distText = (latitude && longitude && s.distance !== undefined) 
-                                ? ` (${s.distance.toFixed(1)} km away)` 
+                            const distText = (latitude && longitude && s.distance !== undefined)
+                                ? `<div class="garage-distance" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; margin-top: 4px;"><i class="fa-solid fa-route"></i> ${s.distance.toFixed(1)} km away</div>`
                                 : '';
 
                             const shopImg = (s.imageUrl && s.imageUrl.trim() !== '' && s.imageUrl !== 'break') ? s.imageUrl : 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=400';
@@ -512,9 +616,10 @@
                                             <span style="color:#f59e0b; font-weight:700; font-size: 0.95rem; white-space: nowrap;"><i class="fa-solid fa-star"></i> ${s.rating ? s.rating.toFixed(1) : '0.0'}</span>
                                         </div>
                                         <div class="garage-address">
-                                            <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}${distText}
+                                            <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}
                                         </div>
-                                        <p class="garage-description">${s.description || 'Quality automotive spare parts.'}</p>
+                                        ${distText}
+                                        <p class="garage-description" style="margin-top: 8px;">${s.description || 'Quality automotive spare parts.'}</p>
                                     </div>
                                     <div class="garage-footer">
                                         <span class="garage-phone"><i class="fa-solid fa-phone"></i> ${s.phone || 'N/A'}</span>
@@ -533,13 +638,17 @@
 
                             if (s.latitude && s.longitude) {
                                 const marker = L.marker([s.latitude, s.longitude]).addTo(this.map);
+                                const distValText = (latitude && longitude && s.distance !== undefined)
+                                    ? `<p style="font-size:0.8rem; margin-bottom:6px; color:var(--secondary); font-weight:600;"><i class="fa-solid fa-route"></i> ${s.distance.toFixed(1)} km away</p>`
+                                    : '';
                                 marker.bindPopup(`
                                     <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 150px;">
                                         <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading); display:flex; justify-content:space-between; align-items:center;">
                                             <span>${s.shopName}</span>
                                             <span style="color:#f59e0b; margin-left: 10px; white-space: nowrap;"><i class="fa-solid fa-star"></i> ${s.rating ? s.rating.toFixed(1) : '0.0'}</span>
                                         </h4>
-                                        <p style="font-size:0.85rem; margin-bottom:8px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${s.city}</p>
+                                        <p style="font-size:0.85rem; margin-bottom:4px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${s.city}</p>
+                                        ${distValText}
                                         <a href="shop.html?id=${s.id}" class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; width:100%; text-align:center; color:white;">View Shop</a>
                                     </div>
                                 `);
@@ -565,16 +674,36 @@
                 }
             };
 
-            // Load parts immediately so search doesn't hang on geolocation prompt/errors
-            performSearch(null, null);
+            // Use stored customerCoords if available, otherwise query Geolocation API
+            if (this.customerCoords) {
+                performSearch(this.customerCoords.lat, this.customerCoords.lng);
+            } else {
+                // Load parts immediately so search doesn't hang on geolocation prompt/errors
+                performSearch(null, null);
 
-            // Optionally retrieve coordinates in the background to refine sorting by distance
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => performSearch(pos.coords.latitude, pos.coords.longitude),
-                    () => {}, // Silently fail on block/timeout
-                    { timeout: 3000 }
-                );
+                // Optionally retrieve coordinates in the background to refine sorting by distance
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            const newLat = pos.coords.latitude;
+                            const newLng = pos.coords.longitude;
+                            this.customerCoords = { lat: newLat, lng: newLng };
+                            try {
+                                localStorage.setItem('customer_coords', JSON.stringify({
+                                    lat: newLat,
+                                    lng: newLng,
+                                    timestamp: Date.now()
+                                }));
+                            } catch (e) {
+                                console.warn("Failed to cache customer coordinates from parts search:", e);
+                            }
+                            this.showCustomerLocationOnMap();
+                            performSearch(newLat, newLng);
+                        },
+                        () => {}, // Silently fail on block/timeout
+                        { timeout: 3000 }
+                    );
+                }
             }
         },
 
@@ -667,6 +796,48 @@
             }
         },
 
+        calculateDistance(lat1, lon1, lat2, lon2) {
+            if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+            const R = 6371; // Radius of the earth in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // Distance in km
+        },
+
+        showCustomerLocationOnMap() {
+            if (!this.map || !this.customerCoords) return;
+
+            // Remove existing customer marker if it exists
+            if (this.customerMarker) {
+                this.map.removeLayer(this.customerMarker);
+            }
+
+            // Create a pulsing divIcon for the customer
+            const customerIcon = L.divIcon({
+                className: 'customer-location-marker',
+                html: '<div class="pulse-circle"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            this.customerMarker = L.marker([this.customerCoords.lat, this.customerCoords.lng], { icon: customerIcon })
+                .addTo(this.map)
+                .bindPopup(`
+                    <div style="font-family: var(--font-body); font-size: 0.85rem; color: var(--text-primary); text-align: center; min-width: 140px;">
+                        <strong style="color: var(--success);"><i class="fa-solid fa-user-circle"></i> Your Location</strong>
+                        <p style="margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary);">Showing nearest services</p>
+                    </div>
+                `);
+
+            // Center and zoom to customer location
+            this.map.setView([this.customerCoords.lat, this.customerCoords.lng], 13);
+        },
+
         initMap() {
             // Center map on Sri Lanka
             this.map = L.map('map', {
@@ -711,6 +882,18 @@
                 if (!res.ok) throw new Error("Failed to load garages");
                 const garages = await res.json();
 
+                // Calculate distance and sort if customer location is available
+                if (this.customerCoords) {
+                    garages.forEach(g => {
+                        if (g.latitude && g.longitude) {
+                            g.distance = this.calculateDistance(this.customerCoords.lat, this.customerCoords.lng, g.latitude, g.longitude);
+                        } else {
+                            g.distance = Infinity;
+                        }
+                    });
+                    garages.sort((a, b) => a.distance - b.distance);
+                }
+
                 if (garages.length === 0) {
                     container.innerHTML = `
                         <div style="text-align:center; padding: 3rem; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius:var(--radius-md);">
@@ -723,8 +906,15 @@
 
                 container.innerHTML = '';
                 const mapPoints = [];
+                if (this.customerCoords) {
+                    mapPoints.push([this.customerCoords.lat, this.customerCoords.lng]);
+                }
 
                 garages.forEach(g => {
+                    const distText = (g.distance !== undefined && g.distance !== Infinity)
+                        ? `<div class="garage-distance" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; margin-top: 4px;"><i class="fa-solid fa-route"></i> ${g.distance.toFixed(1)} km away</div>`
+                        : '';
+
                     // Create card
                     const card = document.createElement('div');
                     card.className = 'garage-card';
@@ -741,7 +931,8 @@
                                 <div class="garage-address">
                                     <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city}
                                 </div>
-                                <p class="garage-description">${g.description}</p>
+                                ${distText}
+                                <p class="garage-description" style="margin-top: 8px;">${g.description}</p>
                             </div>
                             <div class="garage-footer">
                                 <span class="garage-phone"><i class="fa-solid fa-phone"></i> ${g.phone || 'N/A'}</span>
@@ -761,11 +952,15 @@
 
                     // Add map marker
                     if (g.latitude && g.longitude) {
+                        const popupDistHtml = (g.distance !== undefined && g.distance !== Infinity)
+                            ? `<p style="font-size:0.8rem; margin-bottom:6px; color:var(--secondary); font-weight:600;"><i class="fa-solid fa-route"></i> ${g.distance.toFixed(1)} km away</p>`
+                            : '';
                         const marker = L.marker([g.latitude, g.longitude]).addTo(this.map);
                         marker.bindPopup(`
                             <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 150px;">
                                 <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading);">${g.name}</h4>
-                                <p style="font-size:0.8rem; margin-bottom:8px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${g.city}</p>
+                                <p style="font-size:0.8rem; margin-bottom:4px; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${g.city}</p>
+                                ${popupDistHtml}
                                 <a href="garage.html?id=${g.id}" class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; width:100%; text-align:center; color:white;">Book Service</a>
                             </div>
                         `);
@@ -3107,9 +3302,22 @@
                 this.showToast("Retrieving GPS coordinates...", "success");
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        document.getElementById('breakdown-lat').value = position.coords.latitude;
-                        document.getElementById('breakdown-lng').value = position.coords.longitude;
+                        const newLat = position.coords.latitude;
+                        const newLng = position.coords.longitude;
+                        document.getElementById('breakdown-lat').value = newLat;
+                        document.getElementById('breakdown-lng').value = newLng;
                         this.showToast("GPS Location auto-detected!", "success");
+
+                        // Also cache it so the main homepage has access to it immediately
+                        try {
+                            localStorage.setItem('customer_coords', JSON.stringify({
+                                lat: newLat,
+                                lng: newLng,
+                                timestamp: Date.now()
+                            }));
+                        } catch (e) {
+                            console.warn("Failed to cache customer coordinates from emergency detection:", e);
+                        }
                     },
                     (error) => {
                         this.showToast("GPS Access Denied. Please specify Nearest City and Landmark.", "error");

@@ -382,6 +382,17 @@ const customer = {
                     lng: position.coords.longitude
                 };
 
+                // Save to localStorage so main homepage has access to it immediately
+                try {
+                    localStorage.setItem('customer_coords', JSON.stringify({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        timestamp: Date.now()
+                    }));
+                } catch (e) {
+                    console.warn("Failed to cache customer coordinates from dashboard:", e);
+                }
+
                 const statusEl = document.getElementById('gps-status');
                 const statusText = document.getElementById('gps-status-text');
                 statusEl.style.display = 'flex';
