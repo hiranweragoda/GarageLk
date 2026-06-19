@@ -51,7 +51,8 @@
     transition: var(--transition-smooth);
 }
 
-.sidebar-item:hover, .sidebar-item.active {
+.sidebar-item:hover,
+.sidebar-item.active {
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.04);
 }
@@ -158,11 +159,25 @@
     line-height: 1;
 }
 
-.stat-card.primary .stat-value { color: var(--color-primary); }
-.stat-card.customer .stat-value { color: var(--color-customer); }
-.stat-card.garage .stat-value { color: var(--color-garage); }
-.stat-card.admin .stat-value { color: var(--color-admin); }
-.stat-card.emergency .stat-value { color: var(--color-emergency); }
+.stat-card.primary .stat-value {
+    color: var(--color-primary);
+}
+
+.stat-card.customer .stat-value {
+    color: var(--color-customer);
+}
+
+.stat-card.garage .stat-value {
+    color: var(--color-garage);
+}
+
+.stat-card.admin .stat-value {
+    color: var(--color-admin);
+}
+
+.stat-card.emergency .stat-value {
+    color: var(--color-emergency);
+}
 
 /* Dashboard Sections */
 .dashboard-section {
@@ -175,8 +190,15 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Panels grids */
@@ -197,17 +219,24 @@
         width: 70px;
         padding: 20px 10px;
     }
-    .sidebar-brand span, .sidebar-item span, .user-info, .sidebar-user button span {
+
+    .sidebar-brand span,
+    .sidebar-item span,
+    .user-info,
+    .sidebar-user button span {
         display: none;
     }
+
     .main-content {
         margin-left: 70px;
         padding: 20px;
     }
+
     .sidebar-brand {
         margin-bottom: 20px;
         justify-content: center;
     }
+
     .sidebar-item {
         justify-content: center;
         padding: 12px;

@@ -1285,6 +1285,12 @@
                 this.loadAdminMonitor();
             }
 
+            this.updateNotificationsBadge();
+            // Poll for notifications count every 10 seconds
+            setInterval(() => {
+                this.updateNotificationsBadge();
+            }, 10000);
+
             // Initialize drag and drop image upload handlers
             this.initImageUploads();
             this.initStarPickers();
@@ -1309,6 +1315,9 @@
                     </button>
                     <button class="sidebar-btn" id="side-customer-breakdowns" onclick="window.GarageLK.switchDashboardTab('customer-breakdowns'); window.GarageLK.loadCustomerBreakdowns();">
                         <i class="fa-solid fa-truck-medical"></i> Emergency Assist
+                    </button>
+                    <button class="sidebar-btn" id="side-notifications" onclick="window.GarageLK.switchDashboardTab('notifications'); window.GarageLK.loadNotifications();">
+                        <i class="fa-solid fa-bell"></i> Notifications <span id="notifications-badge" class="badge-count" style="display:none; margin-left: 0.5rem; background: var(--danger); color: white; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); font-size: 0.75rem;"></span>
                     </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Settings
@@ -1338,6 +1347,9 @@
                     <button class="sidebar-btn" id="side-owner-analytics" onclick="window.GarageLK.switchDashboardTab('owner-analytics')">
                         <i class="fa-solid fa-chart-line"></i> Analytics Overview
                     </button>
+                    <button class="sidebar-btn" id="side-notifications" onclick="window.GarageLK.switchDashboardTab('notifications'); window.GarageLK.loadNotifications();">
+                        <i class="fa-solid fa-bell"></i> Notifications <span id="notifications-badge" class="badge-count" style="display:none; margin-left: 0.5rem; background: var(--danger); color: white; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); font-size: 0.75rem;"></span>
+                    </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Settings
                     </button>
@@ -1360,6 +1372,9 @@
                     <button class="sidebar-btn" id="side-shop-analytics" onclick="window.GarageLK.switchDashboardTab('shop-analytics'); window.GarageLK.loadShopAnalytics();">
                         <i class="fa-solid fa-chart-line"></i> Analytics (Sales Reports)
                     </button>
+                    <button class="sidebar-btn" id="side-notifications" onclick="window.GarageLK.switchDashboardTab('notifications'); window.GarageLK.loadNotifications();">
+                        <i class="fa-solid fa-bell"></i> Notifications <span id="notifications-badge" class="badge-count" style="display:none; margin-left: 0.5rem; background: var(--danger); color: white; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); font-size: 0.75rem;"></span>
+                    </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Settings
                     </button>
@@ -1381,6 +1396,9 @@
                     </button>
                     <button class="sidebar-btn" id="side-admin-users" onclick="window.GarageLK.switchDashboardTab('admin-users'); window.GarageLK.resetAdminUserFilter();">
                         <i class="fa-solid fa-users"></i> User Management
+                    </button>
+                    <button class="sidebar-btn" id="side-notifications" onclick="window.GarageLK.switchDashboardTab('notifications'); window.GarageLK.loadNotifications();">
+                        <i class="fa-solid fa-bell"></i> Notifications <span id="notifications-badge" class="badge-count" style="display:none; margin-left: 0.5rem; background: var(--danger); color: white; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); font-size: 0.75rem;"></span>
                     </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Management
@@ -1405,6 +1423,138 @@
             if (targetBtn) targetBtn.classList.add('active');
         },
 
+        async updateNotificationsBadge() {
+            try {
+                const res = await fetch('/api/notifications/my');
+                if (res.ok) {
+                    const data = await res.json();
+                    const badge = document.getElementById('notifications-badge');
+                    if (badge) {
+                        const count = data.unreadCount || 0;
+                        if (count > 0) {
+                            badge.textContent = count;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error updating notifications badge:", err);
+            }
+        },
+
+        async loadNotifications() {
+            const list = document.getElementById('notifications-list');
+            if (!list) return;
+
+            list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--text-muted);">Loading notifications...</p>';
+
+            try {
+                // Auto mark all read when entering notifications tab
+                await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+
+                const res = await fetch('/api/notifications/my');
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                this.notificationsRaw = data.notifications || [];
+                this.renderNotificationsFiltered();
+                this.updateNotificationsBadge();
+            } catch (err) {
+                console.error("Error loading notifications:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading notifications.</p>';
+            }
+        },
+
+        renderNotificationsFiltered() {
+            const list = document.getElementById('notifications-list');
+            if (!list) return;
+
+            const searchVal = (document.getElementById('notifications-search-input')?.value || '').toLowerCase().trim();
+            let notifications = this.notificationsRaw || [];
+
+            if (searchVal) {
+                notifications = notifications.filter(n => 
+                    (n.message || '').toLowerCase().includes(searchVal) ||
+                    new Date(n.createdAt).toLocaleString().toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (notifications.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No notifications found.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            notifications.forEach(n => {
+                const item = document.createElement('div');
+                item.className = 'table-item';
+                const isRead = n.read !== undefined ? n.read : n.isRead;
+                if (!isRead) {
+                    item.style.borderLeft = '4px solid var(--secondary)';
+                    item.style.background = 'rgba(6, 182, 212, 0.03)';
+                }
+
+                const dateStr = new Date(n.createdAt).toLocaleString();
+                const markReadBtn = !isRead 
+                    ? `<button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; height: auto;" onclick="window.GarageLK.markNotificationRead(${n.id})" unique-id="notif-read-btn-${n.id}"><i class="fa-solid fa-check"></i> Mark Read</button>` 
+                    : '<span style="font-size: 0.8rem; color: var(--success);"><i class="fa-solid fa-check-double"></i> Read</span>';
+
+                item.innerHTML = `
+                    <div style="flex:1;">
+                        <p style="font-size:0.95rem; font-weight: 500; margin:0 0 4px 0;">${n.message}</p>
+                        <span style="font-size:0.8rem; color:var(--text-muted);">${dateStr}</span>
+                    </div>
+                    <div style="text-align: right; min-width: 120px;">
+                        ${markReadBtn}
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        },
+
+        async markNotificationRead(id) {
+            try {
+                const res = await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+                if (res.ok) {
+                    this.loadNotifications();
+                } else {
+                    this.showToast("Failed to update notification status", "error");
+                }
+            } catch (err) {
+                console.error("Error marking notification as read:", err);
+            }
+        },
+
+        async markAllNotificationsRead() {
+            try {
+                const res = await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+                if (res.ok) {
+                    this.loadNotifications();
+                    this.showToast("All notifications marked as read", "success");
+                } else {
+                    this.showToast("Failed to update notifications", "error");
+                }
+            } catch (err) {
+                console.error("Error marking all read:", err);
+            }
+        },
+
+        async clearNotifications() {
+            if (!confirm("Are you sure you want to permanently clear all your notifications?")) return;
+            try {
+                const res = await fetch('/api/notifications/clear', { method: 'POST' });
+                if (res.ok) {
+                    this.loadNotifications();
+                    this.showToast("All notifications cleared", "success");
+                } else {
+                    this.showToast("Failed to clear notifications", "error");
+                }
+            } catch (err) {
+                console.error("Error clearing notifications:", err);
+            }
+        },
+
         // --- CUSTOMER DATA LOADER ---
         async loadCustomerBookings() {
             const list = document.getElementById('customer-bookings-list');
@@ -1420,121 +1570,142 @@
                 const bookings = await res.json();
                 if (!res.ok) throw new Error("Load failed");
 
-                const activeBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'APPROVED');
-                const completedBookings = bookings.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
+                this.customerBookingsRaw = bookings;
+                this.renderCustomerBookingsFiltered();
+            } catch (err) {
+                console.error("Error loading customer bookings:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading bookings.</p>';
+            }
+        },
 
-                // 1. Render Active Bookings
-                if (activeBookings.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active bookings found.</p>';
+        renderCustomerBookingsFiltered() {
+            const list = document.getElementById('customer-bookings-list');
+            const completedList = document.getElementById('customer-completed-bookings-list');
+            if (!list) return;
+
+            const searchVal = (document.getElementById('customer-booking-search-input')?.value || '').toLowerCase().trim();
+            let bookings = this.customerBookingsRaw || [];
+
+            if (searchVal) {
+                bookings = bookings.filter(b => 
+                    (b.bookingCode || '').toLowerCase().includes(searchVal) ||
+                    (b.garage ? b.garage.name || b.garage.garageName || '' : '').toLowerCase().includes(searchVal) ||
+                    (b.description || '').toLowerCase().includes(searchVal) ||
+                    (b.vehicleNo || '').toLowerCase().includes(searchVal) ||
+                    (b.vehicleType || '').toLowerCase().includes(searchVal) ||
+                    (b.servicesSelected || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            const activeBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'APPROVED');
+            const completedBookings = bookings.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
+
+            // 1. Render Active Bookings
+            if (activeBookings.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active bookings found.</p>';
+            } else {
+                list.innerHTML = '';
+                activeBookings.forEach(b => {
+                    const item = document.createElement('div');
+                    item.className = 'table-item';
+
+                    let statusBadgeClass = 'badge-pending';
+                    if (b.status === 'APPROVED') statusBadgeClass = 'badge-approved';
+
+                    let actionHtml = `
+                        <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
+                            onclick="window.GarageLK.openCancellationModal(${b.id}, 'BOOKING')" unique-id="cancel-btn-${b.id}">
+                            Cancel
+                        </button>
+                    `;
+
+                    item.innerHTML = `
+                        <div style="flex:1;">
+                            <h4 style="font-weight:700;">${b.garage.name} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
+                            </p>
+                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                                <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
+                                <strong>Details:</strong> ${b.description}
+                            </p>
+                        </div>
+                        <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                            <span class="badge ${statusBadgeClass}">${b.status}</span>
+                            <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
+                            ${actionHtml}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            // 2. Render Completed Bookings
+            if (completedList) {
+                if (completedBookings.length === 0) {
+                    completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed appointments found.</p>';
                 } else {
-                    list.innerHTML = '';
-                    activeBookings.forEach(b => {
+                    completedList.innerHTML = '';
+                    completedBookings.forEach(b => {
                         const item = document.createElement('div');
                         item.className = 'table-item';
 
-                        let statusBadgeClass = 'badge-pending';
-                        if (b.status === 'APPROVED') statusBadgeClass = 'badge-approved';
+                        const reviewBtnContainerId = `review-btn-container-${b.id}`;
 
-                        let actionHtml = `
-                            <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.openCancellationModal(${b.id}, 'BOOKING')" unique-id="cancel-btn-${b.id}">
-                                Cancel
-                            </button>
-                        `;
+                        let badgeClass = 'badge-completed';
+                        if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
+
+                        const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                            ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                            : '';
 
                         item.innerHTML = `
                             <div style="flex:1;">
-                                <h4 style="font-weight:700;">${b.garage.name}</h4>
+                                <h4 style="font-weight:700;">${b.garage.name} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
                                 <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
                                     <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
                                 </p>
                                 <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
                                     <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
                                     <strong>Details:</strong> ${b.description}
+                                    ${reasonHtml}
                                 </p>
                             </div>
-                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
-                                <span class="badge ${statusBadgeClass}">${b.status}</span>
+                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 150px;">
+                                <span class="badge ${badgeClass}">${b.status}</span>
                                 <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
-                                ${actionHtml}
+                                <div id="${reviewBtnContainerId}" style="display:inline-block; margin-top:0.25rem;"></div>
                             </div>
                         `;
-                        list.appendChild(item);
+                        completedList.appendChild(item);
+
+                        if (b.status === 'COMPLETED') {
+                            setTimeout(async () => {
+                                const btnContainer = document.getElementById(reviewBtnContainerId);
+                                if (btnContainer) {
+                                    try {
+                                        const existsRes = await fetch(`/api/reviews/booking/${b.id}/exists`);
+                                        if (existsRes.ok) {
+                                            const check = await existsRes.json();
+                                            if (!check.exists) {
+                                                btnContainer.innerHTML = `
+                                                    <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
+                                                        onclick="window.GarageLK.openReviewModal(${b.id})" unique-id="review-btn-${b.id}">
+                                                        <i class="fa-solid fa-star"></i> Write Review
+                                                    </button>
+                                                `;
+                                            } else {
+                                                btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Garage Reviewed</span>`;
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.error(e);
+                                    }
+                                }
+                            }, 0);
+                        }
                     });
                 }
-
-                // 2. Render Completed Bookings
-                if (completedList) {
-                    if (completedBookings.length === 0) {
-                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed appointments found.</p>';
-                    } else {
-                        completedList.innerHTML = '';
-                        completedBookings.forEach(b => {
-                            const item = document.createElement('div');
-                            item.className = 'table-item';
-
-                            const reviewBtnContainerId = `review-btn-container-${b.id}`;
-
-                            let badgeClass = 'badge-completed';
-                            if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
-
-                            const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
-                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
-                                : '';
-
-                            item.innerHTML = `
-                                <div style="flex:1;">
-                                    <h4 style="font-weight:700;">${b.garage.name}</h4>
-                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                        <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
-                                    </p>
-                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                        <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
-                                        <strong>Details:</strong> ${b.description}
-                                        ${reasonHtml}
-                                    </p>
-                                </div>
-                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 150px;">
-                                    <span class="badge ${badgeClass}">${b.status}</span>
-                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
-                                    <div id="${reviewBtnContainerId}" style="display:inline-block; margin-top:0.25rem;"></div>
-                                </div>
-                            `;
-                            completedList.appendChild(item);
-
-                            if (b.status === 'COMPLETED') {
-                                // Load rated check for garage
-                                setTimeout(async () => {
-                                    const btnContainer = document.getElementById(reviewBtnContainerId);
-                                    if (btnContainer) {
-                                        try {
-                                            const existsRes = await fetch(`/api/reviews/booking/${b.id}/exists`);
-                                            if (existsRes.ok) {
-                                                const check = await existsRes.json();
-                                                if (!check.exists) {
-                                                    btnContainer.innerHTML = `
-                                                        <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
-                                                            onclick="window.GarageLK.openReviewModal(${b.id})" unique-id="review-btn-${b.id}">
-                                                            <i class="fa-solid fa-star"></i> Write Review
-                                                        </button>
-                                                    `;
-                                                } else {
-                                                    btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Garage Reviewed</span>`;
-                                                }
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                        }
-                                    }
-                                }, 0);
-                            }
-                        });
-                    }
-                }
-
-            } catch (err) {
-                console.error("Error loading customer bookings:", err);
-                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading bookings.</p>';
             }
         },
 
@@ -1581,49 +1752,67 @@
                     });
                 }
 
-                if (garages.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have not registered any garages yet.</p>';
-                    return;
-                }
-
-                list.innerHTML = '';
-                garages.forEach(g => {
-                    const item = document.createElement('div');
-                    item.className = 'table-item';
-
-                    let badgeClass = 'badge-pending';
-                    if (g.status === 'APPROVED') badgeClass = 'badge-completed';
-
-                    item.innerHTML = `
-                        <div style="display:flex; gap:1rem; align-items:center;">
-                            <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);">
-                            <div>
-                                <h4 style="font-weight:700;">${g.name}</h4>
-                                <p style="font-size:0.85rem; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city}</p>
-                            </div>
-                        </div>
-                        <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
-                            <span class="badge ${badgeClass}" id="garage-status-badge-${g.id}" style="display:none;">${g.status === 'APPROVED' ? 'APPROVED' : 'PENDING APPROVAL'}</span>
-                            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
-                                <button class="btn btn-outline" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.toggleGarageStatusDisplay('${g.id}', this)" unique-id="toggle-status-btn-${g.id}">
-                                    Show Status
-                                </button>
-                                <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.openEditGarageModal(${g.id})" unique-id="edit-garage-btn-${g.id}">
-                                    Edit
-                                </button>
-                                <button class="btn btn-outline btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.handleDeleteGarage(${g.id})" unique-id="delete-garage-btn-${g.id}">
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
-
+                this.renderOwnerGaragesFiltered();
             } catch (err) {
                 console.error("Error loading owner garages:", err);
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading garages.</p>';
             }
+        },
+
+        renderOwnerGaragesFiltered() {
+            const list = document.getElementById('owner-garages-list');
+            if (!list) return;
+
+            const searchVal = (document.getElementById('owner-garage-search-input')?.value || '').toLowerCase().trim();
+            let garages = this.ownerGarages || [];
+
+            if (searchVal) {
+                garages = garages.filter(g => 
+                    (g.name || '').toLowerCase().includes(searchVal) ||
+                    (g.city || '').toLowerCase().includes(searchVal) ||
+                    (g.address || '').toLowerCase().includes(searchVal) ||
+                    (g.description || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (garages.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No garages found matching search.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            garages.forEach(g => {
+                const item = document.createElement('div');
+                item.className = 'table-item';
+
+                let badgeClass = 'badge-pending';
+                if (g.status === 'APPROVED') badgeClass = 'badge-completed';
+
+                item.innerHTML = `
+                    <div style="display:flex; gap:1rem; align-items:center;">
+                        <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);">
+                        <div>
+                            <h4 style="font-weight:700;">${g.name}</h4>
+                            <p style="font-size:0.85rem; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city}</p>
+                        </div>
+                    </div>
+                    <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                        <span class="badge ${badgeClass}" id="garage-status-badge-${g.id}" style="display:none;">${g.status === 'APPROVED' ? 'APPROVED' : 'PENDING APPROVAL'}</span>
+                        <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                            <button class="btn btn-outline" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.toggleGarageStatusDisplay('${g.id}', this)" unique-id="toggle-status-btn-${g.id}">
+                                Show Status
+                            </button>
+                            <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.openEditGarageModal(${g.id})" unique-id="edit-garage-btn-${g.id}">
+                                Edit
+                            </button>
+                            <button class="btn btn-outline btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.handleDeleteGarage(${g.id})" unique-id="delete-garage-btn-${g.id}">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
         },
         async loadOwnerBookings() {
             const list = document.getElementById('owner-bookings-list');
@@ -1665,6 +1854,7 @@
 
             if (searchVal) {
                 bookings = bookings.filter(b => 
+                    (b.bookingCode || '').toLowerCase().includes(searchVal) ||
                     (b.user.fullName || b.user.username || '').toLowerCase().includes(searchVal) ||
                     (b.user.phone || '').toLowerCase().includes(searchVal) ||
                     (b.garage ? b.garage.garageName || b.garage.name || '' : '').toLowerCase().includes(searchVal) ||
@@ -1711,7 +1901,7 @@
                     item.innerHTML = `
                         <div style="flex:1;">
                             <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
-                                <h4 style="font-weight:700; margin-bottom:0;">${b.user.fullName || b.user.username}</h4>
+                                <h4 style="font-weight:700; margin-bottom:0;">${b.user.fullName || b.user.username} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
                                 <span style="font-size:0.8rem; color:var(--text-muted);">booked at <strong>${b.garage.name}</strong></span>
                             </div>
                             <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
@@ -1746,10 +1936,10 @@
                         const item = document.createElement('div');
                         item.className = 'table-item';
 
-                        let titleHtml = `<h4 style="font-weight:700; margin-bottom:0; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Appointment</h4>`;
+                        let titleHtml = `<h4 style="font-weight:700; margin-bottom:0; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Appointment <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>`;
                         let badgeClass = 'badge-completed';
                         if (b.status === 'CANCELLED') {
-                            titleHtml = `<h4 style="font-weight:700; margin-bottom:0; color:var(--danger);"><i class="fa-solid fa-circle-xmark"></i> Cancelled Appointment</h4>`;
+                            titleHtml = `<h4 style="font-weight:700; margin-bottom:0; color:var(--danger);"><i class="fa-solid fa-circle-xmark"></i> Cancelled Appointment <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>`;
                             badgeClass = 'badge-cancelled';
                         }
 
@@ -1850,41 +2040,63 @@
                 const services = data.services;
                 this.ownerServices = services;
 
-                if (services.length === 0) {
-                    container.innerHTML = '<p style="color:var(--text-muted);">No services added yet for this garage.</p>';
-                    return;
-                }
-
-                container.innerHTML = '';
-                services.forEach(s => {
-                    const card = document.createElement('div');
-                    card.className = 'owner-service-card';
-                    card.innerHTML = `
-                        <div>
-                            <h4>${s.serviceName}</h4>
-                            <p>${s.description || 'No description provided.'}</p>
-                        </div>
-                        <div class="owner-service-footer">
-                            <span class="owner-service-price">LKR ${s.price.toFixed(2)}</span>
-                            <div style="display:flex; gap:0.5rem; align-items:center;">
-                                <button class="btn btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
-                                    onclick="window.GarageLK.openEditServiceModal(${garageId}, ${s.id})" unique-id="edit-service-${s.id}">
-                                    <i class="fa-solid fa-pen-to-square"></i> Edit
-                                </button>
-                                <button class="btn btn-outline btn-danger" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
-                                    onclick="window.GarageLK.handleDeleteService(${garageId}, ${s.id})" unique-id="del-service-${s.id}">
-                                    <i class="fa-solid fa-trash"></i> Delete
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                });
-
+                this.renderOwnerServicesFiltered();
             } catch (err) {
                 console.error("Error loading owner services:", err);
                 container.innerHTML = '<p style="color:var(--danger);">Error loading services.</p>';
             }
+        },
+
+        renderOwnerServicesFiltered() {
+            const garageId = document.getElementById('owner-services-garage-select')?.value;
+            const container = document.getElementById('owner-services-container');
+            if (!container) return;
+
+            if (!garageId) {
+                container.innerHTML = '<p style="color:var(--text-muted);">Please select a garage to manage services.</p>';
+                return;
+            }
+
+            const searchVal = (document.getElementById('owner-service-search-input')?.value || '').toLowerCase().trim();
+            let services = this.ownerServices || [];
+
+            if (searchVal) {
+                services = services.filter(s => 
+                    (s.serviceName || '').toLowerCase().includes(searchVal) ||
+                    (s.description || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (services.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted);">No services found matching search.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            services.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'owner-service-card';
+                card.innerHTML = `
+                    <div>
+                        <h4>${s.serviceName}</h4>
+                        <p>${s.description || 'No description provided.'}</p>
+                    </div>
+                    <div class="owner-service-footer">
+                        <span class="owner-service-price">LKR ${s.price.toFixed(2)}</span>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <button class="btn btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
+                                onclick="window.GarageLK.openEditServiceModal(${garageId}, ${s.id})" unique-id="edit-service-${s.id}">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                            </button>
+                            <button class="btn btn-outline btn-danger" style="padding:0.35rem 0.65rem; font-size:0.75rem;" 
+                                onclick="window.GarageLK.handleDeleteService(${garageId}, ${s.id})" unique-id="del-service-${s.id}">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         },
 
         async loadOwnerAnalytics() {
@@ -2240,204 +2452,246 @@
                 // Fetch Garages
                 const res = await fetch('/api/garages/all');
                 if (res.ok) {
-                    const allGarages = await res.json();
-                    
-                    // 1. Pending List
-                    const pending = allGarages.filter(g => g.status === 'PENDING_APPROVAL' || g.status === 'PENDING');
-                    if (list) {
-                        if (pending.length === 0) {
-                            list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No garages currently pending approval.</p>';
-                        } else {
-                            list.innerHTML = '';
-                            pending.forEach(g => {
-                                const item = document.createElement('div');
-                                item.className = 'table-item';
-                                item.innerHTML = `
-                                    <div style="display:flex; gap:1.25rem; align-items:center;">
-                                        <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
-                                        <div>
-                                            <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
-                                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                                <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
-                                            </p>
-                                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-garage-${g.id}">
-                                            <i class="fa-solid fa-eye"></i> View
-                                        </a>
-                                        <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                            onclick="window.GarageLK.handleApproveGarage(${g.id})" unique-id="approve-garage-${g.id}">
-                                            <i class="fa-solid fa-check"></i> Approve
-                                        </button>
-                                        <button class="btn btn-outline btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                            onclick="window.GarageLK.handleRejectGarage(${g.id})" unique-id="reject-garage-${g.id}">
-                                            Reject
-                                        </button>
-                                    </div>
-                                `;
-                                list.appendChild(item);
-                            });
-                        }
-                    }
-
-                    // 2. Approved List
-                    const approved = allGarages.filter(g => g.status === 'APPROVED' || g.status === 'SUSPENDED');
-                    if (approvedGaragesList) {
-                        if (approved.length === 0) {
-                            approvedGaragesList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved garages.</p>';
-                        } else {
-                            approvedGaragesList.innerHTML = '';
-                            approved.forEach(g => {
-                                const item = document.createElement('div');
-                                item.className = 'table-item';
-
-                                const isActive = g.status === 'APPROVED';
-                                const statusBadgeClass = isActive ? 'badge-approved' : 'badge-cancelled';
-                                const statusText = isActive ? 'Active' : 'Suspended';
-                                
-                                const toggleBtnText = isActive ? 'Deactivate' : 'Activate';
-                                const toggleBtnIcon = isActive ? 'fa-ban' : 'fa-check';
-                                const toggleColor = isActive ? 'var(--warning)' : 'var(--success)';
-                                const nextStatus = isActive ? 'SUSPENDED' : 'APPROVED';
-
-                                item.innerHTML = `
-                                    <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
-                                        <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
-                                        <div>
-                                            <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
-                                                ${g.name}
-                                                <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
-                                            </h4>
-                                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                                <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
-                                            </p>
-                                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
-                                            <i class="fa-solid fa-eye"></i> View
-                                        </a>
-                                        <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; color:${toggleColor}; border-color:${toggleColor};" 
-                                            onclick="window.GarageLK.toggleGarageActive(${g.id}, '${nextStatus}')" unique-id="toggle-approved-garage-${g.id}">
-                                            <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
-                                        </button>
-                                        <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                            onclick="window.GarageLK.handleCancelGarage(${g.id})" unique-id="cancel-garage-${g.id}">
-                                            Cancel Approval
-                                        </button>
-                                    </div>
-                                `;
-                                approvedGaragesList.appendChild(item);
-                            });
-                        }
-                    }
+                    this.adminGaragesRaw = await res.json();
+                    this.renderAdminApprovalsFiltered();
                 }
 
                 // Fetch Shops
                 const shopRes = await fetch('/api/shops/all');
                 if (shopRes.ok) {
-                    const allShops = await shopRes.json();
-                    
-                    // 3. Shop Approvals List
-                    const pendingShops = allShops.filter(s => s.status === 'PENDING_APPROVAL' || s.status === 'PENDING');
-                    if (shopList) {
-                        if (pendingShops.length === 0) {
-                            shopList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No shops currently pending approval.</p>';
-                        } else {
-                            shopList.innerHTML = '';
-                            pendingShops.forEach(s => {
-                                const item = document.createElement('div');
-                                item.className = 'table-item';
-                                item.innerHTML = `
-                                    <div style="display:flex; gap:1.25rem; align-items:center;">
-                                        <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
-                                        <div>
-                                            <h4 style="font-weight:700; margin-bottom:2px;">${s.name}</h4>
-                                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                                <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
-                                            </p>
-                                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-shop-${s.id}">
-                                            <i class="fa-solid fa-eye"></i> View
-                                        </a>
-                                        <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                            onclick="window.GarageLK.handleApproveShop(${s.id})" unique-id="approve-shop-${s.id}">
-                                            <i class="fa-solid fa-check"></i> Approve
-                                        </button>
-                                        <button class="btn btn-outline btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                            onclick="window.GarageLK.handleRejectShop(${s.id})" unique-id="reject-shop-${s.id}">
-                                            Reject
-                                        </button>
-                                    </div>
-                                `;
-                                shopList.appendChild(item);
-                            });
-                        }
-                    }
-
-                    // 4. Approved Shops List
-                    const approvedShops = allShops.filter(s => s.status === 'APPROVED' || s.status === 'SUSPENDED');
-                    if (approvedShopsList) {
-                        if (approvedShops.length === 0) {
-                            approvedShopsList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved shops.</p>';
-                        } else {
-                            approvedShopsList.innerHTML = '';
-                            approvedShops.forEach(s => {
-                                const item = document.createElement('div');
-                                item.className = 'table-item';
-
-                                const isActive = s.status === 'APPROVED';
-                                const statusBadgeClass = isActive ? 'badge-approved' : 'badge-cancelled';
-                                const statusText = isActive ? 'Active' : 'Suspended';
-                                
-                                const toggleBtnText = isActive ? 'Deactivate' : 'Activate';
-                                const toggleBtnIcon = isActive ? 'fa-ban' : 'fa-check';
-                                const toggleColor = isActive ? 'var(--warning)' : 'var(--success)';
-                                const nextStatus = isActive ? 'SUSPENDED' : 'APPROVED';
-
-                                item.innerHTML = `
-                                    <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
-                                        <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
-                                        <div>
-                                            <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
-                                                ${s.name}
-                                                <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
-                                            </h4>
-                                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                                <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
-                                            </p>
-                                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
-                                            <i class="fa-solid fa-eye"></i> View
-                                        </a>
-                                        <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; color:${toggleColor}; border-color:${toggleColor};" 
-                                            onclick="window.GarageLK.toggleShopActive(${s.id}, '${nextStatus}')" unique-id="toggle-approved-shop-${s.id}">
-                                            <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
-                                        </button>
-                                        <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
-                                            onclick="window.GarageLK.handleCancelShop(${s.id})" unique-id="cancel-shop-${s.id}">
-                                            Cancel Approval
-                                        </button>
-                                    </div>
-                                `;
-                                approvedShopsList.appendChild(item);
-                            });
-                        }
-                    }
+                    this.adminShopsRaw = await shopRes.json();
+                    this.renderAdminShopApprovalsFiltered();
                 }
             } catch (err) {
                 console.error("Error loading admin approvals:", err);
                 if (list) list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading admin approvals.</p>';
                 if (approvedGaragesList) approvedGaragesList.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading approved list.</p>';
+            }
+        },
+
+        renderAdminApprovalsFiltered() {
+            const list = document.getElementById('admin-approvals-list');
+            const approvedGaragesList = document.getElementById('admin-approved-garages-list');
+            if (!this.adminGaragesRaw) return;
+
+            const searchVal = (document.getElementById('admin-garage-search-input')?.value || '').toLowerCase().trim();
+            let garages = this.adminGaragesRaw;
+
+            if (searchVal) {
+                garages = garages.filter(g => 
+                    (g.name || '').toLowerCase().includes(searchVal) ||
+                    (g.city || '').toLowerCase().includes(searchVal) ||
+                    (g.address || '').toLowerCase().includes(searchVal) ||
+                    (g.description || '').toLowerCase().includes(searchVal) ||
+                    (g.owner && (g.owner.fullName || g.owner.username || '').toLowerCase().includes(searchVal))
+                );
+            }
+
+            const pending = garages.filter(g => g.status === 'PENDING_APPROVAL' || g.status === 'PENDING');
+            const approved = garages.filter(g => g.status === 'APPROVED' || g.status === 'SUSPENDED');
+
+            // Render pending list
+            if (list) {
+                if (pending.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No garages found matching search.</p>';
+                } else {
+                    list.innerHTML = '';
+                    pending.forEach(g => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
+                        item.innerHTML = `
+                            <div style="display:flex; gap:1.25rem; align-items:center;">
+                                <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                <div>
+                                    <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-garage-${g.id}">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </a>
+                                <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                    onclick="window.GarageLK.handleApproveGarage(${g.id})" unique-id="approve-garage-${g.id}">
+                                    <i class="fa-solid fa-check"></i> Approve
+                                </button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                    onclick="window.GarageLK.handleRejectGarage(${g.id})" unique-id="reject-garage-${g.id}">
+                                    Reject
+                                </button>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+            }
+
+            // Render approved list
+            if (approvedGaragesList) {
+                if (approved.length === 0) {
+                    approvedGaragesList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved garages found matching search.</p>';
+                } else {
+                    approvedGaragesList.innerHTML = '';
+                    approved.forEach(g => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
+
+                        const isActive = g.status === 'APPROVED';
+                        const statusBadgeClass = isActive ? 'badge-approved' : 'badge-cancelled';
+                        const statusText = isActive ? 'Active' : 'Suspended';
+                        
+                        const toggleBtnText = isActive ? 'Deactivate' : 'Activate';
+                        const toggleBtnIcon = isActive ? 'fa-ban' : 'fa-check';
+                        const toggleColor = isActive ? 'var(--warning)' : 'var(--success)';
+                        const nextStatus = isActive ? 'SUSPENDED' : 'APPROVED';
+
+                        item.innerHTML = `
+                            <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
+                                <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                <div>
+                                    <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
+                                        ${g.name}
+                                        <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
+                                    </h4>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </a>
+                                <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; color:${toggleColor}; border-color:${toggleColor};" 
+                                    onclick="window.GarageLK.toggleGarageActive(${g.id}, '${nextStatus}')" unique-id="toggle-approved-garage-${g.id}">
+                                    <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
+                                </button>
+                                <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                    onclick="window.GarageLK.handleCancelGarage(${g.id})" unique-id="cancel-garage-${g.id}">
+                                    Cancel Approval
+                                </button>
+                            </div>
+                        `;
+                        approvedGaragesList.appendChild(item);
+                    });
+                }
+            }
+        },
+
+        renderAdminShopApprovalsFiltered() {
+            const shopList = document.getElementById('admin-shop-approvals-list');
+            const approvedShopsList = document.getElementById('admin-approved-shops-list');
+            if (!this.adminShopsRaw) return;
+
+            const searchVal = (document.getElementById('admin-shop-search-input')?.value || '').toLowerCase().trim();
+            let shops = this.adminShopsRaw;
+
+            if (searchVal) {
+                shops = shops.filter(s => 
+                    (s.name || s.shopName || '').toLowerCase().includes(searchVal) ||
+                    (s.city || '').toLowerCase().includes(searchVal) ||
+                    (s.address || '').toLowerCase().includes(searchVal) ||
+                    (s.description || '').toLowerCase().includes(searchVal) ||
+                    (s.ownerName || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            const pendingShops = shops.filter(s => s.status === 'PENDING_APPROVAL' || s.status === 'PENDING');
+            const approvedShops = shops.filter(s => s.status === 'APPROVED' || s.status === 'SUSPENDED');
+
+            // Render pending list
+            if (shopList) {
+                if (pendingShops.length === 0) {
+                    shopList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No shops found matching search.</p>';
+                } else {
+                    shopList.innerHTML = '';
+                    pendingShops.forEach(s => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
+                        item.innerHTML = `
+                            <div style="display:flex; gap:1.25rem; align-items:center;">
+                                <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                <div>
+                                    <h4 style="font-weight:700; margin-bottom:2px;">${s.name || s.shopName}</h4>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                        <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-shop-${s.id}">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </a>
+                                <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                    onclick="window.GarageLK.handleApproveShop(${s.id})" unique-id="approve-shop-${s.id}">
+                                    <i class="fa-solid fa-check"></i> Approve
+                                </button>
+                                <button class="btn btn-outline btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                    onclick="window.GarageLK.handleRejectShop(${s.id})" unique-id="reject-shop-${s.id}">
+                                    Reject
+                                </button>
+                            </div>
+                        `;
+                        shopList.appendChild(item);
+                    });
+                }
+            }
+
+            // Render approved list
+            if (approvedShopsList) {
+                if (approvedShops.length === 0) {
+                    approvedShopsList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No approved shops found matching search.</p>';
+                } else {
+                    approvedShopsList.innerHTML = '';
+                    approvedShops.forEach(s => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
+
+                        const isActive = s.status === 'APPROVED';
+                        const statusBadgeClass = isActive ? 'badge-approved' : 'badge-cancelled';
+                        const statusText = isActive ? 'Active' : 'Suspended';
+                        
+                        const toggleBtnText = isActive ? 'Deactivate' : 'Activate';
+                        const toggleBtnIcon = isActive ? 'fa-ban' : 'fa-check';
+                        const toggleColor = isActive ? 'var(--warning)' : 'var(--success)';
+                        const nextStatus = isActive ? 'SUSPENDED' : 'APPROVED';
+
+                        item.innerHTML = `
+                            <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
+                                <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
+                                <div>
+                                    <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
+                                        ${s.name || s.shopName}
+                                        <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
+                                    </h4>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                        <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
+                                    </p>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </a>
+                                <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; color:${toggleColor}; border-color:${toggleColor};" 
+                                    onclick="window.GarageLK.toggleShopActive(${s.id}, '${nextStatus}')" unique-id="toggle-approved-shop-${s.id}">
+                                    <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
+                                </button>
+                                <button class="btn btn-danger" style="padding:0.5rem 1rem; font-size:0.85rem;" 
+                                    onclick="window.GarageLK.handleCancelShop(${s.id})" unique-id="cancel-shop-${s.id}">
+                                    Cancel Approval
+                                </button>
+                            </div>
+                        `;
+                        approvedShopsList.appendChild(item);
+                    });
+                }
             }
         },
 
@@ -2922,48 +3176,127 @@
                 const breakdowns = await res.json();
                 if (!res.ok) throw new Error();
 
-                const activeBreakdowns = breakdowns.filter(b => b.status !== 'COMPLETED' && b.status !== 'CANCELLED');
-                const completedBreakdowns = breakdowns.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
+                this.customerBreakdownsRaw = breakdowns;
+                this.renderCustomerBreakdownsFiltered();
+            } catch (err) {
+                console.error("Error loading customer breakdowns:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading emergencies.</p>';
+            }
+        },
 
-                // 1. Render Active Emergencies
-                if (activeBreakdowns.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active emergency requests found.</p>';
+        renderCustomerBreakdownsFiltered() {
+            const list = document.getElementById('customer-breakdowns-list');
+            const completedList = document.getElementById('customer-completed-breakdowns-list');
+            if (!list) return;
+
+            const searchVal = (document.getElementById('customer-breakdown-search-input')?.value || '').toLowerCase().trim();
+            let breakdowns = this.customerBreakdownsRaw || [];
+
+            if (searchVal) {
+                breakdowns = breakdowns.filter(b => 
+                    (b.breakdownCode || '').toLowerCase().includes(searchVal) ||
+                    (b.acceptedBy ? b.acceptedBy.name || b.acceptedBy.garageName || '' : '').toLowerCase().includes(searchVal) ||
+                    (b.description || '').toLowerCase().includes(searchVal) ||
+                    (b.vehicleNo || '').toLowerCase().includes(searchVal) ||
+                    (b.address || '').toLowerCase().includes(searchVal) ||
+                    (b.city || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            const activeBreakdowns = breakdowns.filter(b => b.status !== 'COMPLETED' && b.status !== 'CANCELLED');
+            const completedBreakdowns = breakdowns.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
+
+            // 1. Render Active Emergencies
+            if (activeBreakdowns.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active emergency requests found.</p>';
+            } else {
+                list.innerHTML = '';
+                activeBreakdowns.forEach(b => {
+                    const item = document.createElement('div');
+                    item.className = 'table-item';
+
+                    let badgeClass = 'badge-pending';
+                    let responseHtml = '<span style="color:var(--text-muted); font-size:0.85rem;">Searching for response...</span>';
+                    if (b.status === 'ACCEPTED') {
+                        badgeClass = 'badge-approved';
+                        responseHtml = `
+                            <div style="font-size:0.85rem; color:var(--secondary); font-weight:500;">
+                                <i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy ? b.acceptedBy.name : 'Unknown Garage'}</strong> <br>
+                                ${b.assignedMechanic ? `<i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone})</strong> <br>` : ''}
+                                <i class="fa-solid fa-phone"></i> Call Rescue: <strong>${b.acceptedBy ? (b.acceptedBy.phone || 'N/A') : 'N/A'}</strong>
+                            </div>
+                        `;
+                    }
+
+                    let actionHtml = `
+                        <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+                            <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:var(--border-color);" 
+                                onclick="window.GarageLK.completeBreakdown(${b.id})" unique-id="resolve-breakdown-${b.id}">
+                                Mark Resolved
+                            </button>
+                            <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:var(--danger); border-color:var(--danger);" 
+                                onclick="window.GarageLK.openCancellationModal(${b.id}, 'BREAKDOWN')" unique-id="cancel-breakdown-${b.id}">
+                                Cancel
+                            </button>
+                        </div>
+                    `;
+
+                    item.innerHTML = `
+                        <div style="flex:1;">
+                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                                <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.breakdownCode || 'No ID'})</span></h4>
+                                <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
+                            </div>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                <i class="fa-solid fa-location-dot"></i> <strong>Where:</strong> ${b.address}, ${b.city}
+                            </p>
+                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3; margin-bottom:8px;">
+                                <strong>Vehicle:</strong> ${b.vehicleNo} <br>
+                                <strong>Description:</strong> ${b.description}
+                            </p>
+                            ${responseHtml}
+                        </div>
+                        <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 140px;">
+                            <span class="badge ${badgeClass}">${b.status === 'ACCEPTED' ? 'RESCUE DISPATCHED' : b.status}</span>
+                            ${actionHtml}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            // 2. Render Completed / Resolved Emergencies
+            if (completedList) {
+                if (completedBreakdowns.length === 0) {
+                    completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed emergency history found.</p>';
                 } else {
-                    list.innerHTML = '';
-                    activeBreakdowns.forEach(b => {
+                    completedList.innerHTML = '';
+                    completedBreakdowns.forEach(b => {
                         const item = document.createElement('div');
                         item.className = 'table-item';
 
-                        let badgeClass = 'badge-pending';
-                        let responseHtml = '<span style="color:var(--text-muted); font-size:0.85rem;">Searching for response...</span>';
-                        if (b.status === 'ACCEPTED') {
-                            badgeClass = 'badge-approved';
-                            responseHtml = `
-                                <div style="font-size:0.85rem; color:var(--secondary); font-weight:500;">
-                                    <i class="fa-solid fa-truck-pickup"></i> Dispatched: <strong>${b.acceptedBy ? b.acceptedBy.name : 'Unknown Garage'}</strong> <br>
-                                    ${b.assignedMechanic ? `<i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone})</strong> <br>` : ''}
-                                    <i class="fa-solid fa-phone"></i> Call Rescue: <strong>${b.acceptedBy ? (b.acceptedBy.phone || 'N/A') : 'N/A'}</strong>
+                        const badgeClass = b.status === 'CANCELLED' ? 'badge-cancelled' : 'badge-completed';
+                        const reasonText = (b.status === 'CANCELLED' && b.cancellationReason) 
+                            ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                            : '';
+                        const responseHtml = b.status === 'CANCELLED'
+                            ? `
+                                <div style="font-size:0.85rem; color:var(--danger); font-weight:500;">
+                                    <i class="fa-solid fa-ban"></i> Request Cancelled by Customer
+                                    ${reasonText}
                                 </div>
-                            `;
-                        }
-
-                        let actionHtml = `
-                            <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
-                                <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:var(--border-color);" 
-                                    onclick="window.GarageLK.completeBreakdown(${b.id})" unique-id="resolve-breakdown-${b.id}">
-                                    Mark Resolved
-                                </button>
-                                <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:var(--danger); border-color:var(--danger);" 
-                                    onclick="window.GarageLK.openCancellationModal(${b.id}, 'BREAKDOWN')" unique-id="cancel-breakdown-${b.id}">
-                                    Cancel
-                                </button>
-                            </div>
-                        `;
+                              `
+                            : `
+                                <div style="font-size:0.85rem; color:var(--success); font-weight:500;">
+                                    <i class="fa-solid fa-check-double"></i> Resolved by <strong>${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</strong>
+                                    ${b.assignedMechanic ? `<br><i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone || 'N/A'})</strong>` : ''}
+                                </div>
+                              `;
 
                         item.innerHTML = `
                             <div style="flex:1;">
                                 <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                    <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert</h4>
+                                    <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.breakdownCode || 'No ID'})</span></h4>
                                     <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
                                 </div>
                                 <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
@@ -2975,97 +3308,40 @@
                                 </p>
                                 ${responseHtml}
                             </div>
-                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 140px;">
-                                <span class="badge ${badgeClass}">${b.status === 'ACCEPTED' ? 'RESCUE DISPATCHED' : b.status}</span>
-                                ${actionHtml}
+                            <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 150px;">
+                                <span class="badge ${badgeClass}">${b.status}</span>
+                                <div id="breakdown-review-btn-container-${b.id}" style="display:inline-block; margin-top:0.25rem;"></div>
                             </div>
                         `;
-                        list.appendChild(item);
+                        completedList.appendChild(item);
+
+                        if (b.status === 'COMPLETED' && b.acceptedBy) {
+                            setTimeout(async () => {
+                                const btnContainer = document.getElementById(`breakdown-review-btn-container-${b.id}`);
+                                if (btnContainer) {
+                                    try {
+                                        const existsRes = await fetch(`/api/reviews/breakdown/${b.id}/exists`);
+                                        if (existsRes.ok) {
+                                            const check = await existsRes.json();
+                                            if (!check.exists) {
+                                                btnContainer.innerHTML = `
+                                                    <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
+                                                        onclick="window.GarageLK.openBreakdownReviewModal(${b.id})" unique-id="breakdown-review-btn-${b.id}">
+                                                        <i class="fa-solid fa-star"></i> Write Review
+                                                    </button>
+                                                `;
+                                            } else {
+                                                btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Garage Reviewed</span>`;
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.error(e);
+                                    }
+                                }
+                            }, 0);
+                        }
                     });
                 }
-
-                // 2. Render Completed / Resolved Emergencies
-                if (completedList) {
-                    if (completedBreakdowns.length === 0) {
-                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed emergency history found.</p>';
-                    } else {
-                        completedList.innerHTML = '';
-                        completedBreakdowns.forEach(b => {
-                            const item = document.createElement('div');
-                            item.className = 'table-item';
-
-                            const badgeClass = b.status === 'CANCELLED' ? 'badge-cancelled' : 'badge-completed';
-                            const reasonText = (b.status === 'CANCELLED' && b.cancellationReason) 
-                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
-                                : '';
-                            const responseHtml = b.status === 'CANCELLED'
-                                ? `
-                                    <div style="font-size:0.85rem; color:var(--danger); font-weight:500;">
-                                        <i class="fa-solid fa-ban"></i> Request Cancelled by Customer
-                                        ${reasonText}
-                                    </div>
-                                  `
-                                : `
-                                    <div style="font-size:0.85rem; color:var(--success); font-weight:500;">
-                                        <i class="fa-solid fa-check-double"></i> Resolved by <strong>${b.acceptedBy ? `${b.acceptedBy.name} (${b.acceptedBy.phone || 'N/A'})` : 'Customer'}</strong>
-                                        ${b.assignedMechanic ? `<br><i class="fa-solid fa-user-gear"></i> Mechanic: <strong>${b.assignedMechanic.name} (${b.assignedMechanic.phone || 'N/A'})</strong>` : ''}
-                                    </div>
-                                  `;
-
-                            item.innerHTML = `
-                                <div style="flex:1;">
-                                    <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                        <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert</h4>
-                                        <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
-                                    </div>
-                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                        <i class="fa-solid fa-location-dot"></i> <strong>Where:</strong> ${b.address}, ${b.city}
-                                    </p>
-                                    <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3; margin-bottom:8px;">
-                                        <strong>Vehicle:</strong> ${b.vehicleNo} <br>
-                                        <strong>Description:</strong> ${b.description}
-                                    </p>
-                                    ${responseHtml}
-                                </div>
-                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width: 150px;">
-                                    <span class="badge ${badgeClass}">${b.status}</span>
-                                    <div id="breakdown-review-btn-container-${b.id}" style="display:inline-block; margin-top:0.25rem;"></div>
-                                </div>
-                            `;
-                            completedList.appendChild(item);
-
-                            if (b.status === 'COMPLETED' && b.acceptedBy) {
-                                setTimeout(async () => {
-                                    const btnContainer = document.getElementById(`breakdown-review-btn-container-${b.id}`);
-                                    if (btnContainer) {
-                                        try {
-                                            const existsRes = await fetch(`/api/reviews/breakdown/${b.id}/exists`);
-                                            if (existsRes.ok) {
-                                                const check = await existsRes.json();
-                                                if (!check.exists) {
-                                                    btnContainer.innerHTML = `
-                                                        <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
-                                                            onclick="window.GarageLK.openBreakdownReviewModal(${b.id})" unique-id="breakdown-review-btn-${b.id}">
-                                                            <i class="fa-solid fa-star"></i> Write Review
-                                                        </button>
-                                                    `;
-                                                } else {
-                                                    btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Garage Reviewed</span>`;
-                                                }
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                        }
-                                    }
-                                }, 0);
-                            }
-                        });
-                    }
-                }
-
-            } catch (err) {
-                console.error("Error loading customer breakdowns:", err);
-                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading emergencies.</p>';
             }
         },
 
@@ -3089,85 +3365,26 @@
                 // Get unique cities
                 const cities = [...new Set(approvedGarages.map(g => g.city))];
 
-                list.innerHTML = '';
-                let alertCount = 0;
+                let alertsList = [];
 
                 // 1. Load active (OPEN) alerts in operating cities
                 for (const city of cities) {
                     const res = await fetch(`/api/breakdowns/active?city=${encodeURIComponent(city)}`);
                     const alerts = await res.json();
                     if (!res.ok) continue;
-
-                    alerts.forEach(b => {
-                        alertCount++;
-                        const item = document.createElement('div');
-                        item.className = 'table-item';
-
-                        item.innerHTML = `
-                            <div style="flex:1;">
-                                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                    <h4 style="font-weight:700; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Breakdown Alert</h4>
-                                    <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
-                                </div>
-                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                    <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
-                                </p>
-                                <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                    <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
-                                    <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
-                                    <strong>Problem:</strong> ${b.description}
-                                </p>
-                            </div>
-                            <div>
-                                <button class="btn btn-primary" style="background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.25);" 
-                                    onclick="window.GarageLK.openAcceptBreakdownModal(${b.id}, '${b.city}')" unique-id="accept-breakdown-btn-${b.id}">
-                                    Accept & Dispatch
-                                </button>
-                            </div>
-                        `;
-                        list.appendChild(item);
-                    });
+                    alertsList = alertsList.concat(alerts);
                 }
+                this.ownerBreakdownsRaw = alertsList;
 
                 // 2. Load assigned (ACCEPTED) active alerts for owner's garages
                 const assignedRes = await fetch('/api/breakdowns/assigned');
                 if (assignedRes.ok) {
-                    const assignedAlerts = await assignedRes.json();
-                    assignedAlerts.forEach(b => {
-                        alertCount++;
-                        const item = document.createElement('div');
-                        item.className = 'table-item';
-
-                        item.innerHTML = `
-                            <div style="flex:1;">
-                                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                    <h4 style="font-weight:700; color:var(--secondary);"><i class="fa-solid fa-truck-pickup"></i> Dispatched Rescue (Active)</h4>
-                                    <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
-                                </div>
-                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                    <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
-                                </p>
-                                <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                    <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
-                                    <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
-                                    <strong>Assigned Garage:</strong> ${b.acceptedBy ? b.acceptedBy.name : 'N/A'} <br>
-                                    <strong>Assigned Mechanic:</strong> ${b.assignedMechanic ? `${b.assignedMechanic.name} (${b.assignedMechanic.phone})` : 'None'} <br>
-                                    <strong>Problem:</strong> ${b.description}
-                                </p>
-                            </div>
-                            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 140px;">
-                                <span class="badge badge-pending" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; font-weight:700;">
-                                    PENDING RESOLVED
-                                </span>
-                            </div>
-                        `;
-                        list.appendChild(item);
-                    });
+                    this.ownerAssignedBreakdownsRaw = await assignedRes.json();
+                } else {
+                    this.ownerAssignedBreakdownsRaw = [];
                 }
 
-                if (alertCount === 0) {
-                    list.innerHTML = `<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active emergency breakdown alerts or active dispatches in your operating cities (${cities.join(', ')}).</p>`;
-                }
+                this.renderOwnerBreakdownsFiltered();
 
             } catch (err) {
                 console.error("Error loading breakdown alerts:", err);
@@ -3189,60 +3406,172 @@
                 const history = await res.json();
                 if (!res.ok) throw new Error();
 
-                if (history.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed rescue history found.</p>';
-                    if (clearBtn) clearBtn.style.display = 'none';
-                    return;
-                }
-
-                if (clearBtn) {
-                    clearBtn.style.display = 'inline-block';
-                    clearBtn.disabled = false;
-                }
-
-                list.innerHTML = '';
-                history.forEach(b => {
-                    const item = document.createElement('div');
-                    item.className = 'table-item';
-
-                    let titleHtml = `<h4 style="font-weight:700; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Rescue</h4>`;
-                    if (b.status === 'CANCELLED') {
-                        titleHtml = `<h4 style="font-weight:700; color:var(--danger);"><i class="fa-solid fa-circle-xmark"></i> Cancelled Request</h4>`;
-                    }
-
-                    const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
-                        ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
-                        : '';
-
-                    item.innerHTML = `
-                        <div style="flex:1;">
-                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                ${titleHtml}
-                                <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
-                            </div>
-                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
-                            </p>
-                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
-                                <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
-                                ${b.assignedMechanic ? `<strong>Mechanic:</strong> ${b.assignedMechanic.name} (${b.assignedMechanic.phone}) <br>` : ''}
-                                <strong>Problem:</strong> ${b.description}
-                                ${reasonHtml}
-                            </p>
-                        </div>
-                        <div>
-                            <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.deleteBreakdownHistory(${b.id})" unique-id="delete-history-btn-${b.id}">
-                                <i class="fa-solid fa-trash-can"></i> Delete
-                            </button>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+                this.ownerBreakdownsHistoryRaw = history;
+                this.renderOwnerBreakdownsFiltered();
             } catch (err) {
                 console.error("Error loading completed history:", err);
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading completed history.</p>';
+            }
+        },
+
+        renderOwnerBreakdownsFiltered() {
+            const list = document.getElementById('owner-breakdowns-list');
+            const historyList = document.getElementById('owner-breakdown-history-list');
+            const clearBtn = document.getElementById('btn-clear-breakdown-history');
+            if (!list) return;
+
+            const searchVal = (document.getElementById('owner-breakdown-search-input')?.value || '').toLowerCase().trim();
+
+            let alerts = this.ownerBreakdownsRaw || [];
+            let assigned = this.ownerAssignedBreakdownsRaw || [];
+            let history = this.ownerBreakdownsHistoryRaw || [];
+
+            if (searchVal) {
+                const filterFn = b => 
+                    (b.breakdownCode || '').toLowerCase().includes(searchVal) ||
+                    (b.user.fullName || b.user.username || '').toLowerCase().includes(searchVal) ||
+                    (b.contactPhone || '').toLowerCase().includes(searchVal) ||
+                    (b.vehicleNo || '').toLowerCase().includes(searchVal) ||
+                    (b.description || '').toLowerCase().includes(searchVal) ||
+                    (b.city || '').toLowerCase().includes(searchVal) ||
+                    (b.address || '').toLowerCase().includes(searchVal);
+
+                alerts = alerts.filter(filterFn);
+                assigned = assigned.filter(filterFn);
+                history = history.filter(filterFn);
+            }
+
+            list.innerHTML = '';
+            let alertCount = 0;
+
+            // Render active open alerts
+            alerts.forEach(b => {
+                alertCount++;
+                const item = document.createElement('div');
+                item.className = 'table-item';
+                item.innerHTML = `
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                            <h4 style="font-weight:700; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Breakdown Alert <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.breakdownCode || 'No ID'})</span></h4>
+                            <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                            <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
+                        </p>
+                        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                            <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
+                            <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
+                            <strong>Problem:</strong> ${b.description}
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:var(--border-color);" 
+                            onclick="window.GarageLK.quickLookupID('${b.breakdownCode}')" unique-id="lookup-breakdown-btn-${b.id}">
+                            <i class="fa-solid fa-search"></i> Lookup Details
+                        </button>
+                        <button class="btn btn-primary" style="background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.25); padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                            onclick="window.GarageLK.openAcceptBreakdownModal(${b.id}, '${b.city}')" unique-id="accept-breakdown-btn-${b.id}">
+                            Accept & Dispatch
+                        </button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+
+            // Render assigned active alerts
+            assigned.forEach(b => {
+                alertCount++;
+                const item = document.createElement('div');
+                item.className = 'table-item';
+                item.innerHTML = `
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                            <h4 style="font-weight:700; color:var(--secondary);"><i class="fa-solid fa-truck-pickup"></i> Dispatched Rescue (Active) <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.breakdownCode || 'No ID'})</span></h4>
+                            <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                            <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
+                        </p>
+                        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                            <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
+                            <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
+                            <strong>Assigned Garage:</strong> ${b.acceptedBy ? b.acceptedBy.name : 'N/A'} <br>
+                            <strong>Assigned Mechanic:</strong> ${b.assignedMechanic ? `${b.assignedMechanic.name} (${b.assignedMechanic.phone})` : 'None'} <br>
+                            <strong>Problem:</strong> ${b.description}
+                        </p>
+                    </div>
+                    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 0.5rem; min-width: 140px;">
+                        <span class="badge badge-pending" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; font-weight:700;">
+                            PENDING RESOLVED
+                        </span>
+                        <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                            onclick="window.GarageLK.quickLookupID('${b.breakdownCode}')" unique-id="lookup-assigned-btn-${b.id}">
+                            <i class="fa-solid fa-search"></i> Lookup Details
+                        </button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+
+            if (alertCount === 0) {
+                list.innerHTML = `<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No active emergency breakdown alerts or active dispatches matching search.</p>`;
+            }
+
+            // Render completed history
+            if (historyList) {
+                if (history.length === 0) {
+                    historyList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed rescue history found matching search.</p>';
+                    if (clearBtn) clearBtn.style.display = 'none';
+                } else {
+                    if (clearBtn) {
+                        clearBtn.style.display = 'inline-block';
+                        clearBtn.disabled = false;
+                    }
+                    historyList.innerHTML = '';
+                    history.forEach(b => {
+                        const item = document.createElement('div');
+                        item.className = 'table-item';
+
+                        let titleHtml = `<h4 style="font-weight:700; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completed Rescue <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.breakdownCode || 'No ID'})</span></h4>`;
+                        if (b.status === 'CANCELLED') {
+                            titleHtml = `<h4 style="font-weight:700; color:var(--danger);"><i class="fa-solid fa-circle-xmark"></i> Cancelled Request <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.breakdownCode || 'No ID'})</span></h4>`;
+                        }
+
+                        const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                            ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                            : '';
+
+                        item.innerHTML = `
+                            <div style="flex:1;">
+                                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                                    ${titleHtml}
+                                    <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
+                                </div>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                                    <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
+                                </p>
+                                <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                                    <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
+                                    <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
+                                    ${b.assignedMechanic ? `<strong>Mechanic:</strong> ${b.assignedMechanic.name} (${b.assignedMechanic.phone}) <br>` : ''}
+                                    <strong>Problem:</strong> ${b.description}
+                                    ${reasonHtml}
+                                </p>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.quickLookupID('${b.breakdownCode}')" unique-id="lookup-history-btn-${b.id}">
+                                    <i class="fa-solid fa-search"></i> Lookup Details
+                                </button>
+                                <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                    onclick="window.GarageLK.deleteBreakdownHistory(${b.id})" unique-id="delete-history-btn-${b.id}">
+                                    <i class="fa-solid fa-trash-can"></i> Delete
+                                </button>
+                            </div>
+                        `;
+                        historyList.appendChild(item);
+                    });
+                }
             }
         },
 
@@ -3306,54 +3635,78 @@
                 if (!res.ok) throw new Error();
 
                 this.ownerMechanics = mechanics;
-
-                if (mechanics.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No mechanics registered yet. Click "Add Mechanic" to build your team.</p>';
-                    return;
-                }
-
-                list.innerHTML = '';
-                mechanics.forEach(m => {
-                    const item = document.createElement('div');
-                    item.className = 'table-item';
-
-                    let statusBadgeClass = 'badge-pending';
-                    if (m.status === 'AVAILABLE') {
-                        statusBadgeClass = 'badge-approved';
-                    } else if (m.status === 'ON_RESCUE') {
-                        statusBadgeClass = 'badge-completed';
-                    }
-
-                    item.innerHTML = `
-                        <div style="flex:1;">
-                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                                <h4 style="font-weight:700; color:var(--text-main);">${m.name}</h4>
-                                <span class="badge ${statusBadgeClass}">${m.status}</span>
-                            </div>
-                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                <i class="fa-solid fa-phone"></i> <strong>Phone:</strong> ${m.phone}
-                            </p>
-                            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                <i class="fa-solid fa-screwdriver-wrench"></i> <strong>Specialization:</strong> ${m.specialization || 'General Technician'}
-                            </p>
-                        </div>
-                        <div style="display:flex; gap:0.5rem; align-items:center;">
-                            <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.openEditMechanicModal(${m.id})" unique-id="edit-mechanic-btn-${m.id}">
-                                <i class="fa-solid fa-pen-to-square"></i> Edit
-                            </button>
-                            <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.handleDeleteMechanic(${m.id})" unique-id="delete-mechanic-btn-${m.id}">
-                                <i class="fa-solid fa-trash-can"></i> Delete
-                            </button>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+                this.renderOwnerMechanicsFiltered();
             } catch (err) {
                 console.error("Error loading mechanics:", err);
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading mechanics list.</p>';
             }
+        },
+
+        renderOwnerMechanicsFiltered() {
+            const garageId = document.getElementById('owner-mechanics-garage-select') ? document.getElementById('owner-mechanics-garage-select').value : '';
+            const list = document.getElementById('owner-mechanics-list');
+            if (!list) return;
+
+            if (!garageId) {
+                list.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:2rem;">Please select a garage to manage mechanics.</p>';
+                return;
+            }
+
+            const searchVal = (document.getElementById('owner-mechanic-search-input')?.value || '').toLowerCase().trim();
+            let mechanics = this.ownerMechanics || [];
+
+            if (searchVal) {
+                mechanics = mechanics.filter(m => 
+                    (m.name || '').toLowerCase().includes(searchVal) ||
+                    (m.phone || '').toLowerCase().includes(searchVal) ||
+                    (m.specialization || '').toLowerCase().includes(searchVal) ||
+                    (m.status || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (mechanics.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No mechanics found matching search.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            mechanics.forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'table-item';
+
+                let statusBadgeClass = 'badge-pending';
+                if (m.status === 'AVAILABLE') {
+                    statusBadgeClass = 'badge-approved';
+                } else if (m.status === 'ON_RESCUE') {
+                    statusBadgeClass = 'badge-completed';
+                }
+
+                item.innerHTML = `
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                            <h4 style="font-weight:700; color:var(--text-main);">${m.name}</h4>
+                            <span class="badge ${statusBadgeClass}">${m.status}</span>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
+                            <i class="fa-solid fa-phone"></i> <strong>Phone:</strong> ${m.phone}
+                        </p>
+                        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                            <i class="fa-solid fa-screwdriver-wrench"></i> <strong>Specialization:</strong> ${m.specialization || 'General Technician'}
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                            onclick="window.GarageLK.openEditMechanicModal(${m.id})" unique-id="edit-mechanic-btn-${m.id}">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                        <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                            onclick="window.GarageLK.handleDeleteMechanic(${m.id})" unique-id="delete-mechanic-btn-${m.id}">
+                            <i class="fa-solid fa-trash-can"></i> Delete
+                        </button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
         },
 
         openAddMechanicModal() {
@@ -5048,53 +5401,70 @@
 
                 this.ownerShops = shops;
 
-                if (shops.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have not registered any spare part shops yet.</p>';
-                    return;
-                }
-
-                list.innerHTML = '';
-                shops.forEach(s => {
-                    const item = document.createElement('div');
-                    item.className = 'table-item';
-
-                    let badgeClass = 'badge-pending';
-                    if (s.status === 'APPROVED') {
-                        badgeClass = 'badge-completed';
-                    } else if (s.status === 'REJECTED') {
-                        badgeClass = 'badge-danger';
-                    }
-
-                    item.innerHTML = `
-                        <div style="display:flex; gap:1rem; align-items:center;">
-                            <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=150'}" style="width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);">
-                            <div>
-                                <h4 style="font-weight:700;">${s.shopName}</h4>
-                                <p style="font-size:0.85rem; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}</p>
-                            </div>
-                        </div>
-                        <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
-                            <span class="badge ${badgeClass}" id="shop-status-badge-${s.id}" style="display:none;">${s.status}</span>
-                            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
-                                <button class="btn btn-outline" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.toggleShopStatusDisplay('${s.id}', this)" unique-id="toggle-shop-status-btn-${s.id}">
-                                    Show Status
-                                </button>
-                                <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.openEditShopModal(${s.id})" unique-id="edit-shop-btn-${s.id}">
-                                    Edit
-                                </button>
-                                <button class="btn btn-outline btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.handleDeleteShop(${s.id})" unique-id="delete-shop-btn-${s.id}">
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
-
+                this.renderShopMyShopsFiltered();
             } catch (err) {
                 console.error("Error loading owner shops:", err);
                 list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading shops.</p>';
             }
+        },
+
+        renderShopMyShopsFiltered() {
+            const list = document.getElementById('shop-my-shops-list');
+            if (!list) return;
+
+            const searchVal = (document.getElementById('shop-my-shops-search-input')?.value || '').toLowerCase().trim();
+            let shops = this.ownerShops || [];
+
+            if (searchVal) {
+                shops = shops.filter(s => 
+                    (s.shopName || '').toLowerCase().includes(searchVal) ||
+                    (s.city || '').toLowerCase().includes(searchVal) ||
+                    (s.address || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (shops.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No shops found matching search.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            shops.forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'table-item';
+
+                let badgeClass = 'badge-pending';
+                if (s.status === 'APPROVED') {
+                    badgeClass = 'badge-completed';
+                } else if (s.status === 'REJECTED') {
+                    badgeClass = 'badge-danger';
+                }
+
+                item.innerHTML = `
+                    <div style="display:flex; gap:1rem; align-items:center;">
+                        <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=150'}" style="width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);">
+                        <div>
+                            <h4 style="font-weight:700;">${s.shopName}</h4>
+                            <p style="font-size:0.85rem; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}</p>
+                        </div>
+                    </div>
+                    <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                        <span class="badge ${badgeClass}" id="shop-status-badge-${s.id}" style="display:none;">${s.status}</span>
+                        <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                            <button class="btn btn-outline" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.toggleShopStatusDisplay('${s.id}', this)" unique-id="toggle-shop-status-btn-${s.id}">
+                                Show Status
+                            </button>
+                            <button class="btn btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.openEditShopModal(${s.id})" unique-id="edit-shop-btn-${s.id}">
+                                Edit
+                            </button>
+                            <button class="btn btn-outline btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="window.GarageLK.handleDeleteShop(${s.id})" unique-id="delete-shop-btn-${s.id}">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
         },
 
         loadShopInventoryDropdown() {
@@ -5520,41 +5890,117 @@
                 const bookings = await res.json();
                 if (!res.ok) throw new Error();
 
-                const pendingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'READY_FOR_PICKUP');
-                const completedBookings = bookings.filter(b => b.status === 'PICKED_UP' || b.status === 'CANCELLED');
+                this.customerReservationsRaw = bookings;
+                this.renderCustomerReservationsFiltered();
+            } catch (err) {
+                console.error("Error loading customer reservations:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading reservations.</p>';
+            }
+        },
 
-                // 1. Render Pending Reservations
-                if (pendingBookings.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have no pending reservations.</p>';
+        renderCustomerReservationsFiltered() {
+            const list = document.getElementById('customer-reservations-list');
+            const completedList = document.getElementById('customer-picked-up-list');
+            if (!list) return;
+
+            const searchVal = (document.getElementById('customer-reservation-search-input')?.value || '').toLowerCase().trim();
+            let bookings = this.customerReservationsRaw || [];
+
+            if (searchVal) {
+                bookings = bookings.filter(b => 
+                    (b.bookingCode || '').toLowerCase().includes(searchVal) ||
+                    (b.sparePart && b.sparePart.partName || '').toLowerCase().includes(searchVal) ||
+                    (b.sparePart && b.sparePart.shop && b.sparePart.shop.shopName || '').toLowerCase().includes(searchVal) ||
+                    (b.notes || '').toLowerCase().includes(searchVal) ||
+                    (b.status || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            const pendingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'READY_FOR_PICKUP');
+            const completedBookings = bookings.filter(b => b.status === 'PICKED_UP' || b.status === 'CANCELLED');
+
+            // 1. Render Pending Reservations
+            if (pendingBookings.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have no pending reservations.</p>';
+            } else {
+                list.innerHTML = '';
+                pendingBookings.forEach(b => {
+                    const item = document.createElement('div');
+                    item.className = 'table-item';
+
+                    let badgeClass = 'badge-pending';
+                    if (b.status === 'READY_FOR_PICKUP') badgeClass = 'badge-approved';
+
+                    let actionHtml = `
+                        <button class="btn btn-outline btn-danger" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
+                            onclick="window.GarageLK.openCancellationModal(${b.id}, 'PART_RESERVATION')" unique-id="cancel-part-btn-${b.id}">
+                            Cancel Reservation
+                        </button>
+                    `;
+
+                    const formattedPickup = new Date(b.pickupDate).toLocaleString();
+
+                    item.innerHTML = `
+                        <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                            <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
+                            <div>
+                                <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
+                                    <strong>Shop:</strong> ${b.sparePart.shop.shopName} &bull; <strong>Quantity:</strong> ${b.quantity} unit(s)
+                                </p>
+                                <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
+                                    <strong>Pickup Estimation:</strong> ${formattedPickup} <br>
+                                    ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
+                            <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
+                            <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
+                            ${actionHtml}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            // 2. Render Completed / Picked-Up Reservations
+            if (completedList) {
+                if (completedBookings.length === 0) {
+                    completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have no completed reservations.</p>';
                 } else {
-                    list.innerHTML = '';
-                    pendingBookings.forEach(b => {
+                    completedList.innerHTML = '';
+                    completedBookings.forEach(b => {
                         const item = document.createElement('div');
                         item.className = 'table-item';
 
                         let badgeClass = 'badge-pending';
-                        if (b.status === 'READY_FOR_PICKUP') badgeClass = 'badge-approved';
+                        if (b.status === 'PICKED_UP') badgeClass = 'badge-completed';
+                        else if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
 
-                        let actionHtml = `
-                            <button class="btn btn-outline btn-danger" style="padding: 0.4rem 0.8rem; font-size:0.8rem;" 
-                                onclick="window.GarageLK.openCancellationModal(${b.id}, 'PART_RESERVATION')" unique-id="cancel-part-btn-${b.id}">
-                                Cancel Reservation
-                            </button>
-                        `;
+                        let actionHtml = '';
+                        if (b.status === 'PICKED_UP') {
+                            actionHtml = `<div id="rate-shop-btn-container-${b.id}" style="display:inline-block;"></div>`;
+                        }
 
                         const formattedPickup = new Date(b.pickupDate).toLocaleString();
+
+                        const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                            ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                            : '';
 
                         item.innerHTML = `
                             <div style="flex:1; display:flex; gap:1rem; align-items:center;">
                                 <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
                                 <div>
-                                    <h4 style="font-weight:700; margin:0;">${b.sparePart.partName}</h4>
+                                    <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
                                         <strong>Shop:</strong> ${b.sparePart.shop.shopName} &bull; <strong>Quantity:</strong> ${b.quantity} unit(s)
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
                                         <strong>Pickup Estimation:</strong> ${formattedPickup} <br>
                                         ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                        ${reasonHtml}
                                     </p>
                                 </div>
                             </div>
@@ -5564,92 +6010,38 @@
                                 ${actionHtml}
                             </div>
                         `;
-                        list.appendChild(item);
+                        completedList.appendChild(item);
+
+                        if (b.status === 'PICKED_UP') {
+                            const rateBtnContainerId = `rate-shop-btn-container-${b.id}`;
+                            const shopName = b.sparePart.shop.shopName;
+                            setTimeout(async () => {
+                                const btnContainer = document.getElementById(rateBtnContainerId);
+                                if (btnContainer) {
+                                    try {
+                                        const existsRes = await fetch(`/api/shop-reviews/booking/${b.id}/exists`);
+                                        if (existsRes.ok) {
+                                            const check = await existsRes.json();
+                                            if (!check.exists) {
+                                                btnContainer.innerHTML = `
+                                                    <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                                        onclick="window.GarageLK.openShopReviewModal(${b.id}, '${shopName.replace(/'/g, "\\'")}')" 
+                                                        unique-id="rate-shop-btn-${b.id}">
+                                                        <i class="fa-solid fa-star"></i> Write Review
+                                                    </button>
+                                                `;
+                                            } else {
+                                                btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Shop Reviewed</span>`;
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.error(e);
+                                    }
+                                }
+                            }, 0);
+                        }
                     });
                 }
-
-                // 2. Render Completed / Picked-Up Reservations
-                if (completedList) {
-                    if (completedBookings.length === 0) {
-                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">You have no completed reservations.</p>';
-                    } else {
-                        completedList.innerHTML = '';
-                        completedBookings.forEach(b => {
-                            const item = document.createElement('div');
-                            item.className = 'table-item';
-
-                            let badgeClass = 'badge-pending';
-                            if (b.status === 'PICKED_UP') badgeClass = 'badge-completed';
-                            else if (b.status === 'CANCELLED') badgeClass = 'badge-cancelled';
-
-                            let actionHtml = '';
-                            if (b.status === 'PICKED_UP') {
-                                actionHtml = `<div id="rate-shop-btn-container-${b.id}" style="display:inline-block;"></div>`;
-                            }
-
-                            const formattedPickup = new Date(b.pickupDate).toLocaleString();
-
-                            const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
-                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
-                                : '';
-
-                            item.innerHTML = `
-                                <div style="flex:1; display:flex; gap:1rem; align-items:center;">
-                                    <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
-                                    <div>
-                                        <h4 style="font-weight:700; margin:0;">${b.sparePart.partName}</h4>
-                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
-                                            <strong>Shop:</strong> ${b.sparePart.shop.shopName} &bull; <strong>Quantity:</strong> ${b.quantity} unit(s)
-                                        </p>
-                                        <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
-                                            <strong>Pickup Estimation:</strong> ${formattedPickup} <br>
-                                            ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
-                                            ${reasonHtml}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
-                                    <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
-                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
-                                    ${actionHtml}
-                                </div>
-                            `;
-                            completedList.appendChild(item);
-
-                            if (b.status === 'PICKED_UP') {
-                                const rateBtnContainerId = `rate-shop-btn-container-${b.id}`;
-                                const shopName = b.sparePart.shop.shopName;
-                                setTimeout(async () => {
-                                    const btnContainer = document.getElementById(rateBtnContainerId);
-                                    if (btnContainer) {
-                                        try {
-                                            const existsRes = await fetch(`/api/shop-reviews/booking/${b.id}/exists`);
-                                            if (existsRes.ok) {
-                                                const check = await existsRes.json();
-                                                if (!check.exists) {
-                                                    btnContainer.innerHTML = `
-                                                        <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                                            onclick="window.GarageLK.openShopReviewModal(${b.id}, '${shopName.replace(/'/g, "\\'")}')" 
-                                                            unique-id="rate-shop-btn-${b.id}">
-                                                            <i class="fa-solid fa-star"></i> Write Review
-                                                        </button>
-                                                    `;
-                                                } else {
-                                                    btnContainer.innerHTML = `<span class="badge badge-approved" style="font-size:0.75rem; padding:0.4rem 0.8rem;"><i class="fa-solid fa-check"></i> Shop Reviewed</span>`;
-                                                }
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                        }
-                                    }
-                                }, 0);
-                            }
-                        });
-                    }
-                }
-            } catch (err) {
-                console.error("Error loading customer reservations:", err);
-                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading reservations.</p>';
             }
         },
 
@@ -5668,59 +6060,139 @@
                 const bookings = await res.json();
                 if (!res.ok) throw new Error();
 
-                const incomingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'READY_FOR_PICKUP');
-                const completedBookings = bookings.filter(b => b.status === 'PICKED_UP' || b.status === 'CANCELLED');
+                this.shopReservationsRaw = bookings;
+                this.renderShopReservationsFiltered();
+            } catch (err) {
+                console.error("Error loading shop reservations:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading reservations.</p>';
+            }
+        },
 
-                if (incomingBookings.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No incoming spare part reservations.</p>';
+        renderShopReservationsFiltered() {
+            const list = document.getElementById('shop-reservations-list');
+            const completedList = document.getElementById('shop-completed-reservations-list');
+            if (!list) return;
+
+            const searchVal = (document.getElementById('shop-reservation-search-input')?.value || '').toLowerCase().trim();
+
+            let bookings = this.shopReservationsRaw || [];
+
+            if (searchVal) {
+                bookings = bookings.filter(b => 
+                    (b.bookingCode || '').toLowerCase().includes(searchVal) ||
+                    (b.sparePart.partName || '').toLowerCase().includes(searchVal) ||
+                    (b.sparePart.shop.shopName || '').toLowerCase().includes(searchVal) ||
+                    (b.customer.user.fullName || b.customer.user.username || '').toLowerCase().includes(searchVal) ||
+                    (b.customer.user.phone || '').toLowerCase().includes(searchVal) ||
+                    (b.notes || '').toLowerCase().includes(searchVal)
+                );
+            }
+
+            const incomingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'READY_FOR_PICKUP');
+            const completedBookings = bookings.filter(b => b.status === 'PICKED_UP' || b.status === 'CANCELLED');
+
+            if (incomingBookings.length === 0) {
+                list.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No incoming spare part reservations matching search.</p>';
+            } else {
+                list.innerHTML = '';
+                incomingBookings.forEach(b => {
+                    const item = document.createElement('div');
+                    item.className = 'table-item';
+
+                    let badgeClass = 'badge-pending';
+                    if (b.status === 'READY_FOR_PICKUP') badgeClass = 'badge-approved';
+
+                    let actionHtml = '';
+                    if (b.status === 'PENDING') {
+                        actionHtml = `
+                            <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'READY_FOR_PICKUP')" unique-id="ready-btn-${b.id}">
+                                Mark Ready
+                            </button>
+                            <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'CANCELLED')" unique-id="reject-res-btn-${b.id}">
+                                Reject / Cancel
+                            </button>
+                        `;
+                    } else if (b.status === 'READY_FOR_PICKUP') {
+                        actionHtml = `
+                            <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:var(--success);" 
+                                onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'PICKED_UP')" unique-id="picked-btn-${b.id}">
+                                Mark Picked Up
+                            </button>
+                            <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'CANCELLED')" unique-id="reject-res-btn-${b.id}">
+                                Cancel
+                            </button>
+                        `;
+                    }
+
+                    const formattedPickup = new Date(b.pickupDate).toLocaleString();
+                    const cust = b.customer.user;
+
+                    item.innerHTML = `
+                        <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                            <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
+                            <div>
+                                <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
+                                    <strong>Customer:</strong> ${cust.fullName || cust.username} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
+                                </p>
+                                <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
+                                    <strong>Requested Pickup:</strong> ${formattedPickup} <br>
+                                    ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
+                            <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
+                            <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
+                            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                                ${actionHtml}
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            if (completedList) {
+                if (completedBookings.length === 0) {
+                    completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed reservation history matching search.</p>';
                 } else {
-                    list.innerHTML = '';
-                    incomingBookings.forEach(b => {
+                    completedList.innerHTML = '';
+                    completedBookings.forEach(b => {
                         const item = document.createElement('div');
                         item.className = 'table-item';
 
-                        let badgeClass = 'badge-pending';
-                        if (b.status === 'READY_FOR_PICKUP') badgeClass = 'badge-approved';
+                        let badgeClass = b.status === 'PICKED_UP' ? 'badge-completed' : 'badge-cancelled';
 
-                        let actionHtml = '';
-                        if (b.status === 'PENDING') {
-                            actionHtml = `
-                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                    onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'READY_FOR_PICKUP')" unique-id="ready-btn-${b.id}">
-                                    Mark Ready
-                                </button>
-                                <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                    onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'CANCELLED')" unique-id="reject-res-btn-${b.id}">
-                                    Reject / Cancel
-                                </button>
-                            `;
-                        } else if (b.status === 'READY_FOR_PICKUP') {
-                            actionHtml = `
-                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:var(--success);" 
-                                    onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'PICKED_UP')" unique-id="picked-btn-${b.id}">
-                                    Mark Picked Up
-                                </button>
-                                <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                    onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'CANCELLED')" unique-id="reject-res-btn-${b.id}">
-                                    Cancel
-                                </button>
-                            `;
-                        }
+                        let actionHtml = `
+                            <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                                onclick="window.GarageLK.deleteSparePartBookingHistory(${b.id})" unique-id="delete-part-booking-btn-${b.id}">
+                                <i class="fa-solid fa-trash-can"></i> Delete
+                            </button>
+                        `;
 
                         const formattedPickup = new Date(b.pickupDate).toLocaleString();
                         const cust = b.customer.user;
+
+                        const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
+                            ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
+                            : '';
 
                         item.innerHTML = `
                             <div style="flex:1; display:flex; gap:1rem; align-items:center;">
                                 <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
                                 <div>
-                                    <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
+                                    <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
                                         <strong>Customer:</strong> ${cust.fullName || cust.username} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
-                                        <strong>Requested Pickup:</strong> ${formattedPickup} <br>
-                                        ${b.notes ? `<strong>Notes:</strong> ${b.notes}` : ''}
+                                        <strong>Requested Pickup:</strong> ${formattedPickup}
+                                        ${b.notes ? `<br><strong>Notes:</strong> ${b.notes}` : ''}
+                                        ${reasonHtml}
                                     </p>
                                 </div>
                             </div>
@@ -5732,65 +6204,9 @@
                                 </div>
                             </div>
                         `;
-                        list.appendChild(item);
+                        completedList.appendChild(item);
                     });
                 }
-
-                if (completedList) {
-                    if (completedBookings.length === 0) {
-                        completedList.innerHTML = '<p style="text-align:center; padding: 3rem; color:var(--text-muted);">No completed reservation history.</p>';
-                    } else {
-                        completedList.innerHTML = '';
-                        completedBookings.forEach(b => {
-                            const item = document.createElement('div');
-                            item.className = 'table-item';
-
-                            let badgeClass = b.status === 'PICKED_UP' ? 'badge-completed' : 'badge-cancelled';
-
-                            let actionHtml = `
-                                <button class="btn btn-outline" style="color:var(--danger); border-color:var(--border-color); padding:0.4rem 0.8rem; font-size:0.8rem;" 
-                                    onclick="window.GarageLK.deleteSparePartBookingHistory(${b.id})" unique-id="delete-part-booking-btn-${b.id}">
-                                    <i class="fa-solid fa-trash-can"></i> Delete
-                                </button>
-                            `;
-
-                            const formattedPickup = new Date(b.pickupDate).toLocaleString();
-                            const cust = b.customer.user;
-
-                            const reasonHtml = (b.status === 'CANCELLED' && b.cancellationReason) 
-                                ? `<br><strong style="color:var(--danger);">Reason for Cancel:</strong> ${b.cancellationReason}` 
-                                : '';
-
-                            item.innerHTML = `
-                                <div style="flex:1; display:flex; gap:1rem; align-items:center;">
-                                    <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
-                                    <div>
-                                        <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
-                                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
-                                            <strong>Customer:</strong> ${cust.fullName || cust.username} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
-                                        </p>
-                                        <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
-                                            <strong>Requested Pickup:</strong> ${formattedPickup}
-                                            ${b.notes ? `<br><strong>Notes:</strong> ${b.notes}` : ''}
-                                            ${reasonHtml}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div style="text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:180px;">
-                                    <span class="badge ${badgeClass}">${b.status.replace(/_/g, ' ')}</span>
-                                    <span style="font-weight:bold; color:var(--secondary); font-size:0.95rem;">LKR ${(b.totalPrice != null ? b.totalPrice : (b.price != null ? b.price : 0)).toFixed(2)}</span>
-                                    <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
-                                        ${actionHtml}
-                                    </div>
-                                </div>
-                            `;
-                            completedList.appendChild(item);
-                        });
-                    }
-                }
-            } catch (err) {
-                console.error("Error loading shop reservations:", err);
-                list.innerHTML = '<p style="text-align:center; padding: 2rem; color:var(--danger);">Error loading reservations.</p>';
             }
         },
 
@@ -6402,6 +6818,264 @@
             }
         },
 
+        async quickLookupID(inputIdOrCode) {
+            let code = '';
+            if (typeof inputIdOrCode === 'string' && (inputIdOrCode.startsWith('GBK-') || inputIdOrCode.startsWith('SPB-') || inputIdOrCode.startsWith('EMB-'))) {
+                code = inputIdOrCode.trim();
+            } else {
+                const inputEl = document.getElementById(inputIdOrCode);
+                if (!inputEl) return;
+                code = inputEl.value.trim();
+            }
+            if (!code) {
+                this.showToast('Please enter an ID code.', 'error');
+                return;
+            }
+
+            const contentEl = document.getElementById('search-details-content');
+            if (!contentEl) return;
+
+            contentEl.innerHTML = '<div style="text-align:center; padding:2rem;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:var(--primary);"></i><p style="margin-top:1rem; color:var(--text-secondary);">Retrieving details...</p></div>';
+            this.openModal('modal-search-details');
+
+            try {
+                const res = await fetch(`/api/search/code/${encodeURIComponent(code)}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    contentEl.innerHTML = `
+                        <div style="text-align:center; padding:2rem;">
+                            <i class="fa-solid fa-circle-exclamation" style="font-size:3rem; color:var(--danger); margin-bottom:1rem;"></i>
+                            <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:0.5rem; color:var(--text-primary);">Search Failed</h3>
+                            <p style="color:var(--text-secondary); margin-bottom:0;">${data.message || 'Could not retrieve request details.'}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render based on request type
+                let badgeClass = 'badge-pending';
+                if (data.status === 'APPROVED' || data.status === 'READY_FOR_PICKUP' || data.status === 'ACCEPTED') {
+                    badgeClass = 'badge-approved';
+                } else if (data.status === 'COMPLETED' || data.status === 'PICKED_UP' || data.status === 'RESOLVED') {
+                    badgeClass = 'badge-completed';
+                } else if (data.status === 'CANCELLED') {
+                    badgeClass = 'badge-cancelled';
+                }
+
+                let headerTitle = '';
+                let headerIcon = '';
+                let detailsHtml = '';
+
+                if (data.type === 'BOOKING') {
+                    headerIcon = '<i class="fa-solid fa-calendar-check" style="color:var(--primary);"></i>';
+                    headerTitle = 'Garage Booking Appointment';
+                    
+                    const priceVal = data.totalPrice ? `LKR ${parseFloat(data.totalPrice).toFixed(2)}` : 'LKR 0.00';
+                    const notesText = data.notes ? data.notes : '<em style="color:var(--text-muted);">None</em>';
+                    const descText = data.description ? data.description : '<em style="color:var(--text-muted);">None</em>';
+                    
+                    detailsHtml = `
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Garage Name</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.garageName}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Service Type</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.serviceType || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Booking Date & Time</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.bookingDate} &bull; ${data.timeSlot}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Total Cost</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--secondary); font-size:1.1rem;">${priceVal}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Vehicle Info</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.vehicleType} (${data.vehicleNo})</p>
+                            </div>
+                        </div>
+                        
+                        <div style="border-top: 1px solid var(--border-color); padding-top:1rem; margin-bottom:1.5rem;">
+                            <h4 style="font-size:0.9rem; font-weight:700; margin:0 0 0.5rem 0; color:var(--text-primary);">Description & Instructions</h4>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); background:var(--bg-surface-tint); padding:0.75rem; border-radius:var(--radius-sm); margin:0;">${descText}</p>
+                        </div>
+                        
+                        <div style="border-top: 1px solid var(--border-color); padding-top:1rem; margin-bottom:1.5rem;">
+                            <h4 style="font-size:0.9rem; font-weight:700; margin:0 0 0.5rem 0; color:var(--text-primary);">Additional Notes</h4>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); background:var(--bg-surface-tint); padding:0.75rem; border-radius:var(--radius-sm); margin:0;">${notesText}</p>
+                        </div>
+                    `;
+                } else if (data.type === 'SPARE_PART') {
+                    headerIcon = '<i class="fa-solid fa-gears" style="color:var(--primary);"></i>';
+                    headerTitle = 'Spare Part Reservation';
+                    
+                    const priceVal = data.totalPrice ? `LKR ${parseFloat(data.totalPrice).toFixed(2)}` : 'LKR 0.00';
+                    const notesText = data.notes ? data.notes : '<em style="color:var(--text-muted);">None</em>';
+                    
+                    detailsHtml = `
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Shop Name</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.shopName}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Part Name</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.partName}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Quantity Reserved</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.quantity} units</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Total Price</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--secondary); font-size:1.1rem;">${priceVal}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Pickup Deadline</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${new Date(data.pickupDate).toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Reserved Date</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${new Date(data.bookingDate).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="border-top: 1px solid var(--border-color); padding-top:1rem; margin-bottom:1.5rem;">
+                            <h4 style="font-size:0.9rem; font-weight:700; margin:0 0 0.5rem 0; color:var(--text-primary);">Buyer Notes</h4>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); background:var(--bg-surface-tint); padding:0.75rem; border-radius:var(--radius-sm); margin:0;">${notesText}</p>
+                        </div>
+                    `;
+                } else if (data.type === 'BREAKDOWN') {
+                    headerIcon = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i>';
+                    headerTitle = 'Emergency Breakdown Request';
+                    
+                    const mechInfo = data.assignedMechanicName 
+                        ? `<p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.assignedMechanicName} (${data.assignedMechanicPhone || 'N/A'})</p>`
+                        : '<p style="color:var(--text-muted); margin:2px 0 0 0;">None assigned yet</p>';
+
+                    detailsHtml = `
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Location City</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.locationCity}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Full Address</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.address}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Vehicle Plate No.</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.vehicleNo}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Contact Phone</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.contactPhone}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Dispatched Garage</span>
+                                <p style="font-weight:700; margin:2px 0 0 0; color:var(--text-primary);">${data.assignedGarageName || 'None'}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Assigned Mechanic</span>
+                                ${mechInfo}
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid var(--border-color); padding-top:1rem; margin-bottom:1.5rem;">
+                            <h4 style="font-size:0.9rem; font-weight:700; margin:0 0 0.5rem 0; color:var(--text-primary);">Stranded Situation</h4>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); background:var(--bg-surface-tint); padding:0.75rem; border-radius:var(--radius-sm); margin:0;">${data.description}</p>
+                        </div>
+                    `;
+                }
+
+                // Common customer detail section
+                const custName = data.customerName;
+                const custPhone = data.customerPhone || 'N/A';
+                const custEmail = data.customerEmail || 'N/A';
+
+                const customerSectionHtml = `
+                    <div style="border-top: 1px solid var(--border-color); padding-top:1rem; margin-bottom:1.5rem;">
+                        <h4 style="font-size:0.9rem; font-weight:700; margin:0 0 0.75rem 0; color:var(--text-primary);"><i class="fa-solid fa-user-tag"></i> Customer Information</h4>
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:0.75rem;">
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">Name</span>
+                                <p style="font-weight:600; margin:2px 0 0 0; font-size:0.85rem; color:var(--text-primary);">${custName}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">Phone Number</span>
+                                <p style="font-weight:600; margin:2px 0 0 0; font-size:0.85rem; color:var(--text-primary);">${custPhone}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">Email Address</span>
+                                <p style="font-weight:600; margin:2px 0 0 0; font-size:0.85rem; color:var(--text-primary);">${custEmail}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Cancellation reason section (if cancelled)
+                let cancellationHtml = '';
+                if (data.status === 'CANCELLED') {
+                    cancellationHtml = `
+                        <div style="background:rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius:var(--radius-md); padding:1rem; margin-bottom:1.5rem;">
+                            <h4 style="font-size:0.9rem; font-weight:700; margin:0 0 0.5rem 0; color:#ef4444;"><i class="fa-solid fa-ban"></i> Reason for Cancellation</h4>
+                            <p style="font-size:0.85rem; color:#f87171; margin:0; line-height:1.4;">${data.cancellationReason || 'No reason provided.'}</p>
+                        </div>
+                    `;
+                }
+
+                contentEl.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:1rem; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.5rem;">
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <div style="font-size:1.75rem; width:45px; height:45px; display:flex; align-items:center; justify-content:center; background:var(--bg-surface-tint); border-radius:var(--radius-md);">
+                                ${headerIcon}
+                            </div>
+                            <div>
+                                <h3 style="font-size:1.15rem; font-weight:700; margin:0; color:var(--text-primary);">${headerTitle}</h3>
+                                <span style="font-size:0.8rem; color:var(--text-muted); font-family:monospace; font-weight:700;">Code: ${data.code}</span>
+                            </div>
+                        </div>
+                        <span class="badge ${badgeClass}" style="padding:0.4rem 0.8rem; font-size:0.8rem;">${data.status.replace(/_/g, ' ')}</span>
+                    </div>
+
+                    ${cancellationHtml}
+                    ${detailsHtml}
+                    ${customerSectionHtml}
+                `;
+
+                // Handle scroll buttons check dynamically
+                setTimeout(() => {
+                    const scrollUpBtn = document.querySelector('.modal-scroll-btn.scroll-up');
+                    const scrollDownBtn = document.querySelector('.modal-scroll-btn.scroll-down');
+                    if (contentEl && scrollUpBtn && scrollDownBtn) {
+                        const checkScroll = () => {
+                            const isScrollable = contentEl.scrollHeight > contentEl.clientHeight;
+                            scrollUpBtn.style.display = (isScrollable && contentEl.scrollTop > 10) ? 'flex' : 'none';
+                            scrollDownBtn.style.display = (isScrollable && contentEl.scrollTop + contentEl.clientHeight < contentEl.scrollHeight - 10) ? 'flex' : 'none';
+                        };
+                        contentEl.removeEventListener('scroll', contentEl._checkScrollFn);
+                        contentEl._checkScrollFn = checkScroll;
+                        contentEl.addEventListener('scroll', checkScroll);
+                        checkScroll();
+                    }
+                }, 100);
+
+            } catch (err) {
+                console.error("Lookup error:", err);
+                contentEl.innerHTML = `
+                    <div style="text-align:center; padding:2rem;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:3rem; color:var(--danger); margin-bottom:1rem;"></i>
+                        <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:0.5rem; color:var(--text-primary);">Lookup Error</h3>
+                        <p style="color:var(--text-secondary); margin-bottom:0;">An unexpected network error occurred. Please check your connection and try again.</p>
+                    </div>
+                `;
+            }
+        },
+
         initLiveDateTime() {
             const toggleBtn = document.querySelector('.theme-toggle');
             if (!toggleBtn) return;
@@ -6459,6 +7133,44 @@
     document.addEventListener('DOMContentLoaded', () => {
         GarageLK.initTheme();
         GarageLK.initLiveDateTime();
+
+        // Register enter keypress handlers for lookup inputs
+        const ownerSearch = document.getElementById('owner-quick-search-id');
+        if (ownerSearch) {
+            ownerSearch.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    GarageLK.quickLookupID('owner-quick-search-id');
+                }
+            });
+        }
+        const shopSearch = document.getElementById('shop-quick-search-id');
+        if (shopSearch) {
+            shopSearch.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    GarageLK.quickLookupID('shop-quick-search-id');
+                }
+            });
+        }
+        const breakdownSearch = document.getElementById('breakdown-quick-search-id');
+        if (breakdownSearch) {
+            breakdownSearch.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    GarageLK.quickLookupID('breakdown-quick-search-id');
+                }
+            });
+        }
+
+        // Register window scroll listener for Scroll-to-Top button
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('btn-scroll-to-top');
+            if (btn) {
+                if (window.scrollY > 300) {
+                    btn.style.display = 'flex';
+                } else {
+                    btn.style.display = 'none';
+                }
+            }
+        });
     });
 
     window.GarageLK = GarageLK;

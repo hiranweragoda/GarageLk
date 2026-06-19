@@ -19,18 +19,21 @@ public class SparePartBookingController {
     private final CustomerRepository customerRepository;
     private final SparePartShopRepository shopRepository;
     private final ShopReviewRepository shopReviewRepository;
+    private final NotificationRepository notificationRepository;
 
     public SparePartBookingController(
             SparePartBookingRepository bookingRepository,
             SparePartRepository partRepository,
             CustomerRepository customerRepository,
             SparePartShopRepository shopRepository,
-            ShopReviewRepository shopReviewRepository) {
+            ShopReviewRepository shopReviewRepository,
+            NotificationRepository notificationRepository) {
         this.bookingRepository = bookingRepository;
         this.partRepository = partRepository;
         this.customerRepository = customerRepository;
         this.shopRepository = shopRepository;
         this.shopReviewRepository = shopReviewRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @PostMapping("/api/spare-parts/bookings")
@@ -96,7 +99,27 @@ public class SparePartBookingController {
         partRepository.save(part);
 
         SparePartBooking booking = new SparePartBooking(customerOpt.get(), part, quantity, totalPrice, "PENDING", pickupDate, notes);
+        
+        String bookingCode;
+        String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String pattern = "SPB-" + dateStr + "%";
+        long countToday = bookingRepository.countByBookingCodeLike(pattern);
+        long seq = countToday + 1;
+        do {
+            bookingCode = String.format("SPB-%s%02d", dateStr, seq++);
+        } while (bookingRepository.findByBookingCode(bookingCode).isPresent());
+        booking.setBookingCode(bookingCode);
+
         bookingRepository.save(booking);
+
+        try {
+            Long ownerUserId = part.getShop().getUser().getId();
+            String msg = String.format("New spare part reservation for %s (Code: %s)", 
+                part.getPartName(), bookingCode);
+            notificationRepository.save(new Notification(ownerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Spare part booked successfully!", "bookingId", booking.getId()));
     }
@@ -194,6 +217,15 @@ public class SparePartBookingController {
             booking.setCancellationReason(payload.get("cancellationReason").toString());
         }
         bookingRepository.save(booking);
+
+        try {
+            Long customerUserId = booking.getCustomer().getUser().getId();
+            String msg = String.format("Your reservation for %s is %s at %s. (Code: %s)",
+                booking.getSparePart().getPartName(), newStatus.replace("_", " "), booking.getSparePart().getShop().getShopName(), booking.getBookingCode());
+            notificationRepository.save(new Notification(customerUserId, msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Booking status updated to " + newStatus));
     }

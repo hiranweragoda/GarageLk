@@ -48,7 +48,13 @@
                 
                 <!-- CUSTOMER: Bookings List Panel -->
                 <section id="section-customer-bookings" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-list-check"></i> My Appointments</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-list-check"></i> My Appointments</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="customer-booking-search-input" placeholder="Search by Booking ID, garage, vehicle..." oninput="window.GarageLK.renderCustomerBookingsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">Active Appointments</h3>
@@ -72,7 +78,13 @@
 
                 <!-- CUSTOMER: Breakdown Requests Panel -->
                 <section id="section-customer-breakdowns" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: #f87171;"><i class="fa-solid fa-truck-medical"></i> Emergency Assist Requests</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0; color: #f87171;"><i class="fa-solid fa-truck-medical"></i> Emergency Assist Requests</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="customer-breakdown-search-input" placeholder="Search by ID, garage, issue, vehicle..." oninput="window.GarageLK.renderCustomerBreakdownsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">Active Emergencies</h3>
@@ -96,7 +108,13 @@
 
                 <!-- CUSTOMER: Spare Part Reservations Panel -->
                 <section id="section-customer-reservations" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-gears"></i> Spare Part Reservations</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-gears"></i> Spare Part Reservations</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="customer-reservation-search-input" placeholder="Search by ID, shop, spare part..." oninput="window.GarageLK.renderCustomerReservationsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">Pending Reservations</h3>
@@ -120,11 +138,17 @@
 
                 <!-- OWNER: My Garages Panel -->
                 <section id="section-owner-garages" class="dashboard-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="font-size: 1.8rem;"><i class="fa-solid fa-warehouse"></i> My Garages</h2>
-                        <button class="btn btn-primary" onclick="window.GarageLK.openAddGarageModal()" unique-id="add-garage-btn">
-                            <i class="fa-solid fa-plus"></i> Register Garage
-                        </button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-warehouse"></i> My Garages</h2>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <div style="position: relative; max-width: 250px; width: 100%;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                                <input type="text" id="owner-garage-search-input" placeholder="Search garages by name, city..." oninput="window.GarageLK.renderOwnerGaragesFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                            </div>
+                            <button class="btn btn-primary" onclick="window.GarageLK.openAddGarageModal()" unique-id="add-garage-btn" style="height: 42px;">
+                                <i class="fa-solid fa-plus"></i> Register Garage
+                            </button>
+                        </div>
                     </div>
                     <div class="data-table-container">
                         <div class="table-list" id="owner-garages-list">
@@ -139,9 +163,21 @@
                         <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-calendar-days"></i> Booking Requests</h2>
                         <div style="position: relative; max-width: 320px; width: 100%;">
                             <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
-                            <input type="text" id="owner-booking-search-input" placeholder="Search by customer, vehicle, service..." oninput="window.GarageLK.renderOwnerBookingsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                            <input type="text" id="owner-booking-search-input" placeholder="Search by Booking ID, customer, vehicle..." oninput="window.GarageLK.renderOwnerBookingsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
                         </div>
                     </div>
+                    
+                    <div class="data-table-container" style="margin-bottom: 1.5rem; padding: 1.5rem; border-radius: var(--radius-lg); display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; background: var(--bg-surface-tint); border: 1px solid var(--border-color);">
+                        <div style="flex: 1; min-width: 250px;">
+                            <h3 style="font-size: 1rem; margin-bottom: 4px; font-weight:700;"><i class="fa-solid fa-search"></i> Quick ID Lookup</h3>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Instantly view details of any booking or breakdown request code</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; max-width: 450px; width: 100%;">
+                            <input type="text" id="owner-quick-search-id" placeholder="Enter ID (e.g. GBK-123456, EMB-123456)" class="form-control" style="height: 40px; font-size:0.9rem;">
+                            <button class="btn btn-primary" style="height: 40px;" onclick="window.GarageLK.quickLookupID('owner-quick-search-id')" unique-id="owner-quick-lookup-btn">Lookup</button>
+                        </div>
+                    </div>
+
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">Customer Appointments</h3>
@@ -170,13 +206,19 @@
 
                 <!-- OWNER: Services Management Panel -->
                 <section id="section-owner-services" class="dashboard-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="font-size: 1.8rem;"><i class="fa-solid fa-screwdriver-wrench"></i> Manage Services</h2>
-                        <div class="form-group" style="margin-bottom:0; display:flex; align-items:center; gap:0.75rem;">
-                            <label style="margin-bottom:0;">Select Garage:</label>
-                            <select id="owner-services-garage-select" class="form-control" onchange="window.GarageLK.loadOwnerServices()" style="width:200px; padding:0.5rem;" unique-id="garage-service-select">
-                                <!-- Options populated dynamically -->
-                            </select>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-screwdriver-wrench"></i> Manage Services</h2>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <div style="position: relative; max-width: 250px; width: 100%;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                                <input type="text" id="owner-service-search-input" placeholder="Search services..." oninput="window.GarageLK.renderOwnerServicesFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0; display:flex; align-items:center; gap:0.75rem;">
+                                <label style="margin-bottom:0;">Select Garage:</label>
+                                <select id="owner-services-garage-select" class="form-control" onchange="window.GarageLK.loadOwnerServices()" style="width:200px; padding:0.5rem; height: 42px;" unique-id="garage-service-select">
+                                    <!-- Options populated dynamically -->
+                                </select>
+                            </div>
                         </div>
                     </div>
                     
@@ -279,7 +321,24 @@
 
                 <!-- OWNER: Breakdown Requests Panel -->
                 <section id="section-owner-breakdowns" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: #f87171;"><i class="fa-solid fa-bell"></i> Breakdown Alerts & History</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0; color: #f87171;"><i class="fa-solid fa-bell"></i> Breakdown Alerts & History</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="owner-breakdown-search-input" placeholder="Search by Breakdown ID, customer, vehicle..." oninput="window.GarageLK.renderOwnerBreakdownsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
+                    
+                    <div class="data-table-container" style="margin-bottom: 1.5rem; padding: 1.5rem; border-radius: var(--radius-lg); display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; background: var(--bg-surface-tint); border: 1px solid var(--border-color);">
+                        <div style="flex: 1; min-width: 250px;">
+                            <h3 style="font-size: 1rem; margin-bottom: 4px; font-weight:700;"><i class="fa-solid fa-search"></i> Quick ID Lookup</h3>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Instantly view details of any booking or breakdown request code</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; max-width: 450px; width: 100%;">
+                            <input type="text" id="breakdown-quick-search-id" placeholder="Enter ID (e.g. GBK-123456, EMB-123456)" class="form-control" style="height: 40px; font-size:0.9rem;">
+                            <button class="btn btn-primary" style="height: 40px;" onclick="window.GarageLK.quickLookupID('breakdown-quick-search-id')" unique-id="breakdown-quick-lookup-btn">Lookup</button>
+                        </div>
+                    </div>
                     
                     <div class="data-table-container" style="margin-bottom: 2rem;">
                         <div class="table-header-row">
@@ -309,13 +368,19 @@
 
                 <!-- OWNER: Manage Mechanics Panel -->
                 <section id="section-owner-mechanics" class="dashboard-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="font-size: 1.8rem;"><i class="fa-solid fa-user-gear"></i> Manage Mechanics</h2>
-                        <div class="form-group" style="margin-bottom:0; display:flex; align-items:center; gap:0.75rem;">
-                            <label style="margin-bottom:0;">Select Garage:</label>
-                            <select id="owner-mechanics-garage-select" class="form-control" onchange="window.GarageLK.loadOwnerMechanics()" style="width:200px; padding:0.5rem;" unique-id="garage-mechanics-select">
-                                <!-- Options populated dynamically -->
-                            </select>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-user-gear"></i> Manage Mechanics</h2>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <div style="position: relative; max-width: 250px; width: 100%;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                                <input type="text" id="owner-mechanic-search-input" placeholder="Search mechanics..." oninput="window.GarageLK.renderOwnerMechanicsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0; display:flex; align-items:center; gap:0.75rem;">
+                                <label style="margin-bottom:0;">Select Garage:</label>
+                                <select id="owner-mechanics-garage-select" class="form-control" onchange="window.GarageLK.loadOwnerMechanics()" style="width:200px; padding:0.5rem; height: 42px;" unique-id="garage-mechanics-select">
+                                    <!-- Options populated dynamically -->
+                                </select>
+                            </div>
                         </div>
                     </div>
                     
@@ -338,11 +403,17 @@
 
                 <!-- SHOP OWNER: My Shops Panel -->
                 <section id="section-shop-my-shops" class="dashboard-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="font-size: 1.8rem;"><i class="fa-solid fa-store"></i> My Spare Part Shops</h2>
-                        <button class="btn btn-primary" onclick="window.GarageLK.openAddShopModal()" unique-id="add-shop-btn">
-                            <i class="fa-solid fa-plus"></i> Register Shop
-                        </button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-store"></i> My Spare Part Shops</h2>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <div style="position: relative; max-width: 250px; width: 100%;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                                <input type="text" id="shop-my-shops-search-input" placeholder="Search shops by name, city..." oninput="window.GarageLK.renderShopMyShopsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                            </div>
+                            <button class="btn btn-primary" onclick="window.GarageLK.openAddShopModal()" unique-id="add-shop-btn" style="height: 42px;">
+                                <i class="fa-solid fa-plus"></i> Register Shop
+                            </button>
+                        </div>
                     </div>
                     <div class="data-table-container">
                         <div class="table-list" id="shop-my-shops-list">
@@ -386,7 +457,25 @@
 
                 <!-- SHOP OWNER: Part Reservations Panel -->
                 <section id="section-shop-reservations" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-cart-flatbed-suitcase"></i> Manage Part Reservations</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-cart-flatbed-suitcase"></i> Manage Part Reservations</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="shop-reservation-search-input" placeholder="Search by Reservation ID, customer, part..." oninput="window.GarageLK.renderShopReservationsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
+                    
+                    <div class="data-table-container" style="margin-bottom: 1.5rem; padding: 1.5rem; border-radius: var(--radius-lg); display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; background: var(--bg-surface-tint); border: 1px solid var(--border-color);">
+                        <div style="flex: 1; min-width: 250px;">
+                            <h3 style="font-size: 1rem; margin-bottom: 4px; font-weight:700;"><i class="fa-solid fa-search"></i> Quick ID Lookup</h3>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Instantly view details of any part reservation booking code</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; max-width: 450px; width: 100%;">
+                            <input type="text" id="shop-quick-search-id" placeholder="Enter ID (e.g. SPB-123456)" class="form-control" style="height: 40px; font-size:0.9rem;">
+                            <button class="btn btn-primary" style="height: 40px;" onclick="window.GarageLK.quickLookupID('shop-quick-search-id')" unique-id="shop-quick-lookup-btn">Lookup</button>
+                        </div>
+                    </div>
+
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">Incoming Booking Requests</h3>
@@ -490,7 +579,13 @@
 
                 <!-- ADMIN: Pending Garage Approvals Panel -->
                 <section id="section-admin-garage-approvals" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-warehouse"></i> Garage Registration Approvals</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-warehouse"></i> Garage Registration Approvals</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="admin-garage-search-input" placeholder="Search garages by name, owner, city..." oninput="window.GarageLK.renderAdminApprovalsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">Pending Garages Approval List</h3>
@@ -514,7 +609,13 @@
 
                 <!-- ADMIN: Pending Shop Approvals Panel -->
                 <section id="section-admin-shop-approvals" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-store"></i> Shop Registration Approvals</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-store"></i> Shop Registration Approvals</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="admin-shop-search-input" placeholder="Search shops by name, owner, city..." oninput="window.GarageLK.renderAdminShopApprovalsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
                     <div class="data-table-container">
                         <div class="table-header-row">
                             <h3 style="font-size: 1.1rem;">Pending Spare Part Shops Approval List</h3>
@@ -538,7 +639,9 @@
 
                 <!-- ADMIN: System Monitor Panel -->
                 <section id="section-admin-monitor" class="dashboard-section">
-                    <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-chart-line"></i> System Monitor</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-chart-line"></i> System Monitor</h2>
+                    </div>
                     
                     <!-- Admin Date and Export controls (Excluded from PDF) -->
                     <div class="data-table-container" data-html2pdf-ignore="true" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; border-radius: var(--radius-lg); border-left: 4px solid var(--color-primary);">
@@ -707,6 +810,34 @@
                             <div class="table-list" id="admin-mechanics-list">
                                 <!-- Dynamic items loaded by app.js -->
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SYSTEM NOTIFICATIONS: Notifications Panel -->
+                <section id="section-notifications" class="dashboard-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 0;"><i class="fa-solid fa-bell"></i> Notifications</h2>
+                        <div style="position: relative; max-width: 320px; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.95rem;"></i>
+                            <input type="text" id="notifications-search-input" placeholder="Search notifications..." oninput="window.GarageLK.renderNotificationsFiltered()" class="form-control" style="padding-left: 2.75rem; font-size: 0.9rem; border-radius: var(--radius-full); height: 42px;">
+                        </div>
+                    </div>
+
+                    <div class="data-table-container">
+                        <div class="table-header-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1.25rem 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1.1rem;">My Alert Feed</h3>
+                                <span>Keep track of requests status updates, reviews, and bookings</span>
+                            </div>
+                            <div style="display: flex; gap: 0.75rem;">
+                                <button class="btn btn-outline btn-danger" onclick="window.GarageLK.clearNotifications()" unique-id="notif-clear-all-btn" style="height: 36px; padding: 0 1rem; font-size: 0.85rem;">
+                                    <i class="fa-solid fa-trash-can"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-list" id="notifications-list">
+                            <!-- Dynamic items -->
                         </div>
                     </div>
                 </section>
@@ -1323,7 +1454,35 @@
             </form>
         </div>
     </div>
+    <!-- Quick ID Search Details Modal -->
+    <div class="modal-overlay" id="modal-search-details">
+        <div class="modal-content" style="max-width: 600px; width: 90%;">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-search-details')"><i class="fa-solid fa-xmark"></i></span>
+            
+            <div style="position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;">
+                <!-- Scroll buttons inside modal -->
+                <div class="modal-scroll-btn scroll-up" onclick="document.getElementById('search-details-content').scrollBy({top: -150, behavior: 'smooth'})" style="position: absolute; right: 10px; top: 10px; z-index: 100; display: none; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 36px; height: 36px; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s;">
+                    <i class="fa-solid fa-chevron-up"></i>
+                </div>
+                <div class="modal-scroll-btn scroll-down" onclick="document.getElementById('search-details-content').scrollBy({top: 150, behavior: 'smooth'})" style="position: absolute; right: 10px; bottom: 10px; z-index: 100; display: none; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 36px; height: 36px; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s;">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                
+                <div id="search-details-content" style="overflow-y: auto; flex: 1; padding-right: 1.5rem; margin-right: -1rem;">
+                    <!-- Dynamically populated details will go here -->
+                </div>
+            </div>
 
+            <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-outline" onclick="window.GarageLK.closeModal('modal-search-details')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Scroll to Top Button -->
+    <button id="btn-scroll-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" style="position: fixed; bottom: 2rem; right: 2rem; width: 45px; height: 45px; border-radius: 50%; background: var(--primary); color: white; border: none; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 1500; transition: transform 0.2s, opacity 0.2s;">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- SheetJS for Excel Exports -->

@@ -92,17 +92,17 @@ INSERT INTO offered_services (id, garage_id, service_type, price) VALUES (12, 3,
 
 
 -- 5. Insert Seed Bookings (COMPLETED — required for reviews to be possible)
-INSERT INTO bookings (id, customer_id, garage_id, service_type, booking_date, status, price, notes)
-VALUES (1, 1, 1, 'General Service', '2026-04-10 09:00:00', 'COMPLETED', 12500.00, 'Full A/C service and oil change')
-ON DUPLICATE KEY UPDATE status=status;
+INSERT INTO bookings (id, customer_id, garage_id, service_type, booking_date, status, price, notes, booking_code)
+VALUES (1, 1, 1, 'General Service', '2026-04-10 09:00:00', 'COMPLETED', 12500.00, 'Full A/C service and oil change', 'GBK-000001')
+ON DUPLICATE KEY UPDATE status=status, booking_code=VALUES(booking_code);
 
-INSERT INTO bookings (id, customer_id, garage_id, service_type, booking_date, status, price, notes)
-VALUES (2, 2, 2, 'Towing', '2026-04-15 14:00:00', 'COMPLETED', 18000.00, 'Towing from Kandy to Colombo')
-ON DUPLICATE KEY UPDATE status=status;
+INSERT INTO bookings (id, customer_id, garage_id, service_type, booking_date, status, price, notes, booking_code)
+VALUES (2, 2, 2, 'Towing', '2026-04-15 14:00:00', 'COMPLETED', 18000.00, 'Towing from Kandy to Colombo', 'GBK-000002')
+ON DUPLICATE KEY UPDATE status=status, booking_code=VALUES(booking_code);
 
-INSERT INTO bookings (id, customer_id, garage_id, service_type, booking_date, status, price, notes)
-VALUES (3, 1, 3, 'Tire/Wheel Alignment', '2026-05-01 10:00:00', 'COMPLETED', 4500.00, 'All four wheels')
-ON DUPLICATE KEY UPDATE status=status;
+INSERT INTO bookings (id, customer_id, garage_id, service_type, booking_date, status, price, notes, booking_code)
+VALUES (3, 1, 3, 'Tire/Wheel Alignment', '2026-05-01 10:00:00', 'COMPLETED', 4500.00, 'All four wheels', 'GBK-000003')
+ON DUPLICATE KEY UPDATE status=status, booking_code=VALUES(booking_code);
 
 
 -- 6. Insert Seed Reviews (linked to the completed bookings above)
@@ -167,69 +167,88 @@ ON DUPLICATE KEY UPDATE price=price;
 
 -- 10. Insert Seed Breakdown Requests
 -- Colombo requests
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (1, 1, 'Engine overheating on Baseline Road', 'Colombo', 'COMPLETED', '0711122334', '2026-05-10 10:00:00', 6.9271, 79.8612, 'WP CAD-4321', 'Baseline Road, Colombo 08')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (1, 1, 'Engine overheating on Baseline Road', 'Colombo', 'COMPLETED', '0711122334', '2026-05-10 10:00:00', 6.9271, 79.8612, 'WP CAD-4321', 'Baseline Road, Colombo 08', 'EMB-000001')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (2, 2, 'Flat tire near Galle Face', 'Colombo', 'COMPLETED', '0722233445', '2026-05-11 11:30:00', 6.9275, 79.8484, 'CP LG-8899', 'Galle Face Green, Colombo 03')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (2, 2, 'Flat tire near Galle Face', 'Colombo', 'COMPLETED', '0722233445', '2026-05-11 11:30:00', 6.9275, 79.8484, 'CP LG-8899', 'Galle Face Green, Colombo 03', 'EMB-000002')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (3, 1, 'Brake failure near Town Hall', 'Colombo', 'ACCEPTED', '0711122334', '2026-06-01 08:15:00', 6.9182, 79.8631, 'WP CAD-4321', 'Town Hall, Colombo 07')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (3, 1, 'Brake failure near Town Hall', 'Colombo', 'ACCEPTED', '0711122334', '2026-06-01 08:15:00', 6.9182, 79.8631, 'WP CAD-4321', 'Town Hall, Colombo 07', 'EMB-000003')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (4, 2, 'Battery dead in Bambalapitiya', 'Colombo', 'OPEN', '0722233445', '2026-06-09 14:00:00', 6.8972, 79.8597, 'CP LG-8899', 'Galle Road, Colombo 04')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (4, 2, 'Battery dead in Bambalapitiya', 'Colombo', 'OPEN', '0722233445', '2026-06-09 14:00:00', 6.8972, 79.8597, 'CP LG-8899', 'Galle Road, Colombo 04', 'EMB-000004')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (5, 1, 'Transmission slip near Kollupitiya', 'Colombo', 'OPEN', '0711122334', '2026-06-10 16:30:00', 6.9112, 79.8512, 'WP CAD-4321', 'R. A. De Mel Mawatha, Colombo 03')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (5, 1, 'Transmission slip near Kollupitiya', 'Colombo', 'OPEN', '0711122334', '2026-06-10 16:30:00', 6.9112, 79.8512, 'WP CAD-4321', 'R. A. De Mel Mawatha, Colombo 03', 'EMB-000005')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
 -- Kandy requests
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (6, 2, 'Clutch burn near Kandy Lake Round', 'Kandy', 'COMPLETED', '0722233445', '2026-05-15 09:00:00', 7.2911, 80.6418, 'CP LG-8899', 'Lake Round Road, Kandy')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (6, 2, 'Clutch burn near Kandy Lake Round', 'Kandy', 'COMPLETED', '0722233445', '2026-05-15 09:00:00', 7.2911, 80.6418, 'CP LG-8899', 'Lake Round Road, Kandy', 'EMB-000006')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (7, 1, 'Radiator leak in Peradeniya', 'Kandy', 'ACCEPTED', '0711122334', '2026-06-02 12:45:00', 7.2714, 80.5921, 'WP CAD-4321', 'Peradeniya, Kandy')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (7, 1, 'Radiator leak in Peradeniya', 'Kandy', 'ACCEPTED', '0711122334', '2026-06-02 12:45:00', 7.2714, 80.5921, 'WP CAD-4321', 'Peradeniya, Kandy', 'EMB-000007')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (8, 2, 'Suspension noise near Katugastota', 'Kandy', 'OPEN', '0722233445', '2026-06-10 18:00:00', 7.3211, 80.6288, 'CP LG-8899', 'Katugastota, Kandy')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (8, 2, 'Suspension noise near Katugastota', 'Kandy', 'OPEN', '0722233445', '2026-06-10 18:00:00', 7.3211, 80.6288, 'CP LG-8899', 'Katugastota, Kandy', 'EMB-000008')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
 -- Galle requests
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (9, 1, 'Engine warning light near Galle Fort', 'Galle', 'COMPLETED', '0711122334', '2026-05-20 15:30:00', 6.0264, 80.2176, 'WP CAD-4321', 'Fort, Galle')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (9, 1, 'Engine warning light near Galle Fort', 'Galle', 'COMPLETED', '0711122334', '2026-05-20 15:30:00', 6.0264, 80.2176, 'WP CAD-4321', 'Fort, Galle', 'EMB-000009')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (10, 2, 'Puncture tire in Karapitiya', 'Galle', 'OPEN', '0722233445', '2026-06-08 10:15:00', 6.0622, 80.2234, 'CP LG-8899', 'Karapitiya, Galle')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (10, 2, 'Puncture tire in Karapitiya', 'Galle', 'OPEN', '0722233445', '2026-06-08 10:15:00', 6.0622, 80.2234, 'CP LG-8899', 'Karapitiya, Galle', 'EMB-000010')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
 -- Kurunegala requests
-INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address)
-VALUES (11, 1, 'Alternator failure near Kurunegala Clock Tower', 'Kurunegala', 'COMPLETED', '0711122334', '2026-05-25 11:00:00', 7.4875, 80.3647, 'WP CAD-4321', 'Clock Tower Road, Kurunegala')
-ON DUPLICATE KEY UPDATE description=description;
+INSERT INTO breakdown_requests (id, customer_id, description, location_city, status, contact_phone, created_time, latitude, longitude, vehicle_no, address, breakdown_code)
+VALUES (11, 1, 'Alternator failure near Kurunegala Clock Tower', 'Kurunegala', 'COMPLETED', '0711122334', '2026-05-25 11:00:00', 7.4875, 80.3647, 'WP CAD-4321', 'Clock Tower Road, Kurunegala', 'EMB-000011')
+ON DUPLICATE KEY UPDATE description=description, breakdown_code=VALUES(breakdown_code);
 
 
 -- 11. Insert Seed Spare Part Bookings
-INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
-VALUES (1, 1, 1, 2, 24000.00, 'PICKED_UP', '2026-06-10 09:00:00', '2026-06-11 10:00:00', 'Need genuine ones')
-ON DUPLICATE KEY UPDATE status=status;
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes, booking_code)
+VALUES (1, 1, 1, 2, 24000.00, 'PICKED_UP', '2026-06-10 09:00:00', '2026-06-11 10:00:00', 'Need genuine ones', 'SPB-000001')
+ON DUPLICATE KEY UPDATE status=status, booking_code=VALUES(booking_code);
 
-INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
-VALUES (2, 2, 3, 1, 35000.00, 'PICKED_UP', '2026-06-12 14:00:00', '2026-06-13 11:00:00', 'Please keep ready')
-ON DUPLICATE KEY UPDATE status=status;
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes, booking_code)
+VALUES (2, 2, 3, 1, 35000.00, 'PICKED_UP', '2026-06-12 14:00:00', '2026-06-13 11:00:00', 'Please keep ready', 'SPB-000002')
+ON DUPLICATE KEY UPDATE status=status, booking_code=VALUES(booking_code);
 
-INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes)
-VALUES (3, 1, 5, 1, 18000.00, 'PICKED_UP', '2026-06-13 16:00:00', '2026-06-14 10:00:00', 'Left side mirror')
-ON DUPLICATE KEY UPDATE status=status;
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, pickup_date, notes, booking_code)
+VALUES (3, 1, 5, 1, 18000.00, 'PICKED_UP', '2026-06-13 16:00:00', '2026-06-14 10:00:00', 'Left side mirror', 'SPB-000003')
+ON DUPLICATE KEY UPDATE status=status, booking_code=VALUES(booking_code);
 
-INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, notes)
-VALUES (4, 2, 1, 1, 12000.00, 'READY_FOR_PICKUP', '2026-06-14 11:00:00', 'Active booking')
-ON DUPLICATE KEY UPDATE status=status;
+INSERT INTO spare_part_bookings (id, customer_id, spare_part_id, quantity, total_price, status, booking_date, notes, booking_code)
+VALUES (4, 2, 1, 1, 12000.00, 'READY_FOR_PICKUP', '2026-06-14 11:00:00', 'Active booking', 'SPB-000004')
+ON DUPLICATE KEY UPDATE status=status, booking_code=VALUES(booking_code);
+
+
+-- 12. Insert Seed Notifications
+INSERT INTO notifications (id, user_id, message, created_at, is_read)
+VALUES (1, 1, 'New garage registration pending approval: Kandy Auto Care', NOW(), false)
+ON DUPLICATE KEY UPDATE message=VALUES(message);
+
+INSERT INTO notifications (id, user_id, message, created_at, is_read)
+VALUES (2, 2, 'Your booking request at Colombo Hybrid Motors has been APPROVED. (Code: GBK-2026061901)', NOW(), false)
+ON DUPLICATE KEY UPDATE message=VALUES(message);
+
+INSERT INTO notifications (id, user_id, message, created_at, is_read)
+VALUES (3, 2, 'Your reservation for Brake Pads is READY FOR PICKUP at Toyota Lanka Shop. (Code: SPB-2026061902)', NOW(), false)
+ON DUPLICATE KEY UPDATE message=VALUES(message);
+
+INSERT INTO notifications (id, user_id, message, created_at, is_read)
+VALUES (4, 4, 'New booking request received for Colombo Hybrid Motors (Code: GBK-2026061901)', NOW(), false)
+ON DUPLICATE KEY UPDATE message=VALUES(message);
+
 
 
