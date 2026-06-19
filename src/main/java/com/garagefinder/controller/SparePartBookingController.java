@@ -157,6 +157,15 @@ public class SparePartBookingController {
         return ResponseEntity.ok(bookings);
     }
 
+    @GetMapping("/api/spare-parts/bookings/all")
+    public ResponseEntity<?> getAllSparePartBookings(HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null || !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+        return ResponseEntity.ok(bookingRepository.findAll());
+    }
+
     @PutMapping("/api/spare-parts/bookings/{id}/status")
     public ResponseEntity<?> updateBookingStatus(
             @PathVariable Long id,
