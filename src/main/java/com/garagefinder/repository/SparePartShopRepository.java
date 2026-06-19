@@ -11,4 +11,5 @@ public interface SparePartShopRepository extends JpaRepository<SparePartShop, Lo
     List<SparePartShop> findByUserId(Long userId);
     List<SparePartShop> findByStatus(String status);
     List<SparePartShop> findByCityAndStatus(String city, String status);
+    List<SparePartShop> findByDistrictAndStatus(String district, String status);
 }

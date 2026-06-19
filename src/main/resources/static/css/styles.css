@@ -1817,5 +1817,44 @@ body.light-mode .social-icon:hover {
     }
 }
 
+/* Customer location marker */
+.customer-location-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.pulse-circle {
+    width: 14px;
+    height: 14px;
+    background-color: var(--success);
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+    position: relative;
+}
+.pulse-circle::after {
+    content: '';
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--success);
+    border-radius: 50%;
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    animation: pulse-animation 2s infinite ease-out;
+    opacity: 0;
+}
+@keyframes pulse-animation {
+    0% {
+        transform: scale(0.5);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1.2);
+        opacity: 0;
+    }
+}
+
+
 
 

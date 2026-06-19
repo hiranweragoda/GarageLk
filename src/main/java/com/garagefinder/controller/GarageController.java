@@ -82,17 +82,20 @@ public class GarageController {
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String serviceType,
             @RequestParam(required = false) String vehicleType,
-            @RequestParam(required = false) String engineType) {
+            @RequestParam(required = false) String engineType,
+            @RequestParam(required = false) String search) {
 
         List<Garage> garages;
 
-        // Service type filter uses a JOIN query — handle separately
-        if (serviceType != null && !serviceType.isEmpty()) {
+        String cityParam = (city != null && !city.isEmpty()) ? city : null;
+        String districtParam = (district != null && !district.isEmpty()) ? district : null;
+
+        if (search != null && !search.trim().isEmpty()) {
+            garages = garageRepository.searchGarages(cityParam, districtParam, search.trim());
+        } else if (serviceType != null && !serviceType.isEmpty()) {
             garages = garageRepository.findByServiceTypeAndStatus(serviceType, "APPROVED");
         } else {
             // Use combined filter query for all other combinations
-            String cityParam = (city != null && !city.isEmpty()) ? city : null;
-            String districtParam = (district != null && !district.isEmpty()) ? district : null;
             String vehicleParam = (vehicleType != null && !vehicleType.isEmpty()) ? vehicleType : null;
             String engineParam = (engineType != null && !engineType.isEmpty()) ? engineType : null;
             garages = garageRepository.findWithFilters(cityParam, districtParam, vehicleParam, engineParam);
