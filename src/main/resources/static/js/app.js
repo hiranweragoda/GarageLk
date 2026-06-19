@@ -3940,8 +3940,11 @@
                 const usersRes = await fetch('/api/auth/users');
                 const users = usersRes.ok ? await usersRes.json() : [];
 
+                const sparePartBookingsRes = await fetch('/api/spare-parts/bookings/all');
+                const sparePartBookings = sparePartBookingsRes.ok ? await sparePartBookingsRes.json() : [];
+
                 // Store raw data for client-side filtering
-                this.adminRawData = { garages, shops, bookings, breakdowns, mechanics, users };
+                this.adminRawData = { garages, shops, bookings, breakdowns, mechanics, users, sparePartBookings };
 
                 // Compute system-wide static counts
                 document.getElementById('admin-stat-garages').textContent = garages.length;
@@ -4053,6 +4056,7 @@
             const filterType = document.getElementById('admin-date-filter-type').value;
             let filteredBookings = [...this.adminRawData.bookings];
             let filteredBreakdowns = [...this.adminRawData.breakdowns];
+            let filteredSparePartBookings = this.adminRawData.sparePartBookings ? [...this.adminRawData.sparePartBookings] : [];
 
             if (filterType === 'DAY') {
                 const selectedDay = document.getElementById('admin-date-picker').value;
@@ -4063,6 +4067,10 @@
                     });
                     filteredBreakdowns = filteredBreakdowns.filter(b => {
                         const bDate = b.createdAt ? b.createdAt.substring(0, 10) : '';
+                        return bDate === selectedDay;
+                    });
+                    filteredSparePartBookings = filteredSparePartBookings.filter(b => {
+                        const bDate = b.bookingDate ? b.bookingDate.substring(0, 10) : '';
                         return bDate === selectedDay;
                     });
                 }
@@ -4077,6 +4085,10 @@
                         const bDate = b.createdAt ? b.createdAt.substring(0, 7) : '';
                         return bDate === selectedMonth;
                     });
+                    filteredSparePartBookings = filteredSparePartBookings.filter(b => {
+                        const bDate = b.bookingDate ? b.bookingDate.substring(0, 7) : '';
+                        return bDate === selectedMonth;
+                    });
                 }
             }
 
@@ -4085,8 +4097,41 @@
             const activeBreakdowns = filteredBreakdowns.filter(b => b.status !== 'COMPLETED').length;
             document.getElementById('admin-stat-breakdowns').textContent = activeBreakdowns;
 
+            // Compute platform-wide income
+            let garageIncome = 0.0;
+            filteredBookings.forEach(b => {
+                if (b.status === 'COMPLETED') {
+                    garageIncome += (b.totalPrice || b.price || 0.0);
+                }
+            });
+
+            let shopIncome = 0.0;
+            filteredSparePartBookings.forEach(b => {
+                if (b.status === 'PICKED_UP') {
+                    shopIncome += (b.totalPrice || 0.0);
+                }
+            });
+
+            let totalIncome = garageIncome + shopIncome;
+
+            const totalIncomeEl = document.getElementById('admin-stat-total-income');
+            if (totalIncomeEl) totalIncomeEl.textContent = `LKR ${totalIncome.toFixed(2)}`;
+
+            const garageIncomeEl = document.getElementById('admin-stat-garage-income');
+            if (garageIncomeEl) garageIncomeEl.textContent = `LKR ${garageIncome.toFixed(2)}`;
+
+            const shopIncomeEl = document.getElementById('admin-stat-shop-income');
+            if (shopIncomeEl) shopIncomeEl.textContent = `LKR ${shopIncome.toFixed(2)}`;
+
             // Render filtered charts
-            this.renderAdminMonitorCharts(filteredBreakdowns, this.adminRawData.garages, this.adminRawData.shops, this.adminRawData.mechanics);
+            this.renderAdminMonitorCharts(
+                filteredBreakdowns, 
+                this.adminRawData.garages, 
+                this.adminRawData.shops, 
+                this.adminRawData.mechanics,
+                filteredBookings,
+                filteredSparePartBookings
+            );
 
             // Render filtered breakdowns list
             this.renderAdminBreakdownsList(filteredBreakdowns);
@@ -4102,6 +4147,7 @@
             let dateStr = "All_Time";
             let filteredBookings = [...this.adminRawData.bookings];
             let filteredBreakdowns = [...this.adminRawData.breakdowns];
+            let filteredSparePartBookings = this.adminRawData.sparePartBookings ? [...this.adminRawData.sparePartBookings] : [];
 
             if (filterTypeVal === 'DAY') {
                 const selectedDay = document.getElementById('admin-date-picker').value;
@@ -4109,6 +4155,7 @@
                     dateStr = selectedDay;
                     filteredBookings = filteredBookings.filter(b => (b.bookingDate ? b.bookingDate.substring(0, 10) : '') === selectedDay);
                     filteredBreakdowns = filteredBreakdowns.filter(b => (b.createdAt ? b.createdAt.substring(0, 10) : '') === selectedDay);
+                    filteredSparePartBookings = filteredSparePartBookings.filter(b => (b.bookingDate ? b.bookingDate.substring(0, 10) : '') === selectedDay);
                 }
             } else if (filterTypeVal === 'MONTH') {
                 const selectedMonth = document.getElementById('admin-month-picker').value;
@@ -4116,8 +4163,26 @@
                     dateStr = selectedMonth;
                     filteredBookings = filteredBookings.filter(b => (b.bookingDate ? b.bookingDate.substring(0, 7) : '') === selectedMonth);
                     filteredBreakdowns = filteredBreakdowns.filter(b => (b.createdAt ? b.createdAt.substring(0, 7) : '') === selectedMonth);
+                    filteredSparePartBookings = filteredSparePartBookings.filter(b => (b.bookingDate ? b.bookingDate.substring(0, 7) : '') === selectedMonth);
                 }
             }
+
+            // Calculate current filtered incomes for Excel overview
+            let garageIncome = 0.0;
+            filteredBookings.forEach(b => {
+                if (b.status === 'COMPLETED') {
+                    garageIncome += (b.totalPrice || b.price || 0.0);
+                }
+            });
+
+            let shopIncome = 0.0;
+            filteredSparePartBookings.forEach(b => {
+                if (b.status === 'PICKED_UP') {
+                    shopIncome += (b.totalPrice || 0.0);
+                }
+            });
+
+            let totalIncome = garageIncome + shopIncome;
 
             // Map overview stats to key-value rows
             const overviewRows = [
@@ -4127,7 +4192,10 @@
                 { "Metric": "Total Spare Part Shops", "Value": this.adminRawData.shops ? this.adminRawData.shops.length : 0 },
                 { "Metric": "Total Mechanics Team", "Value": this.adminRawData.mechanics ? this.adminRawData.mechanics.length : 0 },
                 { "Metric": "Appointment Bookings (Filtered)", "Value": filteredBookings.length },
-                { "Metric": "Emergency Assists (Filtered)", "Value": filteredBreakdowns.length }
+                { "Metric": "Emergency Assists (Filtered)", "Value": filteredBreakdowns.length },
+                { "Metric": "Total Platform Income (LKR)", "Value": totalIncome },
+                { "Metric": "Garage Earnings (LKR)", "Value": garageIncome },
+                { "Metric": "Shop Earnings (LKR)", "Value": shopIncome }
             ];
 
             // Map breakdowns to nice rows
@@ -4156,6 +4224,20 @@
                 "Time Slot": b.timeSlot || "N/A",
                 "Price (LKR)": b.price || 0.0,
                 "Status": b.status || "N/A",
+                "Notes": b.notes || ""
+            }));
+
+            // Map spare part bookings to nice rows
+            const sparePartBookingRows = filteredSparePartBookings.map(b => ({
+                "Reservation ID": b.id,
+                "Booking Code": b.bookingCode || "N/A",
+                "Customer Name": b.customer ? (b.customer.user.fullName || b.customer.user.username) : "N/A",
+                "Shop Name": b.sparePart && b.sparePart.shop ? b.sparePart.shop.shopName : "N/A",
+                "Part Name": b.sparePart ? b.sparePart.partName : "N/A",
+                "Quantity": b.quantity || 0,
+                "Price (LKR)": b.totalPrice || 0.0,
+                "Status": b.status || "N/A",
+                "Booking Date": b.bookingDate || "N/A",
                 "Notes": b.notes || ""
             }));
 
@@ -4229,6 +4311,9 @@
             const wsBookings = XLSX.utils.json_to_sheet(bookingRows);
             XLSX.utils.book_append_sheet(wb, wsBookings, "Appointments Bookings");
 
+            const wsSpareParts = XLSX.utils.json_to_sheet(sparePartBookingRows);
+            XLSX.utils.book_append_sheet(wb, wsSpareParts, "Spare Part Reservations");
+
             const wsUsers = XLSX.utils.json_to_sheet(userRows);
             XLSX.utils.book_append_sheet(wb, wsUsers, "Registered Users");
 
@@ -4282,7 +4367,7 @@
                 });
         },
 
-        renderAdminMonitorCharts(breakdowns, garages, shops, mechanics) {
+        renderAdminMonitorCharts(breakdowns, garages, shops, mechanics, bookings = [], sparePartBookings = []) {
             const isDarkMode = !document.body.classList.contains('light-mode');
             const textColorPrimary = isDarkMode ? '#e2e8f0' : '#0f172a';
             const textColorSecondary = isDarkMode ? '#94a3b8' : '#475569';
@@ -4292,6 +4377,7 @@
             const breakdownCanvas = document.getElementById('chart-breakdown-status');
             const providersCanvas = document.getElementById('chart-providers-overview');
             const breakdownsByCityCanvas = document.getElementById('chart-breakdowns-by-city');
+            const monthlyIncomeCanvas = document.getElementById('chart-monthly-income');
 
             if (this.breakdownChart) {
                 this.breakdownChart.destroy();
@@ -4304,6 +4390,10 @@
             if (this.breakdownsByCityChart) {
                 this.breakdownsByCityChart.destroy();
                 this.breakdownsByCityChart = null;
+            }
+            if (this.monthlyIncomeChart) {
+                this.monthlyIncomeChart.destroy();
+                this.monthlyIncomeChart = null;
             }
 
             if (breakdownCanvas) {
@@ -4506,6 +4596,124 @@
                                         weight: '600'
                                     }
                                 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (monthlyIncomeCanvas) {
+                const garageIncomeMap = {};
+                const shopIncomeMap = {};
+                const allMonthsSet = new Set();
+
+                bookings.forEach(b => {
+                    if (b.status === 'COMPLETED' && b.bookingDate) {
+                        const month = b.bookingDate.substring(0, 7);
+                        allMonthsSet.add(month);
+                        garageIncomeMap[month] = (garageIncomeMap[month] || 0) + (b.totalPrice || b.price || 0.0);
+                    }
+                });
+
+                sparePartBookings.forEach(b => {
+                    if (b.status === 'PICKED_UP' && b.bookingDate) {
+                        const month = b.bookingDate.substring(0, 7);
+                        allMonthsSet.add(month);
+                        shopIncomeMap[month] = (shopIncomeMap[month] || 0) + (b.totalPrice || 0.0);
+                    }
+                });
+
+                // Sort months chronologically
+                const sortedMonths = Array.from(allMonthsSet).sort();
+
+                // If empty, put default month
+                if (sortedMonths.length === 0) {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    sortedMonths.push(`${year}-${month}`);
+                }
+
+                const garageData = sortedMonths.map(m => garageIncomeMap[m] || 0);
+                const shopData = sortedMonths.map(m => shopIncomeMap[m] || 0);
+                const totalData = sortedMonths.map(m => (garageIncomeMap[m] || 0) + (shopIncomeMap[m] || 0));
+
+                const ctx = monthlyIncomeCanvas.getContext('2d');
+                
+                // Gradients for rich aesthetics!
+                const garageGrad = ctx.createLinearGradient(0, 0, 0, 200);
+                garageGrad.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+                garageGrad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+                const shopGrad = ctx.createLinearGradient(0, 0, 0, 200);
+                shopGrad.addColorStop(0, 'rgba(139, 92, 246, 0.3)');
+                shopGrad.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+                this.monthlyIncomeChart = new Chart(monthlyIncomeCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: sortedMonths,
+                        datasets: [
+                            {
+                                label: 'Garage Earnings',
+                                data: garageData,
+                                borderColor: '#10b981',
+                                backgroundColor: garageGrad,
+                                fill: true,
+                                tension: 0.35,
+                                borderWidth: 2,
+                                pointBackgroundColor: '#10b981'
+                            },
+                            {
+                                label: 'Shop Earnings',
+                                data: shopData,
+                                borderColor: '#8b5cf6',
+                                backgroundColor: shopGrad,
+                                fill: true,
+                                tension: 0.35,
+                                borderWidth: 2,
+                                pointBackgroundColor: '#8b5cf6'
+                            },
+                            {
+                                label: 'Total Platform Income',
+                                data: totalData,
+                                borderColor: '#f59e0b',
+                                borderDash: [5, 5],
+                                fill: false,
+                                tension: 0.35,
+                                borderWidth: 2.5,
+                                pointBackgroundColor: '#f59e0b',
+                                pointRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColorPrimary,
+                                    font: { family: 'Outfit', size: 10 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` ${context.dataset.label}: LKR ${context.raw.toFixed(2)}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColorSecondary, font: { family: 'Outfit', size: 10 } }
+                            },
+                            y: {
+                                grid: { color: gridBorderColor },
+                                ticks: { color: textColorSecondary, font: { family: 'Outfit', size: 10 } }
                             }
                         }
                     }
