@@ -300,15 +300,9 @@
                     <input type="tel" id="breakdown-phone" class="form-control" placeholder="e.g. +94 77 123 4567"
                         required unique-id="breakdown-phone-input">
                 </div>
-                <div class="form-group" style="display:flex; align-items:flex-end; gap:0.5rem;">
-                    <div style="flex:1;">
-                        <label for="breakdown-city">Nearest City</label>
-                        <input type="text" id="breakdown-city" class="form-control" placeholder="Select or type district..." required list="districts-list" unique-id="breakdown-city-select">
-                    </div>
-                    <button type="button" class="btn btn-outline" onclick="window.GarageLK.detectLocation()"
-                        style="height:42px; border-color:var(--border-color);" unique-id="detect-gps-btn">
-                        <i class="fa-solid fa-location-crosshairs"></i> GPS
-                    </button>
+                <div class="form-group">
+                    <label for="breakdown-city">Nearest City</label>
+                    <input type="text" id="breakdown-city" class="form-control" placeholder="Select or type district..." required list="districts-list" unique-id="breakdown-city-select">
                 </div>
                 <div class="form-group">
                     <label for="breakdown-address">Current Address / Landmark</label>

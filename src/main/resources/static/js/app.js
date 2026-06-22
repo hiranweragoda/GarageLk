@@ -25,6 +25,16 @@
         currentUser: null,
         customerCoords: null,
         customerMarker: null,
+        routePath: null,
+        routeBorder: null,
+        routeBadge: null,
+        redIcon: null,
+        blueIcon: null,
+        breakdownRouteMap: null,
+        breakdownRouteMarkers: [],
+        breakdownRoutePath: null,
+        breakdownRouteBorder: null,
+        breakdownRouteBadge: null,
         map: null,
         markers: [],
         selectedServices: new Map(), // serviceId -> price
@@ -289,6 +299,10 @@
                     const age = Date.now() - parsed.timestamp;
                     if (age < 30 * 60 * 1000) { // 30 minutes
                         this.customerCoords = { lat: parsed.lat, lng: parsed.lng };
+                        const latInput = document.getElementById('breakdown-lat');
+                        const lngInput = document.getElementById('breakdown-lng');
+                        if (latInput) latInput.value = parsed.lat;
+                        if (lngInput) lngInput.value = parsed.lng;
                     }
                 }
             } catch (err) {
@@ -348,6 +362,11 @@
                         (pos) => {
                             const newLat = pos.coords.latitude;
                             const newLng = pos.coords.longitude;
+                            
+                            const latInput = document.getElementById('breakdown-lat');
+                            const lngInput = document.getElementById('breakdown-lng');
+                            if (latInput) latInput.value = newLat;
+                            if (lngInput) lngInput.value = newLng;
                             
                             // Check if coordinates changed significantly (e.g. > 50 meters)
                             let isSignificantChange = true;
@@ -472,11 +491,23 @@
                 </div>
             `;
 
-            // Clear previous map markers
+            // Clear previous map markers and route
             if (this.markers) {
                 this.markers.forEach(m => this.map.removeLayer(m));
             }
             this.markers = [];
+            if (this.routePath) {
+                this.map.removeLayer(this.routePath);
+                this.routePath = null;
+            }
+            if (this.routeBorder) {
+                this.map.removeLayer(this.routeBorder);
+                this.routeBorder = null;
+            }
+            if (this.routeBadge) {
+                this.map.removeLayer(this.routeBadge);
+                this.routeBadge = null;
+            }
 
             const performSearch = async (latitude, longitude) => {
                 try {
@@ -555,6 +586,16 @@
                                             <i class="fa-solid fa-location-dot"></i> ${shop.address}, ${shop.city}
                                         </div>
                                         ${distText}
+                                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-top:6px; margin-bottom:4px;">
+                                            ${shop.openToday ? 
+                                                `<span style="display:inline-flex; align-items:center; gap:0.25rem; font-size:0.75rem; font-weight:700; color:#22c55e; background:rgba(34,197,94,0.1); padding:2px 6px; border-radius:10px;"><i class="fa-solid fa-circle-check"></i> Open Today</span>` :
+                                                `<span style="display:inline-flex; align-items:center; gap:0.25rem; font-size:0.75rem; font-weight:700; color:#ef4444; background:rgba(239,68,68,0.1); padding:2px 6px; border-radius:10px;"><i class="fa-solid fa-circle-xmark"></i> Closed Today</span>`
+                                            }
+                                            ${shop.openTime && shop.closeTime ? 
+                                                `<span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;"><i class="fa-solid fa-clock"></i> ${shop.openTime} - ${shop.closeTime} ${shop.openDays ? `(${shop.openDays})` : ''}</span>` : 
+                                                ''
+                                            }
+                                        </div>
                                     </div>
                                     <div class="garage-footer" style="margin-top:auto; padding-top:8px;">
                                         <span class="garage-phone"><i class="fa-solid fa-phone"></i> ${shop.phone || 'N/A'}</span>
@@ -565,7 +606,7 @@
 
                             card.addEventListener('click', () => {
                                 if (shop.latitude && shop.longitude) {
-                                    this.map.setView([shop.latitude, shop.longitude], 13);
+                                    this.drawRoute(shop.latitude, shop.longitude);
                                 }
                             });
 
@@ -573,7 +614,10 @@
 
                             if (shop.latitude && shop.longitude && !renderedShopIds.has(shop.id)) {
                                 renderedShopIds.add(shop.id);
-                                const marker = L.marker([shop.latitude, shop.longitude]).addTo(this.map);
+                                const marker = L.marker([shop.latitude, shop.longitude], { icon: this.blueIcon }).addTo(this.map);
+                                marker.on('click', () => {
+                                    this.drawRoute(shop.latitude, shop.longitude);
+                                });
                                 const distValText = (latitude && longitude && p.distance !== undefined)
                                     ? `<p style="font-size:0.8rem; margin-bottom:4px; color:var(--secondary); font-weight:600;"><i class="fa-solid fa-route"></i> ${p.distance.toFixed(1)} km away</p>`
                                     : '';
@@ -619,6 +663,16 @@
                                             <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}
                                         </div>
                                         ${distText}
+                                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-top:8px; margin-bottom:4px;">
+                                            ${s.openToday ? 
+                                                `<span style="display:inline-flex; align-items:center; gap:0.25rem; font-size:0.8rem; font-weight:700; color:#22c55e; background:rgba(34,197,94,0.1); padding:3px 8px; border-radius:12px;"><i class="fa-solid fa-circle-check"></i> Open Today</span>` :
+                                                `<span style="display:inline-flex; align-items:center; gap:0.25rem; font-size:0.8rem; font-weight:700; color:#ef4444; background:rgba(239,68,68,0.1); padding:3px 8px; border-radius:12px;"><i class="fa-solid fa-circle-xmark"></i> Closed Today</span>`
+                                            }
+                                            ${s.openTime && s.closeTime ? 
+                                                `<span style="font-size:0.8rem; color:var(--text-muted); font-weight:500;"><i class="fa-solid fa-clock"></i> ${s.openTime} - ${s.closeTime} ${s.openDays ? `(${s.openDays})` : ''}</span>` : 
+                                                ''
+                                            }
+                                        </div>
                                         <p class="garage-description" style="margin-top: 8px;">${s.description || 'Quality automotive spare parts.'}</p>
                                     </div>
                                     <div class="garage-footer">
@@ -630,14 +684,17 @@
 
                             card.addEventListener('click', () => {
                                 if (s.latitude && s.longitude) {
-                                    this.map.setView([s.latitude, s.longitude], 13);
+                                    this.drawRoute(s.latitude, s.longitude);
                                 }
                             });
 
                             container.appendChild(card);
 
                             if (s.latitude && s.longitude) {
-                                const marker = L.marker([s.latitude, s.longitude]).addTo(this.map);
+                                const marker = L.marker([s.latitude, s.longitude], { icon: this.blueIcon }).addTo(this.map);
+                                marker.on('click', () => {
+                                    this.drawRoute(s.latitude, s.longitude);
+                                });
                                 const distValText = (latitude && longitude && s.distance !== undefined)
                                     ? `<p style="font-size:0.8rem; margin-bottom:6px; color:var(--secondary); font-weight:600;"><i class="fa-solid fa-route"></i> ${s.distance.toFixed(1)} km away</p>`
                                     : '';
@@ -838,6 +895,107 @@
             this.map.setView([this.customerCoords.lat, this.customerCoords.lng], 13);
         },
 
+        async drawRoute(targetLat, targetLng) {
+            if (!this.map) return;
+
+            // Clear existing route, casing, and badge if any
+            if (this.routePath) {
+                this.map.removeLayer(this.routePath);
+                this.routePath = null;
+            }
+            if (this.routeBorder) {
+                this.map.removeLayer(this.routeBorder);
+                this.routeBorder = null;
+            }
+            if (this.routeBadge) {
+                this.map.removeLayer(this.routeBadge);
+                this.routeBadge = null;
+            }
+
+            // Update marker icons (Red for selected, Blue for others)
+            if (this.markers) {
+                this.markers.forEach(m => {
+                    const latlng = m.getLatLng();
+                    if (latlng.lat === targetLat && latlng.lng === targetLng) {
+                        m.setIcon(this.redIcon);
+                    } else {
+                        m.setIcon(this.blueIcon);
+                    }
+                });
+            }
+
+            if (this.customerCoords && targetLat && targetLng) {
+                const startLat = this.customerCoords.lat;
+                const startLng = this.customerCoords.lng;
+
+                try {
+                    // Query OSRM routing API for real driving directions
+                    const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${targetLng},${targetLat}?overview=full&geometries=geojson`);
+                    if (!response.ok) throw new Error("OSRM API error");
+
+                    const data = await response.json();
+                    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        // Convert [lng, lat] to [lat, lng] for Leaflet
+                        const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+                        // Draw path border / shadow casing
+                        this.routeBorder = L.polyline(coordinates, {
+                            color: '#1557b0', // Classic Google Maps dark blue casing
+                            weight: 10,
+                            opacity: 0.6
+                        }).addTo(this.map);
+
+                        // Draw primary route path
+                        this.routePath = L.polyline(coordinates, {
+                            color: '#1a73e8', // Classic Google Maps blue
+                            weight: 6,
+                            opacity: 0.95
+                        }).addTo(this.map);
+
+                        // Position duration badge near the route midpoint
+                        const midIndex = Math.floor(coordinates.length / 2);
+                        const midCoords = coordinates[midIndex];
+
+                        // Convert duration to minutes
+                        const durationMin = Math.round(route.duration / 60);
+
+                        // Create duration pill marker
+                        const badgeIcon = L.divIcon({
+                            className: 'route-badge-container',
+                            html: `<div class="route-badge-pill">${durationMin} min</div>`,
+                            iconSize: [60, 25],
+                            iconAnchor: [30, 25] // Anchor bottom pointer
+                        });
+
+                        this.routeBadge = L.marker(midCoords, { icon: badgeIcon }).addTo(this.map);
+
+                        // Adjust zoom/bounds to fit route path
+                        this.map.fitBounds(this.routePath.getBounds(), { padding: [50, 50] });
+                        return;
+                    }
+                } catch (error) {
+                    console.warn("OSRM routing failed, falling back to straight polyline:", error);
+                }
+
+                // Fallback: draw straight dashed polyline if OSRM fails
+                this.routePath = L.polyline(
+                    [[startLat, startLng], [targetLat, targetLng]],
+                    {
+                        color: '#06b6d4',
+                        weight: 4,
+                        dashArray: '8, 8',
+                        opacity: 0.85
+                    }
+                ).addTo(this.map);
+
+                this.map.fitBounds(this.routePath.getBounds(), { padding: [50, 50] });
+
+            } else if (targetLat && targetLng) {
+                this.map.setView([targetLat, targetLng], 13);
+            }
+        },
+
         initMap() {
             // Center map on Sri Lanka
             this.map = L.map('map', {
@@ -853,6 +1011,25 @@
             L.tileLayer(tilesUrl, {
                 maxZoom: 20
             }).addTo(this.map);
+
+            // Initialize colored markers (Red for selected, Blue for others)
+            this.redIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            this.blueIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
         },
 
         async loadGarages() {
@@ -867,9 +1044,21 @@
                 </div>
             `;
 
-            // Clear previous map markers
+            // Clear previous map markers and route path
             this.markers.forEach(m => this.map.removeLayer(m));
             this.markers = [];
+            if (this.routePath) {
+                this.map.removeLayer(this.routePath);
+                this.routePath = null;
+            }
+            if (this.routeBorder) {
+                this.map.removeLayer(this.routeBorder);
+                this.routeBorder = null;
+            }
+            if (this.routeBadge) {
+                this.map.removeLayer(this.routeBadge);
+                this.routeBadge = null;
+            }
 
             try {
                 let url = '/api/garages';
@@ -932,6 +1121,16 @@
                                     <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city}
                                 </div>
                                 ${distText}
+                                <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-top:8px; margin-bottom:4px;">
+                                    ${g.openToday ? 
+                                        `<span style="display:inline-flex; align-items:center; gap:0.25rem; font-size:0.8rem; font-weight:700; color:#22c55e; background:rgba(34,197,94,0.1); padding:3px 8px; border-radius:12px;"><i class="fa-solid fa-circle-check"></i> Open Today</span>` :
+                                        `<span style="display:inline-flex; align-items:center; gap:0.25rem; font-size:0.8rem; font-weight:700; color:#ef4444; background:rgba(239,68,68,0.1); padding:3px 8px; border-radius:12px;"><i class="fa-solid fa-circle-xmark"></i> Closed Today</span>`
+                                    }
+                                    ${g.openTime && g.closeTime ? 
+                                        `<span style="font-size:0.8rem; color:var(--text-muted); font-weight:500;"><i class="fa-solid fa-clock"></i> ${g.openTime} - ${g.closeTime} ${g.openDays ? `(${g.openDays})` : ''}</span>` : 
+                                        ''
+                                    }
+                                </div>
                                 <p class="garage-description" style="margin-top: 8px;">${g.description}</p>
                             </div>
                             <div class="garage-footer">
@@ -941,10 +1140,10 @@
                         </div>
                     `;
 
-                    // Click card: pan to marker
+                    // Click card: draw route and zoom/pan
                     card.addEventListener('click', () => {
                         if (g.latitude && g.longitude) {
-                            this.map.setView([g.latitude, g.longitude], 13);
+                            this.drawRoute(g.latitude, g.longitude);
                         }
                     });
 
@@ -955,7 +1154,10 @@
                         const popupDistHtml = (g.distance !== undefined && g.distance !== Infinity)
                             ? `<p style="font-size:0.8rem; margin-bottom:6px; color:var(--secondary); font-weight:600;"><i class="fa-solid fa-route"></i> ${g.distance.toFixed(1)} km away</p>`
                             : '';
-                        const marker = L.marker([g.latitude, g.longitude]).addTo(this.map);
+                        const marker = L.marker([g.latitude, g.longitude], { icon: this.blueIcon }).addTo(this.map);
+                        marker.on('click', () => {
+                            this.drawRoute(g.latitude, g.longitude);
+                        });
                         marker.bindPopup(`
                             <div style="color:var(--text-primary); font-family:var(--font-body); min-width: 150px;">
                                 <h4 style="font-weight:700; margin-bottom:4px; font-family:var(--font-heading);">${g.name}</h4>
@@ -2312,6 +2514,15 @@
                     this.ownerBreakdownsList = [];
                 }
 
+                // Fetch mechanics
+                const resMechanics = await fetch('/api/mechanics');
+                const mechanics = await resMechanics.json();
+                if (resMechanics.ok) {
+                    this.ownerMechanicsList = mechanics;
+                } else {
+                    this.ownerMechanicsList = [];
+                }
+
                 this.filterOwnerAnalytics();
 
             } catch (err) {
@@ -2390,6 +2601,17 @@
             document.getElementById('stat-total-bookings').textContent = totalCount;
             document.getElementById('stat-total-revenue').textContent = `LKR ${revenue.toFixed(2)}`;
             document.getElementById('stat-completed-bookings').textContent = completedCount;
+
+            // Filter mechanics
+            let filteredMechanics = this.ownerMechanicsList || [];
+            if (selectedGarageId) {
+                filteredMechanics = filteredMechanics.filter(m => m.garage && m.garage.id === parseInt(selectedGarageId, 10));
+            }
+            let mechanicsCount = filteredMechanics.length;
+            const statTotalMechanics = document.getElementById('stat-total-mechanics');
+            if (statTotalMechanics) {
+                statTotalMechanics.textContent = mechanicsCount;
+            }
 
             // Filter completed rescues (breakdowns)
             let completedRescuesCount = 0;
@@ -2566,6 +2788,13 @@
             });
             const completedRescuesCount = filteredBreakdowns.length;
 
+            // Filter mechanics
+            let filteredMechanics = this.ownerMechanicsList || [];
+            if (selectedGarageId) {
+                filteredMechanics = filteredMechanics.filter(m => m.garage && m.garage.id === parseInt(selectedGarageId, 10));
+            }
+            const mechanicsCount = filteredMechanics.length;
+
             let dateRangeStr = 'All Time';
             if (dateType === 'day') {
                 dateRangeStr = `Day: ${targetDay}`;
@@ -2580,7 +2809,8 @@
                 { 'Metric': 'Total Bookings', 'Value': totalCount },
                 { 'Metric': 'Total Revenue', 'Value': `LKR ${revenue.toFixed(2)}` },
                 { 'Metric': 'Completed', 'Value': completedCount },
-                { 'Metric': 'Completed Rescues', 'Value': completedRescuesCount }
+                { 'Metric': 'Completed Rescues', 'Value': completedRescuesCount },
+                { 'Metric': 'Total Mechanics', 'Value': mechanicsCount }
             ];
 
             // Generate Workbook
@@ -3010,6 +3240,11 @@
             const phone = document.getElementById('garage-phone').value.trim();
             const email = document.getElementById('garage-email').value.trim();
             
+            const openTime = document.getElementById('garage-open-time').value;
+            const closeTime = document.getElementById('garage-close-time').value;
+            const openDays = document.getElementById('garage-open-days').value.trim();
+            const openToday = document.getElementById('garage-open-today').checked;
+            
             const fileInput = document.getElementById('garage-image-file');
             let imageUrl = '';
 
@@ -3029,7 +3264,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name, description, address, city, phone, email, imageUrl, latitude, longitude
+                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday
                     })
                 });
 
@@ -3287,12 +3522,214 @@
             this.activeLngInput = null;
         },
 
+        async viewBreakdownOnMap(customerLat, customerLng, breakdownId, breakdownCity) {
+            try {
+                const res = await fetch('/api/garages/my');
+                if (!res.ok) throw new Error("Failed to fetch owner garages");
+                const garages = await res.json();
+                
+                const approvedGarages = garages.filter(g => g.status === 'APPROVED');
+                if (approvedGarages.length === 0) {
+                    this.showToast("You don't have any approved garages to route from.", "error");
+                    return;
+                }
+                
+                // Find the closest approved garage
+                let closestGarage = null;
+                let minDistance = Infinity;
+                
+                approvedGarages.forEach(g => {
+                    if (g.latitude !== null && g.longitude !== null && g.latitude !== undefined && g.longitude !== undefined) {
+                        const dist = this.calculateDistance(customerLat, customerLng, g.latitude, g.longitude);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            closestGarage = g;
+                        }
+                    }
+                });
+                
+                if (!closestGarage) {
+                    this.showToast("None of your approved garages have coordinates set.", "error");
+                    return;
+                }
+                
+                // Open modal
+                this.openModal('modal-view-breakdown-route');
+                
+                // Wait for modal display transitions to complete
+                setTimeout(async () => {
+                    const savedTheme = localStorage.getItem('theme') || 'night';
+                    
+                    // Initialize map if not yet done
+                    if (!this.breakdownRouteMap) {
+                        this.breakdownRouteMap = L.map('breakdown-route-map', {
+                            zoomControl: true,
+                            attributionControl: false
+                        });
+                        
+                        const tilesUrl = savedTheme === 'day'
+                            ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                        L.tileLayer(tilesUrl, { maxZoom: 20 }).addTo(this.breakdownRouteMap);
+                    }
+                    
+                    // Clear existing layers
+                    if (this.breakdownRouteMarkers) {
+                        this.breakdownRouteMarkers.forEach(m => this.breakdownRouteMap.removeLayer(m));
+                    }
+                    this.breakdownRouteMarkers = [];
+                    
+                    if (this.breakdownRoutePath) {
+                        this.breakdownRouteMap.removeLayer(this.breakdownRoutePath);
+                        this.breakdownRoutePath = null;
+                    }
+                    if (this.breakdownRouteBorder) {
+                        this.breakdownRouteMap.removeLayer(this.breakdownRouteBorder);
+                        this.breakdownRouteBorder = null;
+                    }
+                    if (this.breakdownRouteBadge) {
+                        this.breakdownRouteMap.removeLayer(this.breakdownRouteBadge);
+                        this.breakdownRouteBadge = null;
+                    }
+                    
+                    // Red marker for customer, Blue marker for garage
+                    if (!this.redIcon) {
+                        this.redIcon = new L.Icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                            shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        });
+                    }
+                    if (!this.blueIcon) {
+                        this.blueIcon = new L.Icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                            shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        });
+                    }
+                    
+                    // Add markers to breakdownRouteMarkers array & map
+                    const garageMarker = L.marker([closestGarage.latitude, closestGarage.longitude], { icon: this.blueIcon })
+                        .addTo(this.breakdownRouteMap)
+                        .bindPopup(`<strong>Your Garage: ${closestGarage.name}</strong>`);
+                    const customerMarker = L.marker([customerLat, customerLng], { icon: this.redIcon })
+                        .addTo(this.breakdownRouteMap)
+                        .bindPopup(`<strong>Stranded Customer (ID: ${breakdownId})</strong>`);
+                        
+                    this.breakdownRouteMarkers.push(garageMarker);
+                    this.breakdownRouteMarkers.push(customerMarker);
+                    
+                    this.breakdownRouteMap.invalidateSize();
+                    
+                    // Let's draw the route!
+                    const startLat = closestGarage.latitude;
+                    const startLng = closestGarage.longitude;
+                    const endLat = customerLat;
+                    const endLng = customerLng;
+                    
+                    try {
+                        const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`);
+                        if (!response.ok) throw new Error("OSRM API error");
+                        
+                        const data = await response.json();
+                        if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                            const route = data.routes[0];
+                            const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                            
+                            // Draw casing
+                            this.breakdownRouteBorder = L.polyline(coordinates, {
+                                color: '#1557b0',
+                                weight: 10,
+                                opacity: 0.6
+                            }).addTo(this.breakdownRouteMap);
+                            
+                            // Draw primary route path
+                            this.breakdownRoutePath = L.polyline(coordinates, {
+                                color: '#1a73e8',
+                                weight: 6,
+                                opacity: 0.95
+                            }).addTo(this.breakdownRouteMap);
+                            
+                            // Position duration badge near the route midpoint
+                            const midIndex = Math.floor(coordinates.length / 2);
+                            const midCoords = coordinates[midIndex];
+                            const durationMin = Math.round(route.duration / 60);
+                            
+                            const badgeIcon = L.divIcon({
+                                className: 'route-badge-container',
+                                html: `<div class="route-badge-pill">${durationMin} min</div>`,
+                                iconSize: [60, 25],
+                                iconAnchor: [30, 25]
+                            });
+                            
+                            this.breakdownRouteBadge = L.marker(midCoords, { icon: badgeIcon }).addTo(this.breakdownRouteMap);
+                            
+                            this.breakdownRouteMap.fitBounds(this.breakdownRoutePath.getBounds(), { padding: [50, 50] });
+                            return;
+                        }
+                    } catch (err) {
+                        console.warn("OSRM routing on dashboard failed, falling back to straight polyline:", err);
+                    }
+                    
+                    // Fallback to straight dashed line
+                    this.breakdownRoutePath = L.polyline(
+                        [[startLat, startLng], [endLat, endLng]],
+                        {
+                            color: '#06b6d4',
+                            weight: 4,
+                            dashArray: '8, 8',
+                            opacity: 0.85
+                        }
+                    ).addTo(this.breakdownRouteMap);
+                    
+                    this.breakdownRouteMap.fitBounds(this.breakdownRoutePath.getBounds(), { padding: [50, 50] });
+                }, 350);
+                
+            } catch (err) {
+                console.error("Error drawing breakdown route map:", err);
+                this.showToast("Error loading breakdown route.", "error");
+            }
+        },
+        
+        closeBreakdownRouteMap() {
+            this.closeModal('modal-view-breakdown-route');
+        },
+
         // --- EMERGENCY BREAKDOWN ASSIST ---
         openEmergencyModal() {
             if (!this.currentUser) {
                 this.showToast('Please Sign In to submit an emergency assist request.', 'error');
                 setTimeout(() => { window.location.href = 'auth.html'; }, 1000);
                 return;
+            }
+            if (this.customerCoords) {
+                const latInput = document.getElementById('breakdown-lat');
+                const lngInput = document.getElementById('breakdown-lng');
+                if (latInput) latInput.value = this.customerCoords.lat;
+                if (lngInput) lngInput.value = this.customerCoords.lng;
+            } else {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            const newLat = pos.coords.latitude;
+                            const newLng = pos.coords.longitude;
+                            this.customerCoords = { lat: newLat, lng: newLng };
+                            const latInput = document.getElementById('breakdown-lat');
+                            const lngInput = document.getElementById('breakdown-lng');
+                            if (latInput) latInput.value = newLat;
+                            if (lngInput) lngInput.value = newLng;
+                            this.showCustomerLocationOnMap();
+                        },
+                        () => {},
+                        { timeout: 5000, enableHighAccuracy: true }
+                    );
+                }
             }
             this.openModal('modal-breakdown');
         },
@@ -3657,6 +4094,17 @@
                 alertCount++;
                 const item = document.createElement('div');
                 item.className = 'table-item';
+
+                let viewOnMapBtn = '';
+                if (b.latitude !== null && b.longitude !== null && b.latitude !== undefined && b.longitude !== undefined) {
+                    viewOnMapBtn = `
+                        <button class="btn btn-outline" style="color:var(--secondary); border-color:var(--secondary); padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                            onclick="window.GarageLK.viewBreakdownOnMap(${b.latitude}, ${b.longitude}, ${b.id}, '${b.city}')" unique-id="view-map-btn-${b.id}">
+                            <i class="fa-solid fa-map-location-dot"></i> View on Map
+                        </button>
+                    `;
+                }
+
                 item.innerHTML = `
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
@@ -3673,6 +4121,7 @@
                         </p>
                     </div>
                     <div style="display:flex; gap:0.5rem; align-items:center;">
+                        ${viewOnMapBtn}
                         <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; border-color:var(--border-color);" 
                             onclick="window.GarageLK.quickLookupID('${b.breakdownCode}')" unique-id="lookup-breakdown-btn-${b.id}">
                             <i class="fa-solid fa-search"></i> Lookup Details
@@ -3691,6 +4140,17 @@
                 alertCount++;
                 const item = document.createElement('div');
                 item.className = 'table-item';
+
+                let viewOnMapBtnAssigned = '';
+                if (b.latitude !== null && b.longitude !== null && b.latitude !== undefined && b.longitude !== undefined) {
+                    viewOnMapBtnAssigned = `
+                        <button class="btn btn-outline" style="color:var(--secondary); border-color:var(--secondary); padding:0.4rem 0.8rem; font-size:0.8rem; width:100%; text-align:center;" 
+                            onclick="window.GarageLK.viewBreakdownOnMap(${b.latitude}, ${b.longitude}, ${b.id}, '${b.city}')" unique-id="view-map-assigned-btn-${b.id}">
+                            <i class="fa-solid fa-map-location-dot"></i> View on Map
+                        </button>
+                    `;
+                }
+
                 item.innerHTML = `
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
@@ -3712,7 +4172,8 @@
                         <span class="badge badge-pending" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; font-weight:700;">
                             PENDING RESOLVED
                         </span>
-                        <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
+                        ${viewOnMapBtnAssigned}
+                        <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8rem; width:100%; text-align:center;" 
                             onclick="window.GarageLK.quickLookupID('${b.breakdownCode}')" unique-id="lookup-assigned-btn-${b.id}">
                             <i class="fa-solid fa-search"></i> Lookup Details
                         </button>
@@ -4154,6 +4615,39 @@
                 // Store raw data for client-side filtering
                 this.adminRawData = { garages, shops, bookings, breakdowns, mechanics, users, sparePartBookings };
 
+                // Populate Garage dropdown for admin monitor (approved only)
+                const monitorGarageSelect = document.getElementById('admin-monitor-garage-select');
+                if (monitorGarageSelect) {
+                    monitorGarageSelect.innerHTML = '<option value="">Select a Garage...</option>';
+                    garages.forEach(g => {
+                        if (g.status === 'APPROVED') {
+                            monitorGarageSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+                        }
+                    });
+                }
+
+                // Populate Shop dropdown for admin monitor (approved only)
+                const monitorShopSelect = document.getElementById('admin-monitor-shop-select');
+                if (monitorShopSelect) {
+                    monitorShopSelect.innerHTML = '<option value="">Select a Shop...</option>';
+                    shops.forEach(s => {
+                        if (s.status === 'APPROVED') {
+                            monitorShopSelect.innerHTML += `<option value="${s.id}">${s.shopName || s.name}</option>`;
+                        }
+                    });
+                }
+
+                // Reset individual views
+                const garageDetails = document.getElementById('admin-monitor-garage-details');
+                const garagePlaceholder = document.getElementById('admin-monitor-garage-placeholder');
+                if (garageDetails) garageDetails.style.display = 'none';
+                if (garagePlaceholder) garagePlaceholder.style.display = 'block';
+
+                const shopDetails = document.getElementById('admin-monitor-shop-details');
+                const shopPlaceholder = document.getElementById('admin-monitor-shop-placeholder');
+                if (shopDetails) shopDetails.style.display = 'none';
+                if (shopPlaceholder) shopPlaceholder.style.display = 'block';
+
                 // Compute system-wide static counts
                 document.getElementById('admin-stat-garages').textContent = garages.length;
                 const shopStatEl = document.getElementById('admin-stat-shops');
@@ -4573,6 +5067,298 @@
                     console.error("PDF generation failed:", err);
                     this.showToast("PDF generation failed", "error");
                 });
+        },
+
+        handleAdminGarageSelectChange() {
+            const select = document.getElementById('admin-monitor-garage-select');
+            const garageId = select ? select.value : '';
+            const detailsDiv = document.getElementById('admin-monitor-garage-details');
+            const placeholder = document.getElementById('admin-monitor-garage-placeholder');
+
+            if (!garageId) {
+                if (detailsDiv) detailsDiv.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+
+            const numericId = parseInt(garageId, 10);
+            const garage = this.adminRawData.garages.find(g => g.id === numericId);
+
+            if (!garage) return;
+
+            // Update details
+            document.getElementById('admin-garage-detail-name').textContent = garage.garageName || garage.name || '-';
+            document.getElementById('admin-garage-detail-owner').textContent = garage.ownerName || (garage.owner ? (garage.owner.fullName || garage.owner.username) : '-');
+            document.getElementById('admin-garage-detail-phone').textContent = garage.phone || '-';
+            document.getElementById('admin-garage-detail-location').textContent = `${garage.address || ''}, ${garage.city || ''}`;
+            document.getElementById('admin-garage-detail-specialization').textContent = `${garage.vehicleTypes || 'All'} (${garage.engineTypes || 'All'})`;
+
+            // Compute statistics
+            const garageBookings = (this.adminRawData.bookings || []).filter(b => b.garage && b.garage.id === numericId);
+            const completedBookings = garageBookings.filter(b => b.status === 'COMPLETED');
+            
+            let revenue = 0.0;
+            const revenueMap = {};
+            completedBookings.forEach(b => {
+                revenue += (b.totalPrice || b.price || 0.0);
+                const type = b.serviceType || 'Other';
+                revenueMap[type] = (revenueMap[type] || 0) + (b.totalPrice || b.price || 0.0);
+            });
+
+            const garageMechanics = (this.adminRawData.mechanics || []).filter(m => m.garage && m.garage.id === numericId);
+            const garageRescues = (this.adminRawData.breakdowns || []).filter(b => b.assignedGarage && b.assignedGarage.id === numericId && b.status === 'COMPLETED');
+
+            // Render stats
+            document.getElementById('admin-garage-stat-bookings').textContent = garageBookings.length;
+            document.getElementById('admin-garage-stat-revenue').textContent = `LKR ${revenue.toFixed(2)}`;
+            document.getElementById('admin-garage-stat-completed').textContent = completedBookings.length;
+            document.getElementById('admin-garage-stat-mechanics').textContent = garageMechanics.length;
+            document.getElementById('admin-garage-stat-rescues').textContent = garageRescues.length;
+
+            // Render Charts
+            const revenueCanvas = document.getElementById('admin-chart-garage-revenue');
+            if (revenueCanvas) {
+                if (window.adminGarageRevenueChart) window.adminGarageRevenueChart.destroy();
+                
+                const isDarkMode = !document.body.classList.contains('light-mode');
+                const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+                const gridColor = isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                
+                const revenueLabels = Object.keys(revenueMap);
+                const revenueValues = Object.values(revenueMap);
+
+                window.adminGarageRevenueChart = new Chart(revenueCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: revenueLabels.length > 0 ? revenueLabels : ['No Data'],
+                        datasets: [{
+                            label: 'Revenue (LKR)',
+                            data: revenueValues.length > 0 ? revenueValues : [0],
+                            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                            borderColor: 'rgb(6, 182, 212)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 10 } }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 10 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const completionsCanvas = document.getElementById('admin-chart-garage-completions');
+            if (completionsCanvas) {
+                if (window.adminGarageCompletionsChart) window.adminGarageCompletionsChart.destroy();
+
+                const isDarkMode = !document.body.classList.contains('light-mode');
+                const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+
+                const completedCount = completedBookings.length;
+                const completedRescuesCount = garageRescues.length;
+                const hasData = completedCount > 0 || completedRescuesCount > 0;
+
+                window.adminGarageCompletionsChart = new Chart(completionsCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Completed Bookings', 'Completed Rescues'],
+                        datasets: [{
+                            data: hasData ? [completedCount, completedRescuesCount] : [1, 0],
+                            backgroundColor: hasData ? ['rgba(16, 185, 129, 0.75)', 'rgba(239, 68, 68, 0.75)'] : ['rgba(148, 163, 184, 0.25)', 'rgba(0,0,0,0)'],
+                            borderColor: hasData ? ['rgb(16, 185, 129)', 'rgb(239, 68, 68)'] : ['rgba(148, 163, 184, 0.4)', 'rgba(0,0,0,0)'],
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Outfit', size: 10 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (detailsDiv) detailsDiv.style.display = 'flex';
+            if (placeholder) placeholder.style.display = 'none';
+        },
+
+        handleAdminShopSelectChange() {
+            const select = document.getElementById('admin-monitor-shop-select');
+            const shopId = select ? select.value : '';
+            const detailsDiv = document.getElementById('admin-monitor-shop-details');
+            const placeholder = document.getElementById('admin-monitor-shop-placeholder');
+
+            if (!shopId) {
+                if (detailsDiv) detailsDiv.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+
+            const numericId = parseInt(shopId, 10);
+            const shop = this.adminRawData.shops.find(s => s.id === numericId);
+
+            if (!shop) return;
+
+            // Update details
+            document.getElementById('admin-shop-detail-name').textContent = shop.shopName || shop.name || '-';
+            document.getElementById('admin-shop-detail-owner').textContent = shop.ownerName || (shop.user ? (shop.user.fullName || shop.user.username) : '-');
+            document.getElementById('admin-shop-detail-phone').textContent = shop.phone || '-';
+            document.getElementById('admin-shop-detail-location').textContent = `${shop.address || ''}, ${shop.city || ''}`;
+            document.getElementById('admin-shop-detail-desc').textContent = shop.description || '-';
+
+            // Compute statistics
+            const shopBookings = (this.adminRawData.sparePartBookings || []).filter(b => b.sparePart && b.sparePart.shop && b.sparePart.shop.id === numericId);
+            const pickedUpBookings = shopBookings.filter(b => b.status === 'PICKED_UP');
+
+            let revenue = 0.0;
+            let partsSold = 0;
+            const partSalesCount = {};
+            const partRevenueMap = {};
+
+            pickedUpBookings.forEach(b => {
+                revenue += (b.totalPrice || 0.0);
+                partsSold += (b.quantity || 0);
+                
+                const partName = b.sparePart ? b.sparePart.partName : 'Unknown';
+                partSalesCount[partName] = (partSalesCount[partName] || 0) + (b.quantity || 0);
+                partRevenueMap[partName] = (partRevenueMap[partName] || 0.0) + (b.totalPrice || 0.0);
+            });
+
+            // Find top selling part
+            let topPart = 'N/A';
+            let maxQty = 0;
+            for (const [part, qty] of Object.entries(partSalesCount)) {
+                if (qty > maxQty) {
+                    maxQty = qty;
+                    topPart = part;
+                }
+            }
+
+            // Render stats
+            document.getElementById('admin-shop-stat-revenue').textContent = `LKR ${revenue.toFixed(2)}`;
+            document.getElementById('admin-shop-stat-sales').textContent = partsSold;
+            document.getElementById('admin-shop-stat-top').textContent = topPart;
+
+            // Render Charts
+            const salesCanvas = document.getElementById('admin-chart-shop-sales');
+            if (salesCanvas) {
+                if (window.adminShopSalesChart) window.adminShopSalesChart.destroy();
+
+                const isDarkMode = !document.body.classList.contains('light-mode');
+                const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+                const gridColor = isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+                const partNames = Object.keys(partSalesCount);
+                const salesCounts = Object.values(partSalesCount);
+
+                window.adminShopSalesChart = new Chart(salesCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: partNames.length > 0 ? partNames : ['No Data'],
+                        datasets: [{
+                            label: 'Quantity Sold',
+                            data: salesCounts.length > 0 ? salesCounts : [0],
+                            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                            borderColor: 'rgb(6, 182, 212)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 10 } }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: { color: textColor, font: { family: 'Outfit', size: 10 }, stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const revenueCanvas = document.getElementById('admin-chart-shop-revenue');
+            if (revenueCanvas) {
+                if (window.adminShopRevenueChart) window.adminShopRevenueChart.destroy();
+
+                const isDarkMode = !document.body.classList.contains('light-mode');
+                const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+
+                const partNames = Object.keys(partRevenueMap);
+                const revenues = Object.values(partRevenueMap);
+                const hasData = revenues.length > 0;
+
+                const chartColors = [
+                    'rgba(16, 185, 129, 0.75)', // emerald
+                    'rgba(6, 182, 212, 0.75)',  // cyan
+                    'rgba(99, 102, 241, 0.75)',  // indigo
+                    'rgba(245, 158, 11, 0.75)',  // amber
+                    'rgba(239, 68, 68, 0.75)',   // red
+                    'rgba(168, 85, 247, 0.75)',  // purple
+                    'rgba(236, 72, 153, 0.75)'   // pink
+                ];
+                const borderColors = [
+                    'rgb(16, 185, 129)',
+                    'rgb(6, 182, 212)',
+                    'rgb(99, 102, 241)',
+                    'rgb(245, 158, 11)',
+                    'rgb(239, 68, 68)',
+                    'rgb(168, 85, 247)',
+                    'rgb(236, 72, 153)'
+                ];
+
+                window.adminShopRevenueChart = new Chart(revenueCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels: hasData ? partNames : ['No Data'],
+                        datasets: [{
+                            data: hasData ? revenues : [1],
+                            backgroundColor: hasData ? chartColors.slice(0, revenues.length) : ['rgba(148, 163, 184, 0.25)'],
+                            borderColor: hasData ? borderColors.slice(0, revenues.length) : ['rgba(148, 163, 184, 0.4)'],
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, font: { family: 'Outfit', size: 10 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (detailsDiv) detailsDiv.style.display = 'flex';
+            if (placeholder) placeholder.style.display = 'none';
         },
 
         renderAdminMonitorCharts(breakdowns, garages, shops, mechanics, bookings = [], sparePartBookings = []) {
@@ -5400,6 +6186,11 @@
             document.getElementById('edit-garage-image').value = g.imageUrl || '';
             document.getElementById('edit-garage-lat').value = g.latitude || 6.9271;
             document.getElementById('edit-garage-lng').value = g.longitude || 79.8612;
+            
+            document.getElementById('edit-garage-open-time').value = g.openTime || '08:00';
+            document.getElementById('edit-garage-close-time').value = g.closeTime || '17:30';
+            document.getElementById('edit-garage-open-days').value = g.openDays || 'Monday - Saturday';
+            document.getElementById('edit-garage-open-today').checked = g.openToday !== false;
 
             // Populate existing image preview
             const editPlaceholder = document.getElementById('edit-garage-image-placeholder');
@@ -5431,6 +6222,11 @@
             const phone = document.getElementById('edit-garage-phone').value.trim();
             const email = document.getElementById('edit-garage-email').value.trim();
             
+            const openTime = document.getElementById('edit-garage-open-time').value;
+            const closeTime = document.getElementById('edit-garage-close-time').value;
+            const openDays = document.getElementById('edit-garage-open-days').value.trim();
+            const openToday = document.getElementById('edit-garage-open-today').checked;
+            
             const fileInput = document.getElementById('edit-garage-image-file');
             let imageUrl = document.getElementById('edit-garage-image').value.trim();
 
@@ -5450,7 +6246,7 @@
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name, description, address, city, phone, email, imageUrl, latitude, longitude
+                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday
                     })
                 });
 
@@ -5688,6 +6484,11 @@
             document.getElementById('shop-image').value = '';
             document.getElementById('shop-lat').value = '';
             document.getElementById('shop-lng').value = '';
+            
+            document.getElementById('shop-open-time').value = '08:30';
+            document.getElementById('shop-close-time').value = '18:00';
+            document.getElementById('shop-open-days').value = 'Monday - Saturday';
+            document.getElementById('shop-open-today').checked = true;
 
             this.removeSelectedImage(null, 'shop-image-file', 'shop-image-placeholder', 'shop-image-preview-container', 'shop-image');
             const submitBtn = document.getElementById('shop-submit-btn');
@@ -5709,6 +6510,11 @@
             document.getElementById('shop-image').value = s.imageUrl || '';
             document.getElementById('shop-lat').value = s.latitude || '';
             document.getElementById('shop-lng').value = s.longitude || '';
+            
+            document.getElementById('shop-open-time').value = s.openTime || '08:30';
+            document.getElementById('shop-close-time').value = s.closeTime || '18:00';
+            document.getElementById('shop-open-days').value = s.openDays || 'Monday - Saturday';
+            document.getElementById('shop-open-today').checked = s.openToday !== false;
 
             const placeholder = document.getElementById('shop-image-placeholder');
             const previewContainer = document.getElementById('shop-image-preview-container');
@@ -5741,6 +6547,11 @@
             const phone = document.getElementById('shop-phone').value.trim();
             const email = document.getElementById('shop-email').value.trim();
             
+            const openTime = document.getElementById('shop-open-time').value;
+            const closeTime = document.getElementById('shop-close-time').value;
+            const openDays = document.getElementById('shop-open-days').value.trim();
+            const openToday = document.getElementById('shop-open-today').checked;
+            
             const fileInput = document.getElementById('shop-image-file');
             let imageUrl = document.getElementById('shop-image').value.trim();
 
@@ -5772,7 +6583,7 @@
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name, description, address, city, phone, email, imageUrl, latitude, longitude
+                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday
                     })
                 });
 

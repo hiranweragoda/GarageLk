@@ -51,19 +51,19 @@ ON DUPLICATE KEY UPDATE vehicle_no=vehicle_no;
 
 -- 3. Insert Garages (with vehicle_types, engine_types, phone, and email)
 -- Garage 1: Colombo Hybrid Motors
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
-VALUES (1, 4, 'Colombo Hybrid Motors', 'Priyantha De Silva', 'Specialized hybrid vehicle maintenance, battery testing, scan reports, and general servicing for Toyota and Honda models.', '142, Baseline Road, Borella', 'Colombo 08', 'Colombo', 'APPROVED', 6.9242, 79.8732, 'Car,Van', 'Hybrid,Petrol', '0112233445', 'info@colombohybrid.lk')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Van', engine_types='Hybrid,Petrol', phone='0112233445', email='info@colombohybrid.lk';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email, open_time, close_time, open_days, open_today)
+VALUES (1, 4, 'Colombo Hybrid Motors', 'Priyantha De Silva', 'Specialized hybrid vehicle maintenance, battery testing, scan reports, and general servicing for Toyota and Honda models.', '142, Baseline Road, Borella', 'Colombo 08', 'Colombo', 'APPROVED', 6.9242, 79.8732, 'Car,Van', 'Hybrid,Petrol', '0112233445', 'info@colombohybrid.lk', '08:00', '17:30', 'Monday - Saturday', true)
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Van', engine_types='Hybrid,Petrol', phone='0112233445', email='info@colombohybrid.lk', open_time='08:00', close_time='17:30', open_days='Monday - Saturday', open_today=true;
 
 -- Garage 2: Kandy Auto Care & Towing
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
-VALUES (2, 5, 'Kandy Auto Care & Towing', 'Ranjith Alwis', 'Full-service garage including engine diagnostics, AC repairs, breakdown support, and 24/7 towing services in the hill country.', '88, William Gopallawa Mawatha', 'Kandy', 'Kandy', 'APPROVED', 7.2842, 80.6234, 'Car,Van,Truck', 'Petrol,Diesel,Hybrid', '0812233445', 'contact@kandycare.lk')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Van,Truck', engine_types='Petrol,Diesel,Hybrid', phone='0812233445', email='contact@kandycare.lk';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email, open_time, close_time, open_days, open_today)
+VALUES (2, 5, 'Kandy Auto Care & Towing', 'Ranjith Alwis', 'Full-service garage including engine diagnostics, AC repairs, breakdown support, and 24/7 towing services in the hill country.', '88, William Gopallawa Mawatha', 'Kandy', 'Kandy', 'APPROVED', 7.2842, 80.6234, 'Car,Van,Truck', 'Petrol,Diesel,Hybrid', '0812233445', 'contact@kandycare.lk', '07:30', '18:00', 'Monday - Friday', true)
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Van,Truck', engine_types='Petrol,Diesel,Hybrid', phone='0812233445', email='contact@kandycare.lk', open_time='07:30', close_time='18:00', open_days='Monday - Friday', open_today=true;
 
 -- Garage 3: Galle Tire & Wheel Alignment
-INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
-VALUES (3, 6, 'Galle Tire & Wheel Alignment', 'Mohamed Sajid', 'Authorised dealer for premium tires. Specializing in computerised wheel alignment, wheel balancing, and tire puncture repairs.', '210, Matara Road', 'Galle', 'Galle', 'APPROVED', 6.0367, 80.2222, 'Car,Bike,Van', 'Petrol,Diesel,EV,Hybrid', '0912233445', 'galletire@gmail.com')
-ON DUPLICATE KEY UPDATE vehicle_types='Car,Bike,Van', engine_types='Petrol,Diesel,EV,Hybrid', phone='0912233445', email='galletire@gmail.com';
+INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email, open_time, close_time, open_days, open_today)
+VALUES (3, 6, 'Galle Tire & Wheel Alignment', 'Mohamed Sajid', 'Authorised dealer for premium tires. Specializing in computerised wheel alignment, wheel balancing, and tire puncture repairs.', '210, Matara Road', 'Galle', 'Galle', 'APPROVED', 6.0367, 80.2222, 'Car,Bike,Van', 'Petrol,Diesel,EV,Hybrid', '0912233445', 'galletire@gmail.com', '08:00', '17:00', 'Daily', true)
+ON DUPLICATE KEY UPDATE vehicle_types='Car,Bike,Van', engine_types='Petrol,Diesel,EV,Hybrid', phone='0912233445', email='galletire@gmail.com', open_time='08:00', close_time='17:00', open_days='Daily', open_today=true;
 
 -- Garage 4: Lanka Diesel Engineers (PENDING Admin approval)
 INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email)
@@ -130,13 +130,13 @@ ON DUPLICATE KEY UPDATE username=username;
 
 
 -- 8. Insert Spare Part Shops
-INSERT INTO spare_part_shops (id, user_id, shop_name, owner_name, description, address, city, district, status, latitude, longitude, phone, email)
-VALUES (1, 8, 'Colombo Auto Spares', 'Sunil Jayawardena', 'All kinds of Japanese car spare parts, genuine body parts, engines, and accessories.', '50, Panchikawatta Road, Borella', 'Colombo', 'Colombo', 'APPROVED', 6.9298, 79.8665, '0112334455', 'colomboparts@gmail.com')
-ON DUPLICATE KEY UPDATE shop_name=shop_name;
+INSERT INTO spare_part_shops (id, user_id, shop_name, owner_name, description, address, city, district, status, latitude, longitude, phone, email, open_time, close_time, open_days, open_today)
+VALUES (1, 8, 'Colombo Auto Spares', 'Sunil Jayawardena', 'All kinds of Japanese car spare parts, genuine body parts, engines, and accessories.', '50, Panchikawatta Road, Borella', 'Colombo', 'Colombo', 'APPROVED', 6.9298, 79.8665, '0112334455', 'colomboparts@gmail.com', '08:30', '18:00', 'Monday - Saturday', true)
+ON DUPLICATE KEY UPDATE shop_name=shop_name, open_time='08:30', close_time='18:00', open_days='Monday - Saturday', open_today=true;
 
-INSERT INTO spare_part_shops (id, user_id, shop_name, owner_name, description, address, city, district, status, latitude, longitude, phone, email)
-VALUES (2, 9, 'Kandy Auto Spares', 'Nihal Kularatne', 'Retail and wholesale distributor of high quality automotive filters, brake pads, side mirrors, and electrical parts.', '12, Peradeniya Road', 'Kandy', 'Kandy', 'APPROVED', 7.2889, 80.6120, '0812334455', 'kandyparts@gmail.com')
-ON DUPLICATE KEY UPDATE shop_name=shop_name;
+INSERT INTO spare_part_shops (id, user_id, shop_name, owner_name, description, address, city, district, status, latitude, longitude, phone, email, open_time, close_time, open_days, open_today)
+VALUES (2, 9, 'Kandy Auto Spares', 'Nihal Kularatne', 'Retail and wholesale distributor of high quality automotive filters, brake pads, side mirrors, and electrical parts.', '12, Peradeniya Road', 'Kandy', 'Kandy', 'APPROVED', 7.2889, 80.6120, '0812334455', 'kandyparts@gmail.com', '09:00', '19:00', 'Daily', true)
+ON DUPLICATE KEY UPDATE shop_name=shop_name, open_time='09:00', close_time='19:00', open_days='Daily', open_today=true;
 
 
 -- 9. Insert Spare Parts

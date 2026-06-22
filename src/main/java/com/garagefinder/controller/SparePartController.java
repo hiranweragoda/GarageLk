@@ -87,6 +87,10 @@ public class SparePartController {
             shopMap.put("city", shop.getCity());
             shopMap.put("phone", shop.getPhone());
             shopMap.put("email", shop.getEmail());
+            shopMap.put("openTime", shop.getOpenTime());
+            shopMap.put("closeTime", shop.getCloseTime());
+            shopMap.put("openDays", shop.getOpenDays());
+            shopMap.put("openToday", shop.getOpenToday());
             shopMap.put("latitude", shop.getLatitude());
             shopMap.put("longitude", shop.getLongitude());
             shopMap.put("imageUrl", shop.getImageUrl());
@@ -147,6 +151,10 @@ public class SparePartController {
             map.put("imageUrl", s.getImageUrl());
             map.put("phone", s.getPhone());
             map.put("email", s.getEmail());
+            map.put("openTime", s.getOpenTime());
+            map.put("closeTime", s.getCloseTime());
+            map.put("openDays", s.getOpenDays());
+            map.put("openToday", s.getOpenToday());
 
             Double avg = shopReviewRepository.findAverageRatingByShopId(s.getId());
             Long count = shopReviewRepository.countByShopId(s.getId());
@@ -215,6 +223,10 @@ public class SparePartController {
         shopMap.put("imageUrl", shop.getImageUrl());
         shopMap.put("phone", shop.getPhone());
         shopMap.put("email", shop.getEmail());
+        shopMap.put("openTime", shop.getOpenTime());
+        shopMap.put("closeTime", shop.getCloseTime());
+        shopMap.put("openDays", shop.getOpenDays());
+        shopMap.put("openToday", shop.getOpenToday());
         
         double ratingVal = avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 0.0;
         shopMap.put("averageRating", ratingVal);
@@ -271,10 +283,19 @@ public class SparePartController {
 
         String district = city;
 
+        String openTime = payload.get("openTime") != null ? payload.get("openTime").toString() : null;
+        String closeTime = payload.get("closeTime") != null ? payload.get("closeTime").toString() : null;
+        String openDays = payload.get("openDays") != null ? payload.get("openDays").toString() : null;
+        Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null ? Boolean.parseBoolean(payload.get("openToday").toString()) : true;
+
         SparePartShop shop = new SparePartShop(managedUser, name, managedUser.getFullName() != null ? managedUser.getFullName() : managedUser.getUsername(), description, address, city, district, latitude, longitude);
         shop.setImageUrl(imageUrl);
         shop.setPhone(phone);
         shop.setEmail(email);
+        shop.setOpenTime(openTime);
+        shop.setCloseTime(closeTime);
+        shop.setOpenDays(openDays);
+        shop.setOpenToday(openToday);
         shop.setStatus("PENDING");
 
         shopRepository.save(shop);
@@ -325,11 +346,20 @@ public class SparePartController {
         shop.setAddress(address);
         shop.setCity(city);
         shop.setDistrict(city);
+        String openTime = payload.get("openTime") != null ? payload.get("openTime").toString() : null;
+        String closeTime = payload.get("closeTime") != null ? payload.get("closeTime").toString() : null;
+        String openDays = payload.get("openDays") != null ? payload.get("openDays").toString() : null;
+        Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null ? Boolean.parseBoolean(payload.get("openToday").toString()) : true;
+
         shop.setPhone(phone);
         shop.setEmail(email);
         shop.setImageUrl(imageUrl);
         shop.setLatitude(latitude);
         shop.setLongitude(longitude);
+        shop.setOpenTime(openTime);
+        shop.setCloseTime(closeTime);
+        shop.setOpenDays(openDays);
+        shop.setOpenToday(openToday);
         shop.setStatus("PENDING");
 
         shopRepository.save(shop);

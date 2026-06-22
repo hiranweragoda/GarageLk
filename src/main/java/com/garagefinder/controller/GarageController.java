@@ -170,6 +170,10 @@ public class GarageController {
         map.put("imageUrl", g.getImageUrl());
         map.put("phone", g.getPhone());
         map.put("email", g.getEmail());
+        map.put("openTime", g.getOpenTime());
+        map.put("closeTime", g.getCloseTime());
+        map.put("openDays", g.getOpenDays());
+        map.put("openToday", g.getOpenToday());
         map.put("user", g.getUser());
 
         Double avg = reviewRepository.findAverageRatingByGarageId(g.getId());
@@ -420,10 +424,19 @@ public class GarageController {
 
         String district = city;
 
+        String openTime = payload.get("openTime") != null ? payload.get("openTime").toString() : null;
+        String closeTime = payload.get("closeTime") != null ? payload.get("closeTime").toString() : null;
+        String openDays = payload.get("openDays") != null ? payload.get("openDays").toString() : null;
+        Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null ? Boolean.parseBoolean(payload.get("openToday").toString()) : true;
+
         Garage garage = new Garage(managedUser, name, managedUser.getFullName() != null ? managedUser.getFullName() : managedUser.getUsername(), description, address, city, district, latitude, longitude);
         garage.setImageUrl(imageUrl);
         garage.setPhone(phone);
         garage.setEmail(email);
+        garage.setOpenTime(openTime);
+        garage.setCloseTime(closeTime);
+        garage.setOpenDays(openDays);
+        garage.setOpenToday(openToday);
         garage.setStatus("PENDING");
         
         garageRepository.save(garage);
@@ -521,6 +534,11 @@ public class GarageController {
         Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null ? Double.parseDouble(payload.get("latitude").toString()) : garage.getLatitude();
         Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null ? Double.parseDouble(payload.get("longitude").toString()) : garage.getLongitude();
 
+        String openTime = payload.get("openTime") != null ? payload.get("openTime").toString() : null;
+        String closeTime = payload.get("closeTime") != null ? payload.get("closeTime").toString() : null;
+        String openDays = payload.get("openDays") != null ? payload.get("openDays").toString() : null;
+        Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null ? Boolean.parseBoolean(payload.get("openToday").toString()) : true;
+
         garage.setGarageName(name);
         garage.setDescription(description);
         garage.setAddress(address);
@@ -531,6 +549,10 @@ public class GarageController {
         garage.setImageUrl(imageUrl);
         garage.setLatitude(latitude);
         garage.setLongitude(longitude);
+        garage.setOpenTime(openTime);
+        garage.setCloseTime(closeTime);
+        garage.setOpenDays(openDays);
+        garage.setOpenToday(openToday);
         garage.setStatus("PENDING");
 
         garageRepository.save(garage);

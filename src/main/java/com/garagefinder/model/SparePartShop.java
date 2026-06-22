@@ -44,6 +44,18 @@ public class SparePartShop {
     private String phone;
     private String email;
 
+    @Column(name = "open_time")
+    private String openTime;
+
+    @Column(name = "close_time")
+    private String closeTime;
+
+    @Column(name = "open_days")
+    private String openDays;
+
+    @Column(name = "open_today")
+    private Boolean openToday = true;
+
     public SparePartShop() {}
 
     public SparePartShop(User user, String shopName, String ownerName, String description, String address, String city, String district, Double latitude, Double longitude) {
@@ -174,5 +186,37 @@ public class SparePartShop {
 
     public String getName() {
         return shopName;
+    }
+
+    public String getOpenTime() {
+        return openTime;
+    }
+
+    public void setOpenTime(String openTime) {
+        this.openTime = openTime;
+    }
+
+    public String getCloseTime() {
+        return closeTime;
+    }
+
+    public void setCloseTime(String closeTime) {
+        this.closeTime = closeTime;
+    }
+
+    public String getOpenDays() {
+        return openDays;
+    }
+
+    public void setOpenDays(String openDays) {
+        this.openDays = openDays;
+    }
+
+    public Boolean getOpenToday() {
+        return openToday;
+    }
+
+    public void setOpenToday(Boolean openToday) {
+        this.openToday = openToday;
     }
 }
