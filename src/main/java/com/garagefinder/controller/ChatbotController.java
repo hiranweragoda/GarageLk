@@ -178,6 +178,28 @@ public class ChatbotController {
             if (apiKey == null || apiKey.trim().isEmpty()) {
                 apiKey = System.getProperty("GEMINI_API_KEY");
             }
+            if (apiKey == null || apiKey.trim().isEmpty()) {
+                try {
+                    java.nio.file.Path envPath = java.nio.file.Paths.get(".env");
+                    if (java.nio.file.Files.exists(envPath)) {
+                        java.util.List<String> lines = java.nio.file.Files.readAllLines(envPath);
+                        for (String line : lines) {
+                            if (line.trim().startsWith("GEMINI_API_KEY=")) {
+                                apiKey = line.substring(line.indexOf("=") + 1).trim();
+                                // Remove any surrounding quotes if present
+                                if (apiKey.startsWith("\"") && apiKey.endsWith("\"")) {
+                                    apiKey = apiKey.substring(1, apiKey.length() - 1);
+                                } else if (apiKey.startsWith("'") && apiKey.endsWith("'")) {
+                                    apiKey = apiKey.substring(1, apiKey.length() - 1);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
 
             if (apiKey != null && !apiKey.trim().isEmpty()) {
                 try {
