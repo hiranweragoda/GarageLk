@@ -222,7 +222,7 @@ public class GarageController {
             List<OfferedService> services = offeredServiceRepository.findByGarageId(garageId);
             return ResponseEntity.ok(services);
         } else {
-            List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+            List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
             List<OfferedService> services = offeredServiceRepository.findAll().stream()
                 .filter(s -> garageIds.contains(s.getGarage().getId())).toList();
             return ResponseEntity.ok(services);
@@ -539,6 +539,17 @@ public class GarageController {
         String openDays = payload.get("openDays") != null ? payload.get("openDays").toString() : null;
         Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null ? Boolean.parseBoolean(payload.get("openToday").toString()) : true;
 
+        boolean requireApproval = false;
+        if (!Objects.equals(garage.getGarageName(), name)) requireApproval = true;
+        if (!Objects.equals(garage.getDescription(), description)) requireApproval = true;
+        if (!Objects.equals(garage.getAddress(), address)) requireApproval = true;
+        if (!Objects.equals(garage.getCity(), city)) requireApproval = true;
+        if (!Objects.equals(garage.getPhone(), phone)) requireApproval = true;
+        if (!Objects.equals(garage.getEmail(), email)) requireApproval = true;
+        if (!Objects.equals(garage.getImageUrl(), imageUrl)) requireApproval = true;
+        if (!Objects.equals(garage.getLatitude(), latitude)) requireApproval = true;
+        if (!Objects.equals(garage.getLongitude(), longitude)) requireApproval = true;
+
         garage.setGarageName(name);
         garage.setDescription(description);
         garage.setAddress(address);
@@ -553,11 +564,16 @@ public class GarageController {
         garage.setCloseTime(closeTime);
         garage.setOpenDays(openDays);
         garage.setOpenToday(openToday);
-        garage.setStatus("PENDING");
+
+        String message = "Garage profile updated successfully.";
+        if (requireApproval) {
+            garage.setStatus("PENDING");
+            message = "Garage profile updated successfully. Awaiting Admin approval.";
+        }
 
         garageRepository.save(garage);
 
-        return ResponseEntity.ok(Map.of("message", "Garage profile updated successfully. Awaiting Admin approval."));
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     @DeleteMapping("/{id}")

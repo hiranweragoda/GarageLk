@@ -51,7 +51,7 @@ public class MechanicController {
             List<Mechanic> mechanics = mechanicRepository.findByGarageId(garageId);
             return ResponseEntity.ok(mechanics);
         } else {
-            List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+            List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
             List<Mechanic> mechanics = mechanicRepository.findByGarageIdIn(garageIds);
             return ResponseEntity.ok(mechanics);
         }
@@ -66,7 +66,7 @@ public class MechanicController {
         }
 
         List<Mechanic> mechanics = mechanicRepository.findByGarageIdAndStatus(garageId, "AVAILABLE");
-        List<Mechanic> activeAvailable = mechanics.stream().filter(Mechanic::isActive).toList();
+        List<Mechanic> activeAvailable = mechanics.stream().filter(m -> m.isActive()).toList();
         return ResponseEntity.ok(activeAvailable);
     }
 

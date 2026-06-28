@@ -262,7 +262,13 @@
             const email = document.getElementById('signup-email').value.trim();
             const phone = document.getElementById('signup-phone').value.trim();
             const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-reenter-password').value;
             const role = document.getElementById('signup-role').value;
+
+            if (password !== confirmPassword) {
+                this.showToast('Passwords do not match', 'error');
+                return;
+            }
 
             try {
                 const res = await fetch('/api/auth/register', {
@@ -1205,6 +1211,9 @@
             const dateInput = document.getElementById('booking-date');
             if (dateInput) {
                 dateInput.min = new Date().toISOString().split('T')[0];
+                dateInput.addEventListener('change', () => {
+                    this.updateAvailableSlots();
+                });
             }
 
             try {
@@ -1215,6 +1224,19 @@
                 this.renderGarageProfile(data.garage);
                 this.renderGarageServices(data.services);
                 this.renderGarageReviews(data.reviews);
+
+                // Fetch bookings for checking slots
+                this.garageBookings = [];
+                try {
+                    const bookingsRes = await fetch(`/api/bookings/garage/${garageId}`);
+                    if (bookingsRes.ok) {
+                        this.garageBookings = await bookingsRes.json();
+                    }
+                } catch (bErr) {
+                    console.error("Failed to load bookings for slots checking:", bErr);
+                }
+
+                this.updateAvailableSlots();
 
             } catch (err) {
                 console.error("Error loading garage details:", err);
@@ -1524,6 +1546,7 @@
                 this.selectedServices.delete(id);
             }
             this.updateBookingSummary();
+            this.updateAvailableSlots();
         },
 
         updateBookingSummary() {
@@ -1551,6 +1574,82 @@
 
             container.innerHTML = html;
             totalSpan.textContent = `LKR ${total.toFixed(2)}`;
+        },
+
+        updateAvailableSlots() {
+            const selectElement = document.getElementById('booking-time');
+            if (!selectElement) return;
+
+            const dateInput = document.getElementById('booking-date');
+            const selectedDate = dateInput ? dateInput.value : '';
+
+            const selectedNames = Array.from(this.selectedServices.values()).map(s => s.name);
+
+            const slotHours = {
+                "08:00 AM - 09:00 AM": 8,
+                "09:00 AM - 10:00 AM": 9,
+                "10:00 AM - 11:00 AM": 10,
+                "11:00 AM - 12:00 PM": 11,
+                "01:00 PM - 02:00 PM": 13,
+                "02:00 PM - 03:00 PM": 14,
+                "03:00 PM - 04:00 PM": 15,
+                "04:00 PM - 05:00 PM": 16
+            };
+
+            const bookings = this.garageBookings || [];
+
+            for (let i = 0; i < selectElement.options.length; i++) {
+                const option = selectElement.options[i];
+                const val = option.value;
+                if (!val) continue;
+
+                // Determine if this option is booked
+                let isBooked = false;
+
+                if (selectedDate && selectedNames.length > 0) {
+                    isBooked = bookings.some(b => {
+                        if (b.status === 'CANCELLED') return false;
+
+                        // Check date (e.g. "2026-06-29")
+                        const bDateStr = b.bookingDate ? b.bookingDate.split('T')[0] : '';
+                        if (bDateStr !== selectedDate) return false;
+
+                        // Check slot
+                        let slotMatch = false;
+                        if (b.timeSlot) {
+                            slotMatch = (b.timeSlot === val);
+                        } else if (b.bookingDate) {
+                            const bHour = new Date(b.bookingDate).getHours();
+                            slotMatch = (bHour === slotHours[val]);
+                        }
+
+                        if (!slotMatch) return false;
+
+                        // Check services overlap
+                        const bookedServices = b.serviceType ? b.serviceType.split(',').map(s => s.trim()) : [];
+                        const serviceMatch = selectedNames.some(name => bookedServices.includes(name));
+
+                        return serviceMatch;
+                    });
+                }
+
+                if (isBooked) {
+                    option.disabled = true;
+                    option.style.opacity = '0.5';
+                    option.style.color = 'var(--text-muted)';
+                    if (!option.textContent.endsWith(' (Booked)')) {
+                        option.textContent = val + ' (Booked)';
+                    }
+                    if (selectElement.value === val) {
+                        selectElement.value = '';
+                    }
+                } else {
+                    option.disabled = false;
+                    option.style.opacity = '';
+                    option.style.color = '';
+                    option.textContent = val;
+                }
+            }
         },
 
         renderGarageReviews(reviews) {
@@ -2925,7 +3024,7 @@
                         const item = document.createElement('div');
                         item.className = 'table-item';
                         item.innerHTML = `
-                            <div style="display:flex; gap:1.25rem; align-items:center;">
+                            <a href="garage.html?id=${g.id}&isAdminView=true" style="text-decoration:none; color:inherit; display:flex; gap:1.25rem; align-items:center; flex:1;" unique-id="click-garage-approval-${g.id}">
                                 <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
                                 <div>
                                     <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
@@ -2934,11 +3033,8 @@
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
                                 </div>
-                            </div>
+                            </a>
                             <div style="display:flex; gap:0.5rem; align-items:center;">
-                                <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-garage-${g.id}">
-                                    <i class="fa-solid fa-eye"></i> View
-                                </a>
                                 <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
                                     onclick="window.GarageLK.handleApproveGarage(${g.id})" unique-id="approve-garage-${g.id}">
                                     <i class="fa-solid fa-check"></i> Approve
@@ -2974,7 +3070,7 @@
                         const nextStatus = isActive ? 'SUSPENDED' : 'APPROVED';
 
                         item.innerHTML = `
-                            <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
+                            <a href="garage.html?id=${g.id}&isAdminView=true" style="text-decoration:none; color:inherit; display:flex; gap:1.25rem; align-items:center; flex:1;" unique-id="click-approved-garage-${g.id}">
                                 <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
                                 <div>
                                     <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
@@ -2986,11 +3082,8 @@
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
                                 </div>
-                            </div>
+                            </a>
                             <div style="display:flex; gap:0.5rem; align-items:center;">
-                                <a href="garage.html?id=${g.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-garage-${g.id}">
-                                    <i class="fa-solid fa-eye"></i> View
-                                </a>
                                 <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; color:${toggleColor}; border-color:${toggleColor};" 
                                     onclick="window.GarageLK.toggleGarageActive(${g.id}, '${nextStatus}')" unique-id="toggle-approved-garage-${g.id}">
                                     <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
@@ -3038,7 +3131,7 @@
                         const item = document.createElement('div');
                         item.className = 'table-item';
                         item.innerHTML = `
-                            <div style="display:flex; gap:1.25rem; align-items:center;">
+                            <a href="shop.html?id=${s.id}&isAdminView=true" style="text-decoration:none; color:inherit; display:flex; gap:1.25rem; align-items:center; flex:1;" unique-id="click-shop-approval-${s.id}">
                                 <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
                                 <div>
                                     <h4 style="font-weight:700; margin-bottom:2px;">${s.name || s.shopName}</h4>
@@ -3047,11 +3140,8 @@
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
                                 </div>
-                            </div>
+                            </a>
                             <div style="display:flex; gap:0.5rem; align-items:center;">
-                                <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-shop-${s.id}">
-                                    <i class="fa-solid fa-eye"></i> View
-                                </a>
                                 <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem;" 
                                     onclick="window.GarageLK.handleApproveShop(${s.id})" unique-id="approve-shop-${s.id}">
                                     <i class="fa-solid fa-check"></i> Approve
@@ -3087,7 +3177,7 @@
                         const nextStatus = isActive ? 'SUSPENDED' : 'APPROVED';
 
                         item.innerHTML = `
-                            <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
+                            <a href="shop.html?id=${s.id}&isAdminView=true" style="text-decoration:none; color:inherit; display:flex; gap:1.25rem; align-items:center; flex:1;" unique-id="click-approved-shop-${s.id}">
                                 <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1607603731995-5751e3016848?w=150'}" style="width:100px; height:75px; object-fit:cover; border-radius:var(--radius-sm);">
                                 <div>
                                     <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
@@ -3099,11 +3189,8 @@
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
                                 </div>
-                            </div>
+                            </a>
                             <div style="display:flex; gap:0.5rem; align-items:center;">
-                                <a href="shop.html?id=${s.id}&isAdminView=true" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.25rem; text-decoration:none;" unique-id="view-approved-shop-${s.id}">
-                                    <i class="fa-solid fa-eye"></i> View
-                                </a>
                                 <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.85rem; color:${toggleColor}; border-color:${toggleColor};" 
                                     onclick="window.GarageLK.toggleShopActive(${s.id}, '${nextStatus}')" unique-id="toggle-approved-shop-${s.id}">
                                     <i class="fa-solid ${toggleBtnIcon}"></i> ${toggleBtnText}
@@ -5752,6 +5839,7 @@
 
             if (searchVal) {
                 users = users.filter(u => 
+                    String(u.id).includes(searchVal) ||
                     (u.fullName || '').toLowerCase().includes(searchVal) ||
                     (u.username || '').toLowerCase().includes(searchVal) ||
                     (u.email || '').toLowerCase().includes(searchVal) ||
@@ -5799,7 +5887,7 @@
                 }
 
                 item.innerHTML = `
-                    <div style="display:flex; gap:1.25rem; align-items:center; flex:1;">
+                    <div onclick="window.GarageLK.showUserDetails(${u.id})" style="display:flex; gap:1.25rem; align-items:center; flex:1; cursor:pointer;" unique-id="click-user-card-${u.id}">
                         <div class="user-avatar" style="width:48px; height:48px; min-width:48px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.1rem; box-shadow:var(--shadow-sm);">
                             ${initials}
                         </div>
@@ -5809,7 +5897,7 @@
                                 <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem; vertical-align:middle;">${statusText}</span>
                             </h4>
                             <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:2px; line-height:1.4;">
-                                <i class="fa-solid fa-user" style="width:16px;"></i> Username: <strong>${u.username}</strong> &bull; <i class="fa-solid fa-envelope" style="width:16px;"></i> ${u.email}
+                                <i class="fa-solid fa-hashtag" style="width:16px;"></i> User ID: <strong>${u.id}</strong> &bull; <i class="fa-solid fa-user" style="width:16px;"></i> Full Name: <strong>${u.fullName || 'N/A'}</strong> &bull; <i class="fa-solid fa-envelope" style="width:16px;"></i> ${u.email}
                             </p>
                             <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.4;">
                                 <i class="fa-solid fa-phone" style="width:16px;"></i> Phone: ${u.phone || 'N/A'} &bull; <i class="fa-solid fa-user-tag" style="width:16px;"></i> Role: <strong style="text-transform: capitalize;">${u.role.replace('_', ' ').toLowerCase()}</strong>
@@ -5830,6 +5918,104 @@
                 this.renderAdminMechanicsFiltered();
             } else {
                 this.renderAdminUsersFiltered();
+            }
+        },
+
+        async showUserDetails(userId) {
+            const user = this.adminUsersRaw.find(u => u.id === userId);
+            if (!user) return;
+
+            const contentDiv = document.getElementById('user-details-content');
+            contentDiv.innerHTML = '<p style="text-align:center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading details...</p>';
+            this.openModal('modal-user-details');
+
+            try {
+                let extraHtml = '';
+                if (user.role === 'GARAGE_OWNER') {
+                    const res = await fetch('/api/garages/all');
+                    if (res.ok) {
+                        const garages = await res.json();
+                        const ownerGarages = garages.filter(g => {
+                            const ownerId = g.owner ? g.owner.id : (g.user ? g.user.id : null);
+                            return ownerId === userId;
+                        });
+                        extraHtml = `
+                            <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                <h4 style="font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-warehouse"></i> Garages Owned (${ownerGarages.length})</h4>
+                                ${ownerGarages.length > 0 ? `
+                                    <ul style="padding-left: 1.25rem; margin: 0;">
+                                        ${ownerGarages.map(g => `<li style="margin-bottom: 0.35rem;"><strong>${g.name || g.garageName}</strong> (${g.city} &bull; <span class="badge ${g.status === 'APPROVED' ? 'badge-approved' : 'badge-pending'}" style="font-size:0.65rem; padding:0.1rem 0.3rem;">${g.status}</span>)</li>`).join('')}
+                                    </ul>
+                                ` : '<p style="color: var(--text-muted); font-style: italic; margin: 0;">No garages registered.</p>'}
+                            </div>
+                        `;
+                    }
+                } else if (user.role === 'SHOP_OWNER') {
+                    const res = await fetch('/api/shops/all');
+                    if (res.ok) {
+                        const shops = await res.json();
+                        const ownerShops = shops.filter(s => {
+                            const ownerId = s.user ? s.user.id : null;
+                            return ownerId === userId;
+                        });
+                        extraHtml = `
+                            <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                <h4 style="font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-shop"></i> Spare Part Shops Owned (${ownerShops.length})</h4>
+                                ${ownerShops.length > 0 ? `
+                                    <ul style="padding-left: 1.25rem; margin: 0;">
+                                        ${ownerShops.map(s => `<li style="margin-bottom: 0.35rem;"><strong>${s.name || s.shopName}</strong> (${s.city} &bull; <span class="badge ${s.status === 'APPROVED' ? 'badge-approved' : 'badge-pending'}" style="font-size:0.65rem; padding:0.1rem 0.3rem;">${s.status}</span>)</li>`).join('')}
+                                    </ul>
+                                ` : '<p style="color: var(--text-muted); font-style: italic; margin: 0;">No shops registered.</p>'}
+                            </div>
+                        `;
+                    }
+                }
+
+                const initials = user.fullName ?
+                    user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() :
+                    user.username.substring(0, 2).toUpperCase();
+
+                contentDiv.innerHTML = `
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; margin-bottom: 1.25rem;">
+                        <div style="width: 54px; height: 54px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.25rem; box-shadow: var(--shadow-sm);">
+                            ${initials}
+                        </div>
+                        <div>
+                            <h3 style="font-weight: 700; font-size: 1.2rem; margin: 0; color: var(--text-primary);">${user.fullName || user.username}</h3>
+                            <span class="badge ${user.active ? 'badge-approved' : 'badge-cancelled'}" style="margin-top: 0.25rem; display: inline-block;">${user.active ? 'Active' : 'Suspended'}</span>
+                        </div>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.9rem;">
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary); width: 120px;">User ID</td>
+                            <td style="padding: 0.6rem 0; color: var(--text-primary);"><strong>${user.id}</strong></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary);">Full Name</td>
+                            <td style="padding: 0.6rem 0; color: var(--text-primary);">${user.fullName || 'N/A'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary);">Username</td>
+                            <td style="padding: 0.6rem 0; color: var(--text-primary);">${user.username}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary);">Email</td>
+                            <td style="padding: 0.6rem 0; color: var(--text-primary);">${user.email}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary);">Phone</td>
+                            <td style="padding: 0.6rem 0; color: var(--text-primary);">${user.phone || 'N/A'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary);">Role</td>
+                            <td style="padding: 0.6rem 0; text-transform: capitalize; color: var(--text-primary);">${user.role.replace('_', ' ').toLowerCase()}</td>
+                        </tr>
+                    </table>
+                    ${extraHtml}
+                `;
+            } catch (err) {
+                console.error("Error loading user details:", err);
+                contentDiv.innerHTML = '<p style="color: var(--danger);">Failed to load user details.</p>';
             }
         },
 
@@ -5951,6 +6137,8 @@
             document.getElementById('profile-email').value = this.currentUser.email || '';
             document.getElementById('profile-phone').value = this.currentUser.phone || '';
             document.getElementById('profile-password').value = '';
+            const profileReenterInput = document.getElementById('profile-reenter-password');
+            if (profileReenterInput) profileReenterInput.value = '';
         },
 
         async submitUserProfileForm(event) {
@@ -5959,6 +6147,13 @@
             const email = document.getElementById('profile-email').value;
             const phone = document.getElementById('profile-phone').value;
             const password = document.getElementById('profile-password').value;
+            const reenterPasswordInput = document.getElementById('profile-reenter-password');
+            const reenterPassword = reenterPasswordInput ? reenterPasswordInput.value : '';
+
+            if (password && password !== reenterPassword) {
+                this.showToast('Passwords do not match', 'error');
+                return;
+            }
 
             try {
                 const res = await fetch('/api/auth/profile/update', {
@@ -6252,7 +6447,7 @@
 
                 const data = await res.json();
                 if (res.ok) {
-                    this.showToast('Garage profile updated successfully! Pending admin approval.', 'success');
+                    this.showToast(data.message || 'Garage profile updated successfully!', 'success');
                     this.closeModal('modal-edit-garage');
                     this.removeSelectedImage(null, 'edit-garage-image-file', 'edit-garage-image-placeholder', 'edit-garage-image-preview-container', 'edit-garage-image');
                     this.loadOwnerGarages();
@@ -6589,7 +6784,7 @@
 
                 const data = await res.json();
                 if (res.ok) {
-                    this.showToast(editId ? 'Shop profile updated successfully! Pending admin approval.' : 'Spare Part Shop registered successfully! Pending admin approval.', 'success');
+                    this.showToast(data.message || (editId ? 'Shop profile updated successfully!' : 'Spare Part Shop registered successfully!'), 'success');
                     this.closeModal('modal-add-shop');
                     this.removeSelectedImage(null, 'shop-image-file', 'shop-image-placeholder', 'shop-image-preview-container', 'shop-image');
                     await this.loadShopMyShops();

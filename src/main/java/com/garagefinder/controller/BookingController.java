@@ -191,7 +191,7 @@ public class BookingController {
         } else if ("GARAGE_OWNER".equals(user.getRole())) {
             List<Garage> garages = garageRepository.findByUserId(user.getId());
             if (!garages.isEmpty()) {
-                List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+                List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
                 List<Booking> bookings = bookingRepository.findByGarageIdInOrderByBookingDateDesc(garageIds);
                 return ResponseEntity.ok(bookings);
             }
@@ -296,6 +296,13 @@ public class BookingController {
         return ResponseEntity.ok(Map.of("message", "Booking history item deleted successfully"));
     }
 
+    // Get all bookings for a specific garage (used to check booked time slots)
+    @GetMapping("/garage/{garageId}")
+    public ResponseEntity<?> getGarageBookings(@PathVariable Long garageId) {
+        List<Booking> bookings = bookingRepository.findByGarageId(garageId);
+        return ResponseEntity.ok(bookings);
+    }
+
     // Clear all completed booking history for the owner's garages
     @DeleteMapping("/history/clear")
     public ResponseEntity<?> clearBookingHistory(HttpSession session) {
@@ -309,7 +316,7 @@ public class BookingController {
             return ResponseEntity.badRequest().body(Map.of("message", "Garage profile not found"));
         }
 
-        List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+        List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
         List<Booking> bookings = bookingRepository.findByGarageIdInOrderByBookingDateDesc(garageIds);
         List<Booking> completed = bookings.stream()
                 .filter(b -> "COMPLETED".equals(b.getStatus()))

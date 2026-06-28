@@ -1049,6 +1049,10 @@
                                 <label for="profile-password">New Password</label>
                                 <input type="password" id="profile-password" class="form-control" placeholder="Leave blank to keep current password" unique-id="profile-password-input">
                             </div>
+                            <div class="form-group">
+                                <label for="profile-reenter-password">Re-enter New Password</label>
+                                <input type="password" id="profile-reenter-password" class="form-control" placeholder="Re-enter new password" unique-id="profile-reenter-password-input">
+                            </div>
                             <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; font-weight: 600;" unique-id="profile-submit-btn">
                                 Save Profile Changes
                             </button>
@@ -1058,6 +1062,17 @@
             </div>
         </div>
     </main>
+
+    <!-- User Details Modal (Admin) -->
+    <div class="modal-overlay" id="modal-user-details">
+        <div class="modal-content">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-user-details')"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-circle-info"></i> User Details</h3>
+            <div id="user-details-content" style="font-size: 0.95rem; line-height: 1.6; color: var(--text-primary);">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
 
     <!-- Write a Review Modal -->
     <div class="modal-overlay" id="modal-review">
@@ -1159,7 +1174,13 @@
                 </div>
                 <div class="form-group">
                     <label for="garage-open-days">Operating Days</label>
-                    <input type="text" id="garage-open-days" class="form-control" placeholder="e.g. Monday - Saturday" required value="Monday - Saturday">
+                    <select id="garage-open-days" class="form-control" required>
+                        <option value="Monday - Friday">Monday - Friday</option>
+                        <option value="Monday - Saturday">Monday - Saturday</option>
+                        <option value="Daily">Daily</option>
+                        <option value="Saturday - Sunday">Saturday - Sunday</option>
+                        <option value="Monday - Sunday">Monday - Sunday</option>
+                    </select>
                 </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
                     <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">Open Today</span>
@@ -1250,7 +1271,13 @@
                 </div>
                 <div class="form-group">
                     <label for="edit-garage-open-days">Operating Days</label>
-                    <input type="text" id="edit-garage-open-days" class="form-control" placeholder="e.g. Monday - Saturday" required>
+                    <select id="edit-garage-open-days" class="form-control" required>
+                        <option value="Monday - Friday">Monday - Friday</option>
+                        <option value="Monday - Saturday">Monday - Saturday</option>
+                        <option value="Daily">Daily</option>
+                        <option value="Saturday - Sunday">Saturday - Sunday</option>
+                        <option value="Monday - Sunday">Monday - Sunday</option>
+                    </select>
                 </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
                     <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">Open Today</span>
@@ -1451,7 +1478,13 @@
                 </div>
                 <div class="form-group">
                     <label for="shop-open-days">Operating Days</label>
-                    <input type="text" id="shop-open-days" class="form-control" placeholder="e.g. Monday - Saturday" required value="Monday - Saturday">
+                    <select id="shop-open-days" class="form-control" required>
+                        <option value="Monday - Friday">Monday - Friday</option>
+                        <option value="Monday - Saturday">Monday - Saturday</option>
+                        <option value="Daily">Daily</option>
+                        <option value="Saturday - Sunday">Saturday - Sunday</option>
+                        <option value="Monday - Sunday">Monday - Sunday</option>
+                    </select>
                 </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
                     <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">Open Today</span>

@@ -152,7 +152,7 @@ public class SparePartBookingController {
             return ResponseEntity.ok(List.of());
         }
 
-        List<Long> shopIds = shops.stream().map(SparePartShop::getId).toList();
+        List<Long> shopIds = shops.stream().map(s -> s.getId()).toList();
         List<SparePartBooking> bookings = bookingRepository.findBySparePartShopIdInOrderByBookingDateDesc(shopIds);
         return ResponseEntity.ok(bookings);
     }

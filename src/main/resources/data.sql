@@ -3,40 +3,40 @@
 -- 1. Insert Users
 -- Default Admin (password: admin)
 -- SHA-256 of 'admin': 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (1, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin@garagefinder.lk', '0771234567', 'ADMIN', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (1, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'System Administrator', 'admin@garagefinder.lk', '0771234567', 'ADMIN', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 -- Customer 1: Amal Perera (password: password123)
 -- SHA-256 of 'password123': ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (2, 'amal', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'amal@gmail.com', '0711122334', 'CUSTOMER', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (2, 'amal', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Amal Perera', 'amal@gmail.com', '0711122334', 'CUSTOMER', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 -- Customer 2: Nimal Silva (password: password123)
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (3, 'nimal', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'nimal@gmail.com', '0722233445', 'CUSTOMER', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (3, 'nimal', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Nimal Silva', 'nimal@gmail.com', '0722233445', 'CUSTOMER', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 -- Garage Owner 1: Colombo Hybrid Motors (password: password123)
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (4, 'colombohybrid', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'info@colombohybrid.lk', '0112233445', 'GARAGE_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (4, 'colombohybrid', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Colombo Hybrid Motors Owner', 'info@colombohybrid.lk', '0112233445', 'GARAGE_OWNER', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 -- Garage Owner 2: Kandy Auto Care (password: password123)
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (5, 'kandycare', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'contact@kandycare.lk', '0812233445', 'GARAGE_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (5, 'kandycare', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Kandy Auto Care Owner', 'contact@kandycare.lk', '0812233445', 'GARAGE_OWNER', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 -- Garage Owner 3: Galle Tire Shop (password: password123)
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (6, 'galletire', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'galletire@gmail.com', '0912233445', 'GARAGE_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (6, 'galletire', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Galle Tire Shop Owner', 'galletire@gmail.com', '0912233445', 'GARAGE_OWNER', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 -- Garage Owner 4: Lanka Diesel (password: password123) -- PENDING approval
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (7, 'lankadiesel', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'lankadiesel@gmail.com', '0777665544', 'GARAGE_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (7, 'lankadiesel', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Lanka Diesel Owner', 'lankadiesel@gmail.com', '0777665544', 'GARAGE_OWNER', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 
 -- 2. Insert Customers
@@ -120,13 +120,13 @@ ON DUPLICATE KEY UPDATE star_rating=star_rating;
 
 
 -- 7. Insert Spare Part Shop Owners (password: password123)
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (8, 'colomboparts', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'colomboparts@gmail.com', '0779988776', 'SHOP_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (8, 'colomboparts', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Colombo Auto Spares Owner', 'colomboparts@gmail.com', '0779988776', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
-INSERT INTO users (id, username, password, email, phone, role, is_active) 
-VALUES (9, 'kandyparts', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'kandyparts@gmail.com', '0778877665', 'SHOP_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username;
+INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
+VALUES (9, 'kandyparts', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Kandy Parts Shop Owner', 'kandyparts@gmail.com', '0778877665', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 
 -- 8. Insert Spare Part Shops

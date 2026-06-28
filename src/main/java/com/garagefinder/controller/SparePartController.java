@@ -341,6 +341,17 @@ public class SparePartController {
         Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null ? Double.parseDouble(payload.get("latitude").toString()) : shop.getLatitude();
         Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null ? Double.parseDouble(payload.get("longitude").toString()) : shop.getLongitude();
 
+        boolean requireApproval = false;
+        if (!Objects.equals(shop.getShopName(), name)) requireApproval = true;
+        if (!Objects.equals(shop.getDescription(), description)) requireApproval = true;
+        if (!Objects.equals(shop.getAddress(), address)) requireApproval = true;
+        if (!Objects.equals(shop.getCity(), city)) requireApproval = true;
+        if (!Objects.equals(shop.getPhone(), phone)) requireApproval = true;
+        if (!Objects.equals(shop.getEmail(), email)) requireApproval = true;
+        if (!Objects.equals(shop.getImageUrl(), imageUrl)) requireApproval = true;
+        if (!Objects.equals(shop.getLatitude(), latitude)) requireApproval = true;
+        if (!Objects.equals(shop.getLongitude(), longitude)) requireApproval = true;
+
         shop.setShopName(name);
         shop.setDescription(description);
         shop.setAddress(address);
@@ -360,11 +371,16 @@ public class SparePartController {
         shop.setCloseTime(closeTime);
         shop.setOpenDays(openDays);
         shop.setOpenToday(openToday);
-        shop.setStatus("PENDING");
+
+        String message = "Shop profile updated successfully.";
+        if (requireApproval) {
+            shop.setStatus("PENDING");
+            message = "Shop profile updated successfully. Awaiting Admin approval.";
+        }
 
         shopRepository.save(shop);
 
-        return ResponseEntity.ok(Map.of("message", "Shop profile updated successfully. Awaiting Admin approval."));
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     @GetMapping("/api/shops/{shopId}/parts")

@@ -339,7 +339,7 @@ public class BreakdownController {
             return ResponseEntity.ok(List.of());
         }
 
-        List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+        List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
         List<BreakdownRequest> history = breakdownRequestRepository.findByAssignedGarageIdIn(garageIds);
         List<BreakdownRequest> assigned = history.stream()
                 .filter(r -> "ACCEPTED".equals(r.getStatus()))
@@ -362,7 +362,7 @@ public class BreakdownController {
             return ResponseEntity.ok(List.of());
         }
 
-        List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+        List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
         List<BreakdownRequest> history = breakdownRequestRepository.findByAssignedGarageIdIn(garageIds);
         List<BreakdownRequest> completed = history.stream()
                 .filter(r -> "COMPLETED".equals(r.getStatus()) || "CANCELLED".equals(r.getStatus()))
@@ -418,7 +418,7 @@ public class BreakdownController {
             return ResponseEntity.badRequest().body(Map.of("message", "Garage profile not found"));
         }
 
-        List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+        List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
         List<BreakdownRequest> history = breakdownRequestRepository.findByAssignedGarageIdIn(garageIds);
         List<BreakdownRequest> completed = history.stream()
                 .filter(r -> "COMPLETED".equals(r.getStatus()) || "CANCELLED".equals(r.getStatus()))
