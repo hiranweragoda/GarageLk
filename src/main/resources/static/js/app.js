@@ -53,6 +53,18 @@
                 const res = await fetch('/api/auth/me');
                 if (res.ok) {
                     this.currentUser = await res.json(); // flat object: { id, username, fullName, role, ... }
+                    if (this.currentUser && this.currentUser.latitude && this.currentUser.longitude) {
+                        this.customerCoords = {
+                            lat: parseFloat(this.currentUser.latitude),
+                            lng: parseFloat(this.currentUser.longitude)
+                        };
+                        // Also sync to localStorage
+                        localStorage.setItem('customer_coords', JSON.stringify({
+                            lat: this.customerCoords.lat,
+                            lng: this.customerCoords.lng,
+                            timestamp: Date.now()
+                        }));
+                    }
                     this.updateNavUI();
                     return true;
                 }
@@ -226,32 +238,81 @@
             const usernameInput = document.getElementById('login-username');
             const passwordInput = document.getElementById('login-password');
 
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: usernameInput.value.trim(),
-                        password: passwordInput.value
-                    })
-                });
+            const executeLogin = async (latitude, longitude) => {
+                try {
+                    const res = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: usernameInput.value.trim(),
+                            password: passwordInput.value,
+                            latitude: latitude ? latitude.toString() : null,
+                            longitude: longitude ? longitude.toString() : null
+                        })
+                    });
 
-                const data = await res.json();
-                if (res.ok) {
-                    this.showToast('Welcome back, ' + (data.fullName || data.username), 'success');
-                    setTimeout(() => {
-                        if (data.user && data.user.role === 'CUSTOMER') {
-                            window.location.href = 'index.html';
-                        } else {
-                            window.location.href = 'dashboard.html';
+                    const data = await res.json();
+                    if (res.ok) {
+                        // Store coordinates if returned or detected
+                        const latVal = data.latitude || latitude;
+                        const lngVal = data.longitude || longitude;
+                        if (latVal && lngVal) {
+                            localStorage.setItem('customer_coords', JSON.stringify({
+                                lat: parseFloat(latVal),
+                                lng: parseFloat(lngVal),
+                                timestamp: Date.now()
+                            }));
                         }
-                    }, 1000);
-                } else {
-                    this.showToast(data.message || 'Login failed', 'error');
+
+                        this.showToast('Welcome back, ' + (data.fullName || data.username), 'success');
+                        setTimeout(() => {
+                            const userRole = data.role || (data.user && data.user.role);
+                            if (userRole === 'CUSTOMER') {
+                                window.location.href = 'index.html';
+                            } else {
+                                window.location.href = 'dashboard.html';
+                            }
+                        }, 1000);
+                    } else {
+                        this.showToast(data.message || 'Login failed', 'error');
+                    }
+                } catch (err) {
+                    console.error("Login failed:", err);
+                    this.showToast('Connection error', 'error');
                 }
-            } catch (err) {
-                console.error("Login failed:", err);
-                this.showToast('Connection error', 'error');
+            };
+
+            // Attempt to get location, with a 4 second timeout
+            if (navigator.geolocation) {
+                let resolved = false;
+                const geoTimeout = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        console.warn("Geolocation timed out. Proceeding with login.");
+                        executeLogin(null, null);
+                    }
+                }, 4000);
+
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(geoTimeout);
+                            executeLogin(pos.coords.latitude, pos.coords.longitude);
+                        }
+                    },
+                    (err) => {
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(geoTimeout);
+                            console.warn("Geolocation failed/denied:", err);
+                            executeLogin(null, null);
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 3500 }
+                );
+            } else {
+                executeLogin(null, null);
             }
         },
 
@@ -1014,9 +1075,33 @@
                 ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
-            L.tileLayer(tilesUrl, {
+            // Create default theme tile layer
+            this.defaultTileLayer = L.tileLayer(tilesUrl, {
                 maxZoom: 20
             }).addTo(this.map);
+
+            // Google Maps layers
+            this.googleRoadmap = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                attribution: 'Map data &copy; Google'
+            });
+            this.googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                attribution: 'Map data &copy; Google'
+            });
+            this.googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                attribution: 'Map data &copy; Google'
+            });
+
+            const baseMaps = {
+                "Default Theme": this.defaultTileLayer,
+                "Google Roadmap": this.googleRoadmap,
+                "Google Satellite": this.googleSatellite,
+                "Google Hybrid": this.googleHybrid
+            };
+
+            L.control.layers(baseMaps, null, { position: 'topright' }).addTo(this.map);
 
             // Initialize colored markers (Red for selected, Blue for others)
             this.redIcon = new L.Icon({
@@ -2285,13 +2370,13 @@
                 if (g.status === 'APPROVED') badgeClass = 'badge-completed';
 
                 item.innerHTML = `
-                    <div style="display:flex; gap:1rem; align-items:center;">
+                    <a href="garage.html?id=${g.id}" class="profile-link" style="display:flex; gap:1rem; align-items:center; text-decoration:none; color:inherit;" unique-id="view-garage-profile-${g.id}">
                         <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=150'}" style="width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);">
                         <div>
                             <h4 style="font-weight:700;">${g.name}</h4>
                             <p style="font-size:0.85rem; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city}</p>
                         </div>
-                    </div>
+                    </a>
                     <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
                         <span class="badge ${badgeClass}" id="garage-status-badge-${g.id}" style="display:none;">${g.status === 'APPROVED' ? 'APPROVED' : 'PENDING APPROVAL'}</span>
                         <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
@@ -3029,7 +3114,7 @@
                                 <div>
                                     <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
+                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'} &bull; <i class="fa-solid fa-id-card"></i> BRN: <strong style="color:var(--text-primary); font-family:monospace;">${g.businessRegNo || 'N/A'}</strong>
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
                                 </div>
@@ -3078,7 +3163,7 @@
                                         <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
                                     </h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'}
+                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'} &bull; <i class="fa-solid fa-id-card"></i> BRN: <strong style="color:var(--text-primary); font-family:monospace;">${g.businessRegNo || 'N/A'}</strong>
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
                                 </div>
@@ -3136,7 +3221,7 @@
                                 <div>
                                     <h4 style="font-weight:700; margin-bottom:2px;">${s.name || s.shopName}</h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                        <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
+                                        <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'} &bull; <i class="fa-solid fa-id-card"></i> BRN: <strong style="color:var(--text-primary); font-family:monospace;">${s.businessRegNo || 'N/A'}</strong>
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
                                 </div>
@@ -3185,7 +3270,7 @@
                                         <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
                                     </h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                        <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'}
+                                        <i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${s.ownerName || 'N/A'} &bull; <i class="fa-solid fa-id-card"></i> BRN: <strong style="color:var(--text-primary); font-family:monospace;">${s.businessRegNo || 'N/A'}</strong>
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${s.description}</p>
                                 </div>
@@ -3326,6 +3411,7 @@
             const city = document.getElementById('garage-city').value;
             const phone = document.getElementById('garage-phone').value.trim();
             const email = document.getElementById('garage-email').value.trim();
+            const businessRegNo = document.getElementById('garage-business-reg-no').value.trim();
             
             const openTime = document.getElementById('garage-open-time').value;
             const closeTime = document.getElementById('garage-close-time').value;
@@ -3351,7 +3437,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday
+                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday, businessRegNo
                     })
                 });
 
@@ -3544,24 +3630,43 @@
                         ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
                         : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
                         
-                    L.tileLayer(tilesUrl, {
+                    this.pickerDefaultTileLayer = L.tileLayer(tilesUrl, {
                         maxZoom: 20
                     }).addTo(this.pickerMap);
+                    
+                    const googleRoadmap = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                        maxZoom: 20,
+                        attribution: 'Map data &copy; Google'
+                    });
+                    const googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                        maxZoom: 20,
+                        attribution: 'Map data &copy; Google'
+                    });
+                    const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                        maxZoom: 20,
+                        attribution: 'Map data &copy; Google'
+                    });
+                    
+                    const baseMaps = {
+                        "Default Theme": this.pickerDefaultTileLayer,
+                        "Google Roadmap": googleRoadmap,
+                        "Google Satellite": googleSatellite,
+                        "Google Hybrid": googleHybrid
+                    };
+                    
+                    L.control.layers(baseMaps, null, { position: 'topright' }).addTo(this.pickerMap);
                     
                     this.pickerMap.on('click', (e) => {
                         this.handleMapClick(e.latlng);
                     });
                 } else {
                     const savedTheme = localStorage.getItem('theme') || 'night';
-                    this.pickerMap.eachLayer(layer => {
-                        if (layer instanceof L.TileLayer) {
-                            this.pickerMap.removeLayer(layer);
-                        }
-                    });
                     const tilesUrl = savedTheme === 'day'
                         ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
                         : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-                    L.tileLayer(tilesUrl, { maxZoom: 20 }).addTo(this.pickerMap);
+                    if (this.pickerDefaultTileLayer) {
+                        this.pickerDefaultTileLayer.setUrl(tilesUrl);
+                    }
                 }
                 
                 this.pickerMap.setView([initialLat, initialLng], 13);
@@ -3576,6 +3681,42 @@
                     }
                     document.getElementById('picker-selected-coords').textContent = 'None';
                     document.getElementById('btn-confirm-coords').disabled = true;
+                    
+                    // Auto-locate user's location and set selected marker
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                const userLat = position.coords.latitude;
+                                const userLng = position.coords.longitude;
+                                if (this.pickerMap) {
+                                    this.pickerMap.setView([userLat, userLng], 15);
+                                    this.handleMapClick(L.latLng(userLat, userLng));
+                                    this.showUserLocationOnPickerMap(userLat, userLng);
+                                }
+                            },
+                            (error) => {
+                                console.log("Auto-locate error or denied permission:", error);
+                            },
+                            { enableHighAccuracy: true, timeout: 5000 }
+                        );
+                    }
+                }
+
+                // Always try to display user device location as a pulsing green dot on pickerMap
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const userLat = position.coords.latitude;
+                            const userLng = position.coords.longitude;
+                            if (this.pickerMap) {
+                                this.showUserLocationOnPickerMap(userLat, userLng);
+                            }
+                        },
+                        (error) => {
+                            console.log("Device location lookup failed:", error);
+                        },
+                        { enableHighAccuracy: true, timeout: 5000 }
+                    );
                 }
             }, 350);
         },
@@ -3603,10 +3744,56 @@
             }
         },
         
+        locateUserOnPickerMap() {
+            if (navigator.geolocation) {
+                this.showToast('Locating your position...', 'info');
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+                        if (this.pickerMap) {
+                            this.pickerMap.setView([userLat, userLng], 15);
+                            this.showUserLocationOnPickerMap(userLat, userLng);
+                            this.handleMapClick(L.latLng(userLat, userLng));
+                            this.showToast('Location found!', 'success');
+                        }
+                    },
+                    (error) => {
+                        console.error("Geolocation error:", error);
+                        this.showToast('Could not access your location. Please check browser permissions.', 'error');
+                    },
+                    { enableHighAccuracy: true, timeout: 7000 }
+                );
+            } else {
+                this.showToast('Geolocation is not supported by your browser.', 'error');
+            }
+        },
+
+        showUserLocationOnPickerMap(lat, lng) {
+            const userLocIcon = L.divIcon({
+                className: 'user-location-marker-container',
+                html: '<div class="user-location-marker"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            if (this.pickerUserLocationMarker) {
+                this.pickerUserLocationMarker.setLatLng([lat, lng]);
+            } else {
+                this.pickerUserLocationMarker = L.marker([lat, lng], { icon: userLocIcon }).addTo(this.pickerMap);
+            }
+        },
+        
         closeMapPicker() {
             this.closeModal('modal-map-picker');
             this.activeLatInput = null;
             this.activeLngInput = null;
+            if (this.pickerUserLocationMarker) {
+                if (this.pickerMap) {
+                    this.pickerMap.removeLayer(this.pickerUserLocationMarker);
+                }
+                this.pickerUserLocationMarker = null;
+            }
         },
 
         async viewBreakdownOnMap(customerLat, customerLng, breakdownId, breakdownCity) {
@@ -3654,10 +3841,44 @@
                             attributionControl: false
                         });
                         
+                        const savedTheme = localStorage.getItem('theme') || 'night';
                         const tilesUrl = savedTheme === 'day'
                             ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
                             : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-                        L.tileLayer(tilesUrl, { maxZoom: 20 }).addTo(this.breakdownRouteMap);
+                            
+                        this.breakdownDefaultTileLayer = L.tileLayer(tilesUrl, {
+                            maxZoom: 20
+                        }).addTo(this.breakdownRouteMap);
+                        
+                        const googleRoadmap = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                            maxZoom: 20,
+                            attribution: 'Map data &copy; Google'
+                        });
+                        const googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                            maxZoom: 20,
+                            attribution: 'Map data &copy; Google'
+                        });
+                        const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                            maxZoom: 20,
+                            attribution: 'Map data &copy; Google'
+                        });
+                        
+                        const baseMaps = {
+                            "Default Theme": this.breakdownDefaultTileLayer,
+                            "Google Roadmap": googleRoadmap,
+                            "Google Satellite": googleSatellite,
+                            "Google Hybrid": googleHybrid
+                        };
+                        
+                        L.control.layers(baseMaps, null, { position: 'topright' }).addTo(this.breakdownRouteMap);
+                    } else {
+                        const savedTheme = localStorage.getItem('theme') || 'night';
+                        const tilesUrl = savedTheme === 'day'
+                            ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                        if (this.breakdownDefaultTileLayer) {
+                            this.breakdownDefaultTileLayer.setUrl(tilesUrl);
+                        }
                     }
                     
                     // Clear existing layers
@@ -6378,6 +6599,7 @@
             document.getElementById('edit-garage-city').value = g.city;
             document.getElementById('edit-garage-phone').value = g.phone || '';
             document.getElementById('edit-garage-email').value = g.email || '';
+            document.getElementById('edit-garage-business-reg-no').value = g.businessRegNo || '';
             document.getElementById('edit-garage-image').value = g.imageUrl || '';
             document.getElementById('edit-garage-lat').value = g.latitude || 6.9271;
             document.getElementById('edit-garage-lng').value = g.longitude || 79.8612;
@@ -6416,6 +6638,7 @@
             const city = document.getElementById('edit-garage-city').value;
             const phone = document.getElementById('edit-garage-phone').value.trim();
             const email = document.getElementById('edit-garage-email').value.trim();
+            const businessRegNo = document.getElementById('edit-garage-business-reg-no').value.trim();
             
             const openTime = document.getElementById('edit-garage-open-time').value;
             const closeTime = document.getElementById('edit-garage-close-time').value;
@@ -6441,7 +6664,7 @@
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday
+                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday, businessRegNo
                     })
                 });
 
@@ -6676,6 +6899,7 @@
             document.getElementById('shop-city').value = 'Colombo';
             document.getElementById('shop-phone').value = '';
             document.getElementById('shop-email').value = '';
+            document.getElementById('shop-business-reg-no').value = '';
             document.getElementById('shop-image').value = '';
             document.getElementById('shop-lat').value = '';
             document.getElementById('shop-lng').value = '';
@@ -6702,6 +6926,7 @@
             document.getElementById('shop-city').value = s.city;
             document.getElementById('shop-phone').value = s.phone || '';
             document.getElementById('shop-email').value = s.email || '';
+            document.getElementById('shop-business-reg-no').value = s.businessRegNo || '';
             document.getElementById('shop-image').value = s.imageUrl || '';
             document.getElementById('shop-lat').value = s.latitude || '';
             document.getElementById('shop-lng').value = s.longitude || '';
@@ -6741,6 +6966,7 @@
             const city = document.getElementById('shop-city').value;
             const phone = document.getElementById('shop-phone').value.trim();
             const email = document.getElementById('shop-email').value.trim();
+            const businessRegNo = document.getElementById('shop-business-reg-no').value.trim();
             
             const openTime = document.getElementById('shop-open-time').value;
             const closeTime = document.getElementById('shop-close-time').value;
@@ -6778,7 +7004,7 @@
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday
+                        name, description, address, city, phone, email, imageUrl, latitude, longitude, openTime, closeTime, openDays, openToday, businessRegNo
                     })
                 });
 
@@ -6863,13 +7089,13 @@
                 }
 
                 item.innerHTML = `
-                    <div style="display:flex; gap:1rem; align-items:center;">
+                    <a href="shop.html?id=${s.id}" class="profile-link" style="display:flex; gap:1rem; align-items:center; text-decoration:none; color:inherit;" unique-id="view-shop-profile-${s.id}">
                         <img src="${s.imageUrl || 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?w=150'}" style="width:80px; height:60px; object-fit:cover; border-radius:var(--radius-sm);">
                         <div>
                             <h4 style="font-weight:700;">${s.shopName}</h4>
                             <p style="font-size:0.85rem; color:var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${s.address}, ${s.city}</p>
                         </div>
-                    </div>
+                    </a>
                     <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
                         <span class="badge ${badgeClass}" id="shop-status-badge-${s.id}" style="display:none;">${s.status}</span>
                         <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
@@ -8107,16 +8333,19 @@
         },
 
         updateMapTiles(theme) {
-            if (!this.map) return;
-            this.map.eachLayer(layer => {
-                if (layer instanceof L.TileLayer) {
-                    this.map.removeLayer(layer);
-                }
-            });
             const tilesUrl = theme === 'day'
                 ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-            L.tileLayer(tilesUrl, { maxZoom: 20 }).addTo(this.map);
+            
+            if (this.defaultTileLayer) {
+                this.defaultTileLayer.setUrl(tilesUrl);
+            }
+            if (this.pickerDefaultTileLayer) {
+                this.pickerDefaultTileLayer.setUrl(tilesUrl);
+            }
+            if (this.breakdownDefaultTileLayer) {
+                this.breakdownDefaultTileLayer.setUrl(tilesUrl);
+            }
         },
 
         cancellationReasons: {
@@ -8591,6 +8820,15 @@
                 } else {
                     btn.style.display = 'none';
                 }
+            }
+        });
+
+        // Register window resize listener to update Leaflet maps
+        window.addEventListener('resize', () => {
+            if (window.GarageLK) {
+                if (window.GarageLK.map) window.GarageLK.map.invalidateSize();
+                if (window.GarageLK.pickerMap) window.GarageLK.pickerMap.invalidateSize();
+                if (window.GarageLK.breakdownRouteMap) window.GarageLK.breakdownRouteMap.invalidateSize();
             }
         });
     });

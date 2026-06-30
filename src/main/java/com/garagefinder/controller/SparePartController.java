@@ -277,6 +277,7 @@ public class SparePartController {
         String phone = payload.get("phone") != null ? payload.get("phone").toString() : null;
         String email = payload.get("email") != null ? payload.get("email").toString() : null;
         String imageUrl = payload.get("imageUrl") != null ? payload.get("imageUrl").toString() : null;
+        String businessRegNo = payload.get("businessRegNo") != null ? payload.get("businessRegNo").toString() : null;
 
         Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null ? Double.parseDouble(payload.get("latitude").toString()) : 6.9271;
         Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null ? Double.parseDouble(payload.get("longitude").toString()) : 79.8612;
@@ -292,6 +293,7 @@ public class SparePartController {
         shop.setImageUrl(imageUrl);
         shop.setPhone(phone);
         shop.setEmail(email);
+        shop.setBusinessRegNo(businessRegNo);
         shop.setOpenTime(openTime);
         shop.setCloseTime(closeTime);
         shop.setOpenDays(openDays);
@@ -337,6 +339,7 @@ public class SparePartController {
         String phone = payload.get("phone") != null ? payload.get("phone").toString() : null;
         String email = payload.get("email") != null ? payload.get("email").toString() : null;
         String imageUrl = payload.get("imageUrl") != null ? payload.get("imageUrl").toString() : null;
+        String businessRegNo = payload.get("businessRegNo") != null ? payload.get("businessRegNo").toString() : null;
 
         Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null ? Double.parseDouble(payload.get("latitude").toString()) : shop.getLatitude();
         Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null ? Double.parseDouble(payload.get("longitude").toString()) : shop.getLongitude();
@@ -351,6 +354,7 @@ public class SparePartController {
         if (!Objects.equals(shop.getImageUrl(), imageUrl)) requireApproval = true;
         if (!Objects.equals(shop.getLatitude(), latitude)) requireApproval = true;
         if (!Objects.equals(shop.getLongitude(), longitude)) requireApproval = true;
+        if (!Objects.equals(shop.getBusinessRegNo(), businessRegNo)) requireApproval = true;
 
         shop.setShopName(name);
         shop.setDescription(description);
@@ -367,6 +371,7 @@ public class SparePartController {
         shop.setImageUrl(imageUrl);
         shop.setLatitude(latitude);
         shop.setLongitude(longitude);
+        shop.setBusinessRegNo(businessRegNo);
         shop.setOpenTime(openTime);
         shop.setCloseTime(closeTime);
         shop.setOpenDays(openDays);

@@ -1162,6 +1162,10 @@
                     <label for="garage-email">Contact Email</label>
                     <input type="email" id="garage-email" class="form-control" placeholder="e.g. info@mygarage.lk" required unique-id="garage-email-input">
                 </div>
+                <div class="form-group">
+                    <label for="garage-business-reg-no">Business Registration Number</label>
+                    <input type="text" id="garage-business-reg-no" class="form-control" placeholder="e.g. BR-12345" required unique-id="garage-business-reg-no-input">
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="garage-open-time">Opening Time</label>
@@ -1258,6 +1262,10 @@
                 <div class="form-group">
                     <label for="edit-garage-email">Contact Email</label>
                     <input type="email" id="edit-garage-email" class="form-control" placeholder="e.g. info@mygarage.lk" required unique-id="edit-garage-email-input">
+                </div>
+                <div class="form-group">
+                    <label for="edit-garage-business-reg-no">Business Registration Number</label>
+                    <input type="text" id="edit-garage-business-reg-no" class="form-control" placeholder="e.g. BR-12345" required unique-id="edit-garage-business-reg-no-input">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div class="form-group" style="margin-bottom: 0;">
@@ -1417,7 +1425,12 @@
                 <div style="font-size: 0.85rem; color: var(--text-secondary);">
                     Selected Coords: <span id="picker-selected-coords" style="font-family: monospace; font-weight: bold; color: var(--primary);">None</span>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="window.GarageLK.confirmMapSelection()" id="btn-confirm-coords" disabled unique-id="confirm-location-btn">Confirm Location</button>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button type="button" class="btn btn-secondary" onclick="window.GarageLK.locateUserOnPickerMap()" unique-id="locate-me-map-btn" style="height: 42px; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                        <i class="fa-solid fa-crosshairs"></i> Locate Me
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="window.GarageLK.confirmMapSelection()" id="btn-confirm-coords" disabled unique-id="confirm-location-btn" style="height: 42px;">Confirm Location</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1465,6 +1478,10 @@
                 <div class="form-group">
                     <label for="shop-email">Contact Email</label>
                     <input type="email" id="shop-email" class="form-control" placeholder="e.g. sales@myparts.lk" required unique-id="shop-email-input">
+                </div>
+                <div class="form-group">
+                    <label for="shop-business-reg-no">Business Registration Number</label>
+                    <input type="text" id="shop-business-reg-no" class="form-control" placeholder="e.g. BR-54321" required unique-id="shop-business-reg-no-input">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div class="form-group" style="margin-bottom: 0;">

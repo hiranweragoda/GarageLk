@@ -132,13 +132,13 @@ public class GarageController {
             rMap.put("rating", r.getStarRating());
             rMap.put("comment", r.getComment());
             rMap.put("createdAt", r.getCreatedAt());
-            
+
             Map<String, Object> uMap = new HashMap<>();
             User u = r.getCustomer().getUser();
             uMap.put("username", u.getUsername());
             uMap.put("fullName", u.getFullName());
             rMap.put("user", uMap);
-            
+
             reviewsList.add(rMap);
         }
 
@@ -224,7 +224,7 @@ public class GarageController {
         } else {
             List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
             List<OfferedService> services = offeredServiceRepository.findAll().stream()
-                .filter(s -> garageIds.contains(s.getGarage().getId())).toList();
+                    .filter(s -> garageIds.contains(s.getGarage().getId())).toList();
             return ResponseEntity.ok(services);
         }
     }
@@ -249,9 +249,9 @@ public class GarageController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
         }
 
-        String serviceType = payload.containsKey("serviceType") && payload.get("serviceType") != null 
-            ? payload.get("serviceType").toString() 
-            : (payload.get("serviceName") != null ? payload.get("serviceName").toString() : null);
+        String serviceType = payload.containsKey("serviceType") && payload.get("serviceType") != null
+                ? payload.get("serviceType").toString()
+                : (payload.get("serviceName") != null ? payload.get("serviceName").toString() : null);
 
         if (serviceType == null || serviceType.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Service name/type is required"));
@@ -264,7 +264,9 @@ public class GarageController {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid price format"));
         }
 
-        Long serviceId = payload.containsKey("id") && payload.get("id") != null ? Long.parseLong(payload.get("id").toString()) : null;
+        Long serviceId = payload.containsKey("id") && payload.get("id") != null
+                ? Long.parseLong(payload.get("id").toString())
+                : null;
 
         Optional<OfferedService> existingOpt = Optional.empty();
         if (serviceId != null) {
@@ -273,9 +275,9 @@ public class GarageController {
             existingOpt = offeredServiceRepository.findByGarageIdAndServiceType(garage.getId(), serviceType);
         }
 
-        String description = payload.containsKey("description") && payload.get("description") != null 
-            ? payload.get("description").toString() 
-            : null;
+        String description = payload.containsKey("description") && payload.get("description") != null
+                ? payload.get("description").toString()
+                : null;
 
         OfferedService service;
         if (existingOpt.isPresent()) {
@@ -418,27 +420,37 @@ public class GarageController {
         String phone = payload.get("phone") != null ? payload.get("phone").toString() : null;
         String email = payload.get("email") != null ? payload.get("email").toString() : null;
         String imageUrl = payload.get("imageUrl") != null ? payload.get("imageUrl").toString() : null;
-        
-        Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null ? Double.parseDouble(payload.get("latitude").toString()) : 6.9271;
-        Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null ? Double.parseDouble(payload.get("longitude").toString()) : 79.8612;
+        String businessRegNo = payload.get("businessRegNo") != null ? payload.get("businessRegNo").toString() : null;
+
+        Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null
+                ? Double.parseDouble(payload.get("latitude").toString())
+                : 6.9271;
+        Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null
+                ? Double.parseDouble(payload.get("longitude").toString())
+                : 79.8612;
 
         String district = city;
 
         String openTime = payload.get("openTime") != null ? payload.get("openTime").toString() : null;
         String closeTime = payload.get("closeTime") != null ? payload.get("closeTime").toString() : null;
         String openDays = payload.get("openDays") != null ? payload.get("openDays").toString() : null;
-        Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null ? Boolean.parseBoolean(payload.get("openToday").toString()) : true;
+        Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null
+                ? Boolean.parseBoolean(payload.get("openToday").toString())
+                : true;
 
-        Garage garage = new Garage(managedUser, name, managedUser.getFullName() != null ? managedUser.getFullName() : managedUser.getUsername(), description, address, city, district, latitude, longitude);
+        Garage garage = new Garage(managedUser, name,
+                managedUser.getFullName() != null ? managedUser.getFullName() : managedUser.getUsername(), description,
+                address, city, district, latitude, longitude);
         garage.setImageUrl(imageUrl);
         garage.setPhone(phone);
         garage.setEmail(email);
+        garage.setBusinessRegNo(businessRegNo);
         garage.setOpenTime(openTime);
         garage.setCloseTime(closeTime);
         garage.setOpenDays(openDays);
         garage.setOpenToday(openToday);
         garage.setStatus("PENDING");
-        
+
         garageRepository.save(garage);
 
         try {
@@ -455,7 +467,8 @@ public class GarageController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<?> updateGarageStatus(@PathVariable Long id, @RequestBody Map<String, Object> payload, HttpSession session) {
+    public ResponseEntity<?> updateGarageStatus(@PathVariable Long id, @RequestBody Map<String, Object> payload,
+            HttpSession session) {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
         if (user == null || !"ADMIN".equals(user.getRole())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
@@ -468,37 +481,46 @@ public class GarageController {
 
         Garage garage = garageOpt.get();
         String status = payload.get("status") != null ? payload.get("status").toString() : null;
-        
+
         if ("APPROVED".equalsIgnoreCase(status)) {
             garage.setStatus("APPROVED");
             garageRepository.save(garage);
-            
+
             try {
-                notificationRepository.save(new Notification(garage.getUser().getId(), String.format("Your garage %s has been APPROVED.", garage.getGarageName())));
-            } catch (Exception e) { e.printStackTrace(); }
+                notificationRepository.save(new Notification(garage.getUser().getId(),
+                        String.format("Your garage %s has been APPROVED.", garage.getGarageName())));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             return ResponseEntity.ok(Map.of("message", "Garage approved successfully"));
         } else if ("REJECTED".equalsIgnoreCase(status)) {
             garage.setStatus("REJECTED");
             garageRepository.save(garage);
-            
+
             try {
-                notificationRepository.save(new Notification(garage.getUser().getId(), String.format("Your garage %s registration has been REJECTED.", garage.getGarageName())));
-            } catch (Exception e) { e.printStackTrace(); }
+                notificationRepository.save(new Notification(garage.getUser().getId(),
+                        String.format("Your garage %s registration has been REJECTED.", garage.getGarageName())));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             return ResponseEntity.ok(Map.of("message", "Garage rejected successfully"));
         } else if ("CANCELLED".equalsIgnoreCase(status)) {
             garage.setStatus("CANCELLED");
             garageRepository.save(garage);
-            
+
             return ResponseEntity.ok(Map.of("message", "Garage cancelled successfully"));
         } else if ("SUSPENDED".equalsIgnoreCase(status)) {
             garage.setStatus("SUSPENDED");
             garageRepository.save(garage);
-            
+
             try {
-                notificationRepository.save(new Notification(garage.getUser().getId(), String.format("Your garage %s has been SUSPENDED by the administrator.", garage.getGarageName())));
-            } catch (Exception e) { e.printStackTrace(); }
+                notificationRepository.save(new Notification(garage.getUser().getId(), String
+                        .format("Your garage %s has been SUSPENDED by the administrator.", garage.getGarageName())));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             return ResponseEntity.ok(Map.of("message", "Garage suspended successfully"));
         }
@@ -507,7 +529,8 @@ public class GarageController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateGarage(@PathVariable Long id, @RequestBody Map<String, Object> payload, HttpSession session) {
+    public ResponseEntity<?> updateGarage(@PathVariable Long id, @RequestBody Map<String, Object> payload,
+            HttpSession session) {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
         if (user == null || !"GARAGE_OWNER".equals(user.getRole())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
@@ -530,25 +553,43 @@ public class GarageController {
         String phone = payload.get("phone") != null ? payload.get("phone").toString() : null;
         String email = payload.get("email") != null ? payload.get("email").toString() : null;
         String imageUrl = payload.get("imageUrl") != null ? payload.get("imageUrl").toString() : null;
-        
-        Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null ? Double.parseDouble(payload.get("latitude").toString()) : garage.getLatitude();
-        Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null ? Double.parseDouble(payload.get("longitude").toString()) : garage.getLongitude();
+        String businessRegNo = payload.get("businessRegNo") != null ? payload.get("businessRegNo").toString() : null;
+
+        Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null
+                ? Double.parseDouble(payload.get("latitude").toString())
+                : garage.getLatitude();
+        Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null
+                ? Double.parseDouble(payload.get("longitude").toString())
+                : garage.getLongitude();
 
         String openTime = payload.get("openTime") != null ? payload.get("openTime").toString() : null;
         String closeTime = payload.get("closeTime") != null ? payload.get("closeTime").toString() : null;
         String openDays = payload.get("openDays") != null ? payload.get("openDays").toString() : null;
-        Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null ? Boolean.parseBoolean(payload.get("openToday").toString()) : true;
+        Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null
+                ? Boolean.parseBoolean(payload.get("openToday").toString())
+                : true;
 
         boolean requireApproval = false;
-        if (!Objects.equals(garage.getGarageName(), name)) requireApproval = true;
-        if (!Objects.equals(garage.getDescription(), description)) requireApproval = true;
-        if (!Objects.equals(garage.getAddress(), address)) requireApproval = true;
-        if (!Objects.equals(garage.getCity(), city)) requireApproval = true;
-        if (!Objects.equals(garage.getPhone(), phone)) requireApproval = true;
-        if (!Objects.equals(garage.getEmail(), email)) requireApproval = true;
-        if (!Objects.equals(garage.getImageUrl(), imageUrl)) requireApproval = true;
-        if (!Objects.equals(garage.getLatitude(), latitude)) requireApproval = true;
-        if (!Objects.equals(garage.getLongitude(), longitude)) requireApproval = true;
+        if (!Objects.equals(garage.getGarageName(), name))
+            requireApproval = true;
+        if (!Objects.equals(garage.getDescription(), description))
+            requireApproval = true;
+        if (!Objects.equals(garage.getAddress(), address))
+            requireApproval = true;
+        if (!Objects.equals(garage.getCity(), city))
+            requireApproval = true;
+        if (!Objects.equals(garage.getPhone(), phone))
+            requireApproval = true;
+        if (!Objects.equals(garage.getEmail(), email))
+            requireApproval = true;
+        if (!Objects.equals(garage.getImageUrl(), imageUrl))
+            requireApproval = true;
+        if (!Objects.equals(garage.getLatitude(), latitude))
+            requireApproval = true;
+        if (!Objects.equals(garage.getLongitude(), longitude))
+            requireApproval = true;
+        if (!Objects.equals(garage.getBusinessRegNo(), businessRegNo))
+            requireApproval = true;
 
         garage.setGarageName(name);
         garage.setDescription(description);
@@ -560,6 +601,7 @@ public class GarageController {
         garage.setImageUrl(imageUrl);
         garage.setLatitude(latitude);
         garage.setLongitude(longitude);
+        garage.setBusinessRegNo(businessRegNo);
         garage.setOpenTime(openTime);
         garage.setCloseTime(closeTime);
         garage.setOpenDays(openDays);
@@ -591,8 +633,8 @@ public class GarageController {
 
         Garage garage = garageOpt.get();
 
-        boolean isAuthorized = "ADMIN".equals(user.getRole()) || 
-            ("GARAGE_OWNER".equals(user.getRole()) && garage.getUser().getId().equals(user.getId()));
+        boolean isAuthorized = "ADMIN".equals(user.getRole()) ||
+                ("GARAGE_OWNER".equals(user.getRole()) && garage.getUser().getId().equals(user.getId()));
 
         if (!isAuthorized) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
@@ -650,9 +692,8 @@ public class GarageController {
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of(
-            "message", "User status updated successfully",
-            "active", user.isActive()
-        ));
+                "message", "User status updated successfully",
+                "active", user.isActive()));
     }
 
     @PostMapping("/upload")
@@ -682,7 +723,8 @@ public class GarageController {
             String filename = UUID.randomUUID().toString() + extension;
 
             // Save file
-            java.io.File destination = new java.io.File(uploadDir.getAbsolutePath() + java.io.File.separator + filename);
+            java.io.File destination = new java.io.File(
+                    uploadDir.getAbsolutePath() + java.io.File.separator + filename);
             file.transferTo(destination);
 
             // Return URL

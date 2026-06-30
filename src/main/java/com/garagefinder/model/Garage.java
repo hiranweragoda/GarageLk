@@ -51,6 +51,9 @@ public class Garage {
 
     private String email;
 
+    @Column(name = "business_reg_no")
+    private String businessRegNo;
+
     @Column(name = "open_time")
     private String openTime;
 
@@ -210,6 +213,14 @@ public class Garage {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getBusinessRegNo() {
+        return businessRegNo;
+    }
+
+    public void setBusinessRegNo(String businessRegNo) {
+        this.businessRegNo = businessRegNo;
     }
 
     public String getName() {
