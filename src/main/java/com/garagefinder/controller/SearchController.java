@@ -67,7 +67,7 @@ public class SearchController {
             details.put("garageName", b.getGarage().getGarageName());
             
             // Customer user details
-            User customerUser = b.getCustomer().getUser();
+            User customerUser = b.getCustomer();
             details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getUsername());
             details.put("customerPhone", customerUser.getPhone());
             details.put("customerEmail", customerUser.getEmail());
@@ -103,7 +103,7 @@ public class SearchController {
             details.put("shopName", b.getSparePart().getShop().getShopName());
 
             // Customer user details
-            User customerUser = b.getCustomer().getUser();
+            User customerUser = b.getCustomer();
             details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getUsername());
             details.put("customerPhone", customerUser.getPhone());
             details.put("customerEmail", customerUser.getEmail());
@@ -152,7 +152,7 @@ public class SearchController {
             }
 
             // Customer user details
-            User customerUser = b.getCustomer().getUser();
+            User customerUser = b.getCustomer();
             details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getUsername());
             details.put("customerPhone", customerUser.getPhone());
             details.put("customerEmail", customerUser.getEmail());

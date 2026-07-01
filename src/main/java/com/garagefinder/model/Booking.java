@@ -13,7 +13,7 @@ public class Booking {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private User customer;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "garage_id", nullable = false)
@@ -57,7 +57,7 @@ public class Booking {
     // Constructors
     public Booking() {}
 
-    public Booking(Customer customer, Garage garage, String serviceType, LocalDateTime bookingDate, String status, Double price, String notes) {
+    public Booking(User customer, Garage garage, String serviceType, LocalDateTime bookingDate, String status, Double price, String notes) {
         this.customer = customer;
         this.garage = garage;
         this.serviceType = serviceType;
@@ -84,11 +84,11 @@ public class Booking {
         this.id = id;
     }
 
-    public Customer getCustomer() {
+    public User getCustomer() {
         return customer;
     }
 
-    public void setCustomer(Customer customer) {
+    public void setCustomer(User customer) {
         this.customer = customer;
     }
 
@@ -181,7 +181,7 @@ public class Booking {
     }
 
     public User getUser() {
-        return customer != null ? customer.getUser() : null;
+        return customer;
     }
 
     public String getBookingCode() {

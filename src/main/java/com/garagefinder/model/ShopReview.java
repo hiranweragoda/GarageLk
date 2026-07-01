@@ -13,7 +13,7 @@ public class ShopReview {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private User customer;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "shop_id", nullable = false)
@@ -34,7 +34,7 @@ public class ShopReview {
 
     public ShopReview() {}
 
-    public ShopReview(Customer customer, SparePartShop shop, SparePartBooking sparePartBooking, Integer starRating, String comment) {
+    public ShopReview(User customer, SparePartShop shop, SparePartBooking sparePartBooking, Integer starRating, String comment) {
         this.customer = customer;
         this.shop = shop;
         this.sparePartBooking = sparePartBooking;
@@ -52,11 +52,11 @@ public class ShopReview {
         this.id = id;
     }
 
-    public Customer getCustomer() {
+    public User getCustomer() {
         return customer;
     }
 
-    public void setCustomer(Customer customer) {
+    public void setCustomer(User customer) {
         this.customer = customer;
     }
 

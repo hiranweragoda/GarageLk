@@ -13,7 +13,7 @@ public class Review {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private User customer;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "garage_id", nullable = false)
@@ -39,7 +39,7 @@ public class Review {
     // Constructors
     public Review() {}
 
-    public Review(Customer customer, Garage garage, Booking booking, Integer starRating, String comment) {
+    public Review(User customer, Garage garage, Booking booking, Integer starRating, String comment) {
         this.customer = customer;
         this.garage = garage;
         this.booking = booking;
@@ -48,7 +48,7 @@ public class Review {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Review(Customer customer, Garage garage, BreakdownRequest breakdownRequest, Integer starRating, String comment) {
+    public Review(User customer, Garage garage, BreakdownRequest breakdownRequest, Integer starRating, String comment) {
         this.customer = customer;
         this.garage = garage;
         this.breakdownRequest = breakdownRequest;
@@ -61,8 +61,8 @@ public class Review {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Customer getCustomer() { return customer; }
-    public void setCustomer(Customer customer) { this.customer = customer; }
+    public User getCustomer() { return customer; }
+    public void setCustomer(User customer) { this.customer = customer; }
 
     public Garage getGarage() { return garage; }
     public void setGarage(Garage garage) { this.garage = garage; }

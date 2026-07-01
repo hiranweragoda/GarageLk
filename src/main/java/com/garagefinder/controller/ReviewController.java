@@ -2,13 +2,11 @@ package com.garagefinder.controller;
 
 import com.garagefinder.model.Booking;
 import com.garagefinder.model.BreakdownRequest;
-import com.garagefinder.model.Customer;
 import com.garagefinder.model.Garage;
 import com.garagefinder.model.Review;
 import com.garagefinder.model.User;
 import com.garagefinder.repository.BookingRepository;
 import com.garagefinder.repository.BreakdownRequestRepository;
-import com.garagefinder.repository.CustomerRepository;
 import com.garagefinder.repository.ReviewRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
@@ -23,13 +21,11 @@ public class ReviewController {
 
     private final ReviewRepository reviewRepository;
     private final BookingRepository bookingRepository;
-    private final CustomerRepository customerRepository;
     private final BreakdownRequestRepository breakdownRequestRepository;
 
-    public ReviewController(ReviewRepository reviewRepository, BookingRepository bookingRepository, CustomerRepository customerRepository, BreakdownRequestRepository breakdownRequestRepository) {
+    public ReviewController(ReviewRepository reviewRepository, BookingRepository bookingRepository, BreakdownRequestRepository breakdownRequestRepository) {
         this.reviewRepository = reviewRepository;
         this.bookingRepository = bookingRepository;
-        this.customerRepository = customerRepository;
         this.breakdownRequestRepository = breakdownRequestRepository;
     }
 
@@ -39,11 +35,6 @@ public class ReviewController {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
         if (user == null || !"CUSTOMER".equals(user.getRole())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Only customers can submit reviews"));
-        }
-
-        Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-        if (customerOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Customer profile not found"));
         }
 
         Long bookingId = null;
@@ -73,7 +64,7 @@ public class ReviewController {
             if (!"COMPLETED".equals(booking.getStatus())) {
                 return ResponseEntity.badRequest().body(Map.of("message", "You can only review completed services"));
             }
-            if (!booking.getCustomer().getId().equals(customerOpt.get().getId())) {
+            if (!booking.getCustomer().getId().equals(user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
             }
             if (reviewRepository.existsByBookingId(bookingId)) {
@@ -89,7 +80,7 @@ public class ReviewController {
             if (!"COMPLETED".equals(breakdownRequest.getStatus())) {
                 return ResponseEntity.badRequest().body(Map.of("message", "You can only review completed rescues"));
             }
-            if (!breakdownRequest.getCustomer().getId().equals(customerOpt.get().getId())) {
+            if (!breakdownRequest.getCustomer().getId().equals(user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
             }
             if (reviewRepository.existsByBreakdownRequestId(breakdownRequestId)) {
@@ -115,9 +106,9 @@ public class ReviewController {
 
         Review review;
         if (booking != null) {
-            review = new Review(customerOpt.get(), garage, booking, starRating, comment);
+            review = new Review(user, garage, booking, starRating, comment);
         } else {
-            review = new Review(customerOpt.get(), garage, breakdownRequest, starRating, comment);
+            review = new Review(user, garage, breakdownRequest, starRating, comment);
         }
         reviewRepository.save(review);
 
@@ -137,8 +128,8 @@ public class ReviewController {
             item.put("rating", r.getStarRating());
             item.put("comment", r.getComment());
             item.put("createdAt", r.getCreatedAt());
-            item.put("customerName", r.getCustomer().getUser().getUsername());
-            item.put("vehicleType", r.getCustomer().getVehicleType());
+            item.put("customerName", r.getCustomer().getUsername());
+            item.put("vehicleType", null); // vehicle info no longer stored in customers table
             item.put("serviceType", r.getBooking() != null ? r.getBooking().getServiceType() : "Emergency Rescue");
             result.add(item);
         }

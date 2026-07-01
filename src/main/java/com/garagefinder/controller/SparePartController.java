@@ -200,7 +200,7 @@ public class SparePartController {
             rMap.put("createdAt", r.getCreatedAt());
             
             Map<String, Object> uMap = new HashMap<>();
-            User u = r.getCustomer().getUser();
+            User u = r.getCustomer();
             uMap.put("username", u.getUsername());
             uMap.put("fullName", u.getFullName());
             rMap.put("user", uMap);

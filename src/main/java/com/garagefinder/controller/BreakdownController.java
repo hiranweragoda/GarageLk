@@ -1,13 +1,11 @@
 package com.garagefinder.controller;
 
 import com.garagefinder.model.BreakdownRequest;
-import com.garagefinder.model.Customer;
 import com.garagefinder.model.Garage;
 import com.garagefinder.model.Mechanic;
 import com.garagefinder.model.User;
 import com.garagefinder.model.Notification;
 import com.garagefinder.repository.BreakdownRequestRepository;
-import com.garagefinder.repository.CustomerRepository;
 import com.garagefinder.repository.GarageRepository;
 import com.garagefinder.repository.MechanicRepository;
 import com.garagefinder.repository.NotificationRepository;
@@ -27,19 +25,16 @@ import java.util.HashSet;
 public class BreakdownController {
 
     private final BreakdownRequestRepository breakdownRequestRepository;
-    private final CustomerRepository customerRepository;
     private final GarageRepository garageRepository;
     private final MechanicRepository mechanicRepository;
     private final NotificationRepository notificationRepository;
 
     public BreakdownController(
             BreakdownRequestRepository breakdownRequestRepository,
-            CustomerRepository customerRepository,
             GarageRepository garageRepository,
             MechanicRepository mechanicRepository,
             NotificationRepository notificationRepository) {
         this.breakdownRequestRepository = breakdownRequestRepository;
-        this.customerRepository = customerRepository;
         this.garageRepository = garageRepository;
         this.mechanicRepository = mechanicRepository;
         this.notificationRepository = notificationRepository;
@@ -53,11 +48,6 @@ public class BreakdownController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Only customers can file emergency breakdown requests"));
         }
 
-        Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-        if (customerOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Customer profile not found"));
-        }
-
         String description = payload.get("description") != null ? payload.get("description").toString() : null;
         String locationCity = payload.containsKey("city") ? (payload.get("city") != null ? payload.get("city").toString() : null) : (payload.get("locationCity") != null ? payload.get("locationCity").toString() : null);
         String contactPhone = payload.containsKey("phone") ? (payload.get("phone") != null ? payload.get("phone").toString() : null) : (payload.get("contactPhone") != null ? payload.get("contactPhone").toString() : null);
@@ -66,7 +56,7 @@ public class BreakdownController {
         Double latitude = payload.containsKey("latitude") && payload.get("latitude") != null ? Double.parseDouble(payload.get("latitude").toString()) : 6.9271;
         Double longitude = payload.containsKey("longitude") && payload.get("longitude") != null ? Double.parseDouble(payload.get("longitude").toString()) : 79.8612;
 
-        BreakdownRequest request = new BreakdownRequest(customerOpt.get(), description, locationCity, "OPEN", contactPhone, latitude, longitude);
+        BreakdownRequest request = new BreakdownRequest(user, description, locationCity, "OPEN", contactPhone, latitude, longitude);
         request.setAddress(address);
         request.setVehicleNo(vehicleNo);
         
@@ -122,12 +112,7 @@ public class BreakdownController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-        if (customerOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Customer profile not found"));
-        }
-
-        List<BreakdownRequest> requests = breakdownRequestRepository.findByCustomerIdOrderByCreatedTimeDesc(customerOpt.get().getId());
+        List<BreakdownRequest> requests = breakdownRequestRepository.findByCustomerIdOrderByCreatedTimeDesc(user.getId());
         return ResponseEntity.ok(requests);
     }
 
@@ -213,7 +198,7 @@ public class BreakdownController {
         breakdownRequestRepository.save(request);
 
         try {
-            Long customerUserId = request.getCustomer().getUser().getId();
+            Long customerUserId = request.getCustomer().getId();
             String msg = String.format("Emergency assist request accepted by %s. (Code: %s)",
                 garageOpt.get().getGarageName(), request.getBreakdownCode());
             notificationRepository.save(new Notification(customerUserId, msg));
@@ -244,8 +229,7 @@ public class BreakdownController {
         if ("ADMIN".equals(user.getRole())) {
             authorized = true;
         } else if ("CUSTOMER".equals(user.getRole())) {
-            Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-            if (customerOpt.isPresent() && request.getCustomer().getId().equals(customerOpt.get().getId())) {
+            if (request.getCustomer().getId().equals(user.getId())) {
                 authorized = true;
             }
         } else if ("GARAGE_OWNER".equals(user.getRole())) {
@@ -268,7 +252,7 @@ public class BreakdownController {
         breakdownRequestRepository.save(request);
 
         try {
-            Long customerUserId = request.getCustomer().getUser().getId();
+            Long customerUserId = request.getCustomer().getId();
             String msg = String.format("Emergency assist request has been completed. (Code: %s)",
                 request.getBreakdownCode());
             notificationRepository.save(new Notification(customerUserId, msg));
@@ -302,8 +286,7 @@ public class BreakdownController {
         if ("ADMIN".equals(user.getRole())) {
             authorized = true;
         } else if ("CUSTOMER".equals(user.getRole())) {
-            Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-            if (customerOpt.isPresent() && request.getCustomer().getId().equals(customerOpt.get().getId())) {
+            if (request.getCustomer().getId().equals(user.getId())) {
                 authorized = true;
             }
         }

@@ -13,7 +13,7 @@ public class SparePartBooking {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private User customer;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "spare_part_id", nullable = false)
@@ -45,7 +45,7 @@ public class SparePartBooking {
 
     public SparePartBooking() {}
 
-    public SparePartBooking(Customer customer, SparePart sparePart, Integer quantity, Double totalPrice, String status, LocalDateTime pickupDate, String notes) {
+    public SparePartBooking(User customer, SparePart sparePart, Integer quantity, Double totalPrice, String status, LocalDateTime pickupDate, String notes) {
         this.customer = customer;
         this.sparePart = sparePart;
         this.quantity = quantity;
@@ -73,11 +73,11 @@ public class SparePartBooking {
         this.id = id;
     }
 
-    public Customer getCustomer() {
+    public User getCustomer() {
         return customer;
     }
 
-    public void setCustomer(Customer customer) {
+    public void setCustomer(User customer) {
         this.customer = customer;
     }
 
@@ -143,5 +143,11 @@ public class SparePartBooking {
 
     public void setBookingCode(String bookingCode) {
         this.bookingCode = bookingCode;
+    }
+
+    // Alias for JSON serialization: exposes customer as "user" nested under "customer"
+    // matching the pattern used in Booking.java so frontend can access b.customer.user
+    public User getUser() {
+        return customer;
     }
 }

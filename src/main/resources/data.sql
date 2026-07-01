@@ -39,16 +39,6 @@ VALUES (7, 'lankadiesel', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f3
 ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
 
 
--- 2. Insert Customers
-INSERT INTO customers (id, user_id, vehicle_no, vehicle_type, fuel_type)
-VALUES (1, 2, 'WP CAD-4321', 'Toyota Prius (Hybrid)', 'Hybrid')
-ON DUPLICATE KEY UPDATE vehicle_no=vehicle_no;
-
-INSERT INTO customers (id, user_id, vehicle_no, vehicle_type, fuel_type)
-VALUES (2, 3, 'CP LG-8899', 'Honda Vezel (Hybrid)', 'Hybrid')
-ON DUPLICATE KEY UPDATE vehicle_no=vehicle_no;
-
-
 -- 3. Insert Garages (with vehicle_types, engine_types, phone, email, and business_reg_no)
 -- Garage 1: Colombo Hybrid Motors
 INSERT INTO garages (id, user_id, garage_name, owner_name, description, address, city, district, status, latitude, longitude, vehicle_types, engine_types, phone, email, business_reg_no, open_time, close_time, open_days, open_today)

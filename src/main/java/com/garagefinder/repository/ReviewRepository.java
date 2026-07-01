@@ -12,6 +12,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByGarageIdOrderByCreatedAtDesc(Long garageId);
 
+    List<Review> findByCustomerId(Long customerId);
+
     Optional<Review> findByBookingId(Long bookingId);
 
     boolean existsByBookingId(Long bookingId);

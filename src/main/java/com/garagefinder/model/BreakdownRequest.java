@@ -13,7 +13,7 @@ public class BreakdownRequest {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private User customer;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
@@ -55,7 +55,7 @@ public class BreakdownRequest {
     // Constructors
     public BreakdownRequest() {}
 
-    public BreakdownRequest(Customer customer, String description, String locationCity, String status, String contactPhone, Double latitude, Double longitude) {
+    public BreakdownRequest(User customer, String description, String locationCity, String status, String contactPhone, Double latitude, Double longitude) {
         this.customer = customer;
         this.description = description;
         this.locationCity = locationCity;
@@ -83,11 +83,11 @@ public class BreakdownRequest {
         this.id = id;
     }
 
-    public Customer getCustomer() {
+    public User getCustomer() {
         return customer;
     }
 
-    public void setCustomer(Customer customer) {
+    public void setCustomer(User customer) {
         this.customer = customer;
     }
 
@@ -192,7 +192,7 @@ public class BreakdownRequest {
     }
 
     public User getUser() {
-        return customer != null ? customer.getUser() : null;
+        return customer;
     }
 
     public java.util.Map<String, String> getAcceptedBy() {

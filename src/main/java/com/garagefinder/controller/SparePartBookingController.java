@@ -16,7 +16,6 @@ public class SparePartBookingController {
 
     private final SparePartBookingRepository bookingRepository;
     private final SparePartRepository partRepository;
-    private final CustomerRepository customerRepository;
     private final SparePartShopRepository shopRepository;
     private final ShopReviewRepository shopReviewRepository;
     private final NotificationRepository notificationRepository;
@@ -24,16 +23,70 @@ public class SparePartBookingController {
     public SparePartBookingController(
             SparePartBookingRepository bookingRepository,
             SparePartRepository partRepository,
-            CustomerRepository customerRepository,
             SparePartShopRepository shopRepository,
             ShopReviewRepository shopReviewRepository,
             NotificationRepository notificationRepository) {
         this.bookingRepository = bookingRepository;
         this.partRepository = partRepository;
-        this.customerRepository = customerRepository;
         this.shopRepository = shopRepository;
         this.shopReviewRepository = shopReviewRepository;
         this.notificationRepository = notificationRepository;
+    }
+
+    private Map<String, Object> buildBookingMap(SparePartBooking b) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", b.getId());
+        map.put("bookingCode", b.getBookingCode());
+        map.put("quantity", b.getQuantity());
+        map.put("totalPrice", b.getTotalPrice());
+        map.put("status", b.getStatus());
+        map.put("bookingDate", b.getBookingDate());
+        map.put("pickupDate", b.getPickupDate());
+        map.put("notes", b.getNotes());
+        map.put("cancellationReason", b.getCancellationReason());
+
+        // customer.user structure expected by frontend (b.customer.user.fullName)
+        Map<String, Object> customerMap = new LinkedHashMap<>();
+        Map<String, Object> userMap = new LinkedHashMap<>();
+        User cust = b.getCustomer();
+        if (cust != null) {
+            userMap.put("id", cust.getId());
+            userMap.put("username", cust.getUsername());
+            userMap.put("fullName", cust.getFullName());
+            userMap.put("email", cust.getEmail());
+            userMap.put("phone", cust.getPhone());
+        }
+        customerMap.put("user", userMap);
+        map.put("customer", customerMap);
+
+        // sparePart with nested shop
+        Map<String, Object> partMap = new LinkedHashMap<>();
+        SparePart sp = b.getSparePart();
+        if (sp != null) {
+            partMap.put("id", sp.getId());
+            partMap.put("partName", sp.getPartName());
+            partMap.put("vehicleModel", sp.getVehicleModel());
+            partMap.put("vehicleYear", sp.getVehicleYear());
+            partMap.put("price", sp.getPrice());
+            partMap.put("quantity", sp.getQuantity());
+            partMap.put("status", sp.getStatus());
+            partMap.put("imageUrl", sp.getImageUrl());
+
+            Map<String, Object> shopMap = new LinkedHashMap<>();
+            SparePartShop shop = sp.getShop();
+            if (shop != null) {
+                shopMap.put("id", shop.getId());
+                shopMap.put("shopName", shop.getShopName());
+                shopMap.put("ownerName", shop.getOwnerName());
+                shopMap.put("address", shop.getAddress());
+                shopMap.put("city", shop.getCity());
+                shopMap.put("phone", shop.getPhone());
+            }
+            partMap.put("shop", shopMap);
+        }
+        map.put("sparePart", partMap);
+
+        return map;
     }
 
     @PostMapping("/api/spare-parts/bookings")
@@ -41,11 +94,6 @@ public class SparePartBookingController {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
         if (user == null || !"CUSTOMER".equals(user.getRole())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Only customers can book spare parts"));
-        }
-
-        Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-        if (customerOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Customer profile not found"));
         }
 
         if (payload.get("partId") == null) {
@@ -98,7 +146,7 @@ public class SparePartBookingController {
         part.setQuantity(part.getQuantity() - quantity);
         partRepository.save(part);
 
-        SparePartBooking booking = new SparePartBooking(customerOpt.get(), part, quantity, totalPrice, "PENDING", pickupDate, notes);
+        SparePartBooking booking = new SparePartBooking(user, part, quantity, totalPrice, "PENDING", pickupDate, notes);
         
         String bookingCode;
         String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
@@ -131,13 +179,12 @@ public class SparePartBookingController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-        if (customerOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Customer profile not found"));
+        List<SparePartBooking> bookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(user.getId());
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (SparePartBooking b : bookings) {
+            result.add(buildBookingMap(b));
         }
-
-        List<SparePartBooking> bookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(customerOpt.get().getId());
-        return ResponseEntity.ok(bookings);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/api/spare-parts/bookings/shop")
@@ -154,7 +201,11 @@ public class SparePartBookingController {
 
         List<Long> shopIds = shops.stream().map(s -> s.getId()).toList();
         List<SparePartBooking> bookings = bookingRepository.findBySparePartShopIdInOrderByBookingDateDesc(shopIds);
-        return ResponseEntity.ok(bookings);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (SparePartBooking b : bookings) {
+            result.add(buildBookingMap(b));
+        }
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/api/spare-parts/bookings/all")
@@ -163,7 +214,12 @@ public class SparePartBookingController {
         if (user == null || !"ADMIN".equals(user.getRole())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
-        return ResponseEntity.ok(bookingRepository.findAll());
+        List<SparePartBooking> bookings = bookingRepository.findAll();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (SparePartBooking b : bookings) {
+            result.add(buildBookingMap(b));
+        }
+        return ResponseEntity.ok(result);
     }
 
     @PutMapping("/api/spare-parts/bookings/{id}/status")
@@ -190,8 +246,7 @@ public class SparePartBookingController {
 
         boolean isAuthorized = false;
         if ("CUSTOMER".equals(user.getRole())) {
-            Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-            if (customerOpt.isPresent() && booking.getCustomer().getId().equals(customerOpt.get().getId())) {
+            if (booking.getCustomer().getId().equals(user.getId())) {
                 if ("CANCELLED".equals(newStatus)) {
                     isAuthorized = true;
                 } else {
@@ -228,7 +283,7 @@ public class SparePartBookingController {
         bookingRepository.save(booking);
 
         try {
-            Long customerUserId = booking.getCustomer().getUser().getId();
+            Long customerUserId = booking.getCustomer().getId();
             String msg = String.format("Your reservation for %s is %s at %s. (Code: %s)",
                 booking.getSparePart().getPartName(), newStatus.replace("_", " "), booking.getSparePart().getShop().getShopName(), booking.getBookingCode());
             notificationRepository.save(new Notification(customerUserId, msg));

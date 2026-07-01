@@ -42,11 +42,14 @@
             <p>Your ultimate portal to discover automotive services and source genuine spare parts across Sri Lanka.
             </p>
 
-            <div class="search-mode-tabs" style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
-                <button class="btn btn-primary" id="mode-garage" onclick="window.GarageLK.setSearchMode('garage')" style="border-radius: 50px; padding: 0.5rem 1.5rem;" unique-id="mode-garage-tab">
+            <div class="search-mode-tabs"
+                style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
+                <button class="btn btn-primary" id="mode-garage" onclick="window.GarageLK.setSearchMode('garage')"
+                    style="border-radius: 50px; padding: 0.5rem 1.5rem;" unique-id="mode-garage-tab">
                     <i class="fa-solid fa-warehouse"></i> Find Garages
                 </button>
-                <button class="btn btn-outline" id="mode-parts" onclick="window.GarageLK.setSearchMode('parts')" style="border-radius: 50px; padding: 0.5rem 1.5rem;" unique-id="mode-parts-tab">
+                <button class="btn btn-outline" id="mode-parts" onclick="window.GarageLK.setSearchMode('parts')"
+                    style="border-radius: 50px; padding: 0.5rem 1.5rem;" unique-id="mode-parts-tab">
                     <i class="fa-solid fa-gears"></i> Parts Marketplace
                 </button>
             </div>
@@ -60,7 +63,9 @@
                 </div>
                 <div class="search-input-group">
                     <i class="fa-solid fa-location-dot"></i>
-                    <input type="text" id="search-city" placeholder="All Districts" list="districts-list" unique-id="city-dropdown" style="border: none; background: transparent; width: 100%; height: 100%; color: var(--text-secondary); outline: none;">
+                    <input type="text" id="search-city" placeholder="All Districts" list="districts-list"
+                        unique-id="city-dropdown"
+                        style="border: none; background: transparent; width: 100%; height: 100%; color: var(--text-secondary); outline: none;">
                 </div>
                 <button class="btn btn-primary" id="btn-search" unique-id="search-submit">
                     <i class="fa-solid fa-magnifying-glass"></i> Find
@@ -68,24 +73,31 @@
             </div>
 
             <!-- Parts Search Container -->
-            <div class="search-container" id="parts-search-container" style="display: none; max-width: 900px; margin: 0 auto 2rem;">
+            <div class="search-container" id="parts-search-container"
+                style="display: none; max-width: 900px; margin: 0 auto 2rem;">
                 <div class="search-input-group" style="flex: 1.2;">
                     <i class="fa-solid fa-gears"></i>
-                    <input type="text" id="search-part-name" placeholder="Part name (e.g. Brake Pad, Alternator)" unique-id="part-name-input">
+                    <input type="text" id="search-part-name" placeholder="Part name (e.g. Brake Pad, Alternator)"
+                        unique-id="part-name-input">
                 </div>
                 <div class="search-input-group">
                     <i class="fa-solid fa-car"></i>
-                    <input type="text" id="search-part-model" placeholder="Model (e.g. Prius)" unique-id="part-model-input">
+                    <input type="text" id="search-part-model" placeholder="Model (e.g. Prius)"
+                        unique-id="part-model-input">
                 </div>
                 <div class="search-input-group" style="flex: 0.6;">
                     <i class="fa-solid fa-calendar"></i>
-                    <input type="number" id="search-part-year" placeholder="Year (e.g. 2015)" unique-id="part-year-input">
+                    <input type="number" id="search-part-year" placeholder="Year (e.g. 2015)"
+                        unique-id="part-year-input">
                 </div>
                 <div class="search-input-group">
                     <i class="fa-solid fa-location-dot"></i>
-                    <input type="text" id="search-part-city" placeholder="All Districts" list="districts-list" unique-id="part-city-dropdown" style="border: none; background: transparent; width: 100%; height: 100%; color: var(--text-secondary); outline: none;">
+                    <input type="text" id="search-part-city" placeholder="All Districts" list="districts-list"
+                        unique-id="part-city-dropdown"
+                        style="border: none; background: transparent; width: 100%; height: 100%; color: var(--text-secondary); outline: none;">
                 </div>
-                <button class="btn btn-primary" id="btn-search-parts" onclick="window.GarageLK.loadSpareParts()" unique-id="part-search-submit">
+                <button class="btn btn-primary" id="btn-search-parts" onclick="window.GarageLK.loadSpareParts()"
+                    unique-id="part-search-submit">
                     <i class="fa-solid fa-magnifying-glass"></i> Find Parts
                 </button>
             </div>
@@ -97,18 +109,25 @@
             </div>
 
             <!-- Active Emergency Breakdown Details Panel -->
-            <div id="active-breakdown-panel" class="glass-card" style="display: none; max-width: 600px; margin: 2rem auto 0; text-align: left; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 0.75rem;">
-                    <h3 style="font-size: 1.25rem; color:#ef4444; display:flex; align-items:center; gap:0.5rem; margin:0;">
+            <div id="active-breakdown-panel" class="glass-card"
+                style="display: none; max-width: 600px; margin: 2rem auto 0; text-align: left; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 0.75rem;">
+                    <h3
+                        style="font-size: 1.25rem; color:#ef4444; display:flex; align-items:center; gap:0.5rem; margin:0;">
                         <i class="fa-solid fa-circle-exclamation fa-fade"></i> Active Breakdown Assist
                     </h3>
-                    <span id="active-breakdown-status-badge" class="badge" style="font-size: 0.75rem; padding: 0.25rem 0.60rem; border-radius: 4px; font-weight:700;">OPEN</span>
+                    <span id="active-breakdown-status-badge" class="badge"
+                        style="font-size: 0.75rem; padding: 0.25rem 0.60rem; border-radius: 4px; font-weight:700;">OPEN</span>
                 </div>
-                <div id="active-breakdown-details-content" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary);">
+                <div id="active-breakdown-details-content"
+                    style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary);">
                     <!-- Dynamically populated -->
                 </div>
                 <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
-                    <button class="btn btn-outline" id="active-breakdown-resolve-btn" style="border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.85rem; padding: 0.5rem 1rem;" unique-id="homepage-resolve-btn">
+                    <button class="btn btn-outline" id="active-breakdown-resolve-btn"
+                        style="border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.85rem; padding: 0.5rem 1rem;"
+                        unique-id="homepage-resolve-btn">
                         <i class="fa-solid fa-circle-check"></i> Mark Resolved
                     </button>
                 </div>
@@ -208,10 +227,12 @@
     <footer>
         <div class="footer-container">
             <div class="footer-column brand-col">
-                <a href="/index.html" class="logo" style="font-size: 1.5rem; margin-bottom: 1rem; display: inline-flex; text-decoration: none;">
+                <a href="/index.html" class="logo"
+                    style="font-size: 1.5rem; margin-bottom: 1rem; display: inline-flex; text-decoration: none;">
                     <i class="fa-solid fa-gears"></i>Garage<span>LK</span>
                 </a>
-                <p>Sri Lanka's premier digital gateway connecting vehicle owners with elite automotive service centers and genuine spare part suppliers.</p>
+                <p>Sri Lanka's premier digital gateway connecting vehicle owners with elite automotive service centers
+                    and genuine spare part suppliers.</p>
                 <div class="social-links">
                     <a href="#" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
                     <a href="#" class="social-icon" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
@@ -220,7 +241,7 @@
                     <a href="#" class="social-icon" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
                 </div>
             </div>
-            
+
             <div class="footer-column">
                 <h3>Quick Links</h3>
                 <ul class="footer-links">
@@ -232,7 +253,7 @@
                     <li><a href="/auth.html">Join as Partner</a></li>
                 </ul>
             </div>
-            
+
             <div class="footer-column">
                 <h3>Contact Us</h3>
                 <ul class="contact-info">
@@ -256,16 +277,19 @@
                     </li>
                 </ul>
             </div>
-            
+
             <div class="footer-column">
                 <h3>Emergency Services</h3>
-                <p style="font-size: 0.85rem; margin-bottom: 1rem;">Stranded on the road? Request immediate assistance from nearby mechanics.</p>
-                <button class="btn btn-emergency" onclick="window.GarageLK.openEmergencyModal()" style="padding: 0.6rem 1.2rem; font-size: 0.85rem; width: 100%; border-radius: 4px;" unique-id="footer-emergency-btn">
+                <p style="font-size: 0.85rem; margin-bottom: 1rem;">Stranded on the road? Request immediate assistance
+                    from nearby mechanics.</p>
+                <button class="btn btn-emergency" onclick="window.GarageLK.openEmergencyModal()"
+                    style="padding: 0.6rem 1.2rem; font-size: 0.85rem; width: 100%; border-radius: 4px;"
+                    unique-id="footer-emergency-btn">
                     <i class="fa-solid fa-triangle-exclamation"></i> 24/7 Roadside Assist
                 </button>
             </div>
         </div>
-        
+
         <div class="footer-bottom">
             <div class="footer-bottom-container">
                 <p>&copy; 2026 GarageLK. All rights reserved.</p>
@@ -302,7 +326,8 @@
                 </div>
                 <div class="form-group">
                     <label for="breakdown-city">Nearest City</label>
-                    <input type="text" id="breakdown-city" class="form-control" placeholder="Select or type district..." required list="districts-list" unique-id="breakdown-city-select">
+                    <input type="text" id="breakdown-city" class="form-control" placeholder="Select or type district..."
+                        required list="districts-list" unique-id="breakdown-city-select">
                 </div>
                 <div class="form-group">
                     <label for="breakdown-address">Current Address / Landmark</label>

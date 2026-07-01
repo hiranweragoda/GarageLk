@@ -1,12 +1,10 @@
 package com.garagefinder.controller;
 
 import com.garagefinder.model.Booking;
-import com.garagefinder.model.Customer;
 import com.garagefinder.model.Garage;
 import com.garagefinder.model.User;
 import com.garagefinder.model.Notification;
 import com.garagefinder.repository.BookingRepository;
-import com.garagefinder.repository.CustomerRepository;
 import com.garagefinder.repository.GarageRepository;
 import com.garagefinder.repository.NotificationRepository;
 import jakarta.servlet.http.HttpSession;
@@ -25,13 +23,11 @@ import java.util.Optional;
 public class BookingController {
 
     private final BookingRepository bookingRepository;
-    private final CustomerRepository customerRepository;
     private final GarageRepository garageRepository;
     private final NotificationRepository notificationRepository;
 
-    public BookingController(BookingRepository bookingRepository, CustomerRepository customerRepository, GarageRepository garageRepository, NotificationRepository notificationRepository) {
+    public BookingController(BookingRepository bookingRepository, GarageRepository garageRepository, NotificationRepository notificationRepository) {
         this.bookingRepository = bookingRepository;
-        this.customerRepository = customerRepository;
         this.garageRepository = garageRepository;
         this.notificationRepository = notificationRepository;
     }
@@ -42,11 +38,6 @@ public class BookingController {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
         if (user == null || !"CUSTOMER".equals(user.getRole())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Only customers can book services"));
-        }
-
-        Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-        if (customerOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Customer profile not found"));
         }
 
         if (payload.get("garageId") == null) {
@@ -84,7 +75,7 @@ public class BookingController {
             ));
         }
 
-        Booking booking = new Booking(customerOpt.get(), garageOpt.get(), serviceType, bookingDate, "PENDING", price, notes);
+        Booking booking = new Booking(user, garageOpt.get(), serviceType, bookingDate, "PENDING", price, notes);
         booking.setTimeSlot(timeSlot);
         booking.setVehicleNo(vehicleNo);
         booking.setVehicleType(vehicleType);
@@ -183,11 +174,8 @@ public class BookingController {
         }
 
         if ("CUSTOMER".equals(user.getRole())) {
-            Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-            if (customerOpt.isPresent()) {
-                List<Booking> bookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(customerOpt.get().getId());
-                return ResponseEntity.ok(bookings);
-            }
+            List<Booking> bookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(user.getId());
+            return ResponseEntity.ok(bookings);
         } else if ("GARAGE_OWNER".equals(user.getRole())) {
             List<Garage> garages = garageRepository.findByUserId(user.getId());
             if (!garages.isEmpty()) {
@@ -226,9 +214,8 @@ public class BookingController {
         if ("ADMIN".equals(user.getRole())) {
             authorized = true;
         } else if ("CUSTOMER".equals(user.getRole())) {
-            // Customer can only cancel bookings
-            Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-            if (customerOpt.isPresent() && booking.getCustomer().getId().equals(customerOpt.get().getId())) {
+            // Customer can only cancel bookings they own
+            if (booking.getCustomer().getId().equals(user.getId())) {
                 if ("CANCELLED".equals(newStatus)) {
                     authorized = true;
                 } else {
@@ -252,7 +239,7 @@ public class BookingController {
         bookingRepository.save(booking);
 
         try {
-            Long customerUserId = booking.getCustomer().getUser().getId();
+            Long customerUserId = booking.getCustomer().getId();
             String msg = String.format("Your booking request at %s has been %s. (Code: %s)",
                 booking.getGarage().getGarageName(), newStatus, booking.getBookingCode());
             notificationRepository.save(new Notification(customerUserId, msg));

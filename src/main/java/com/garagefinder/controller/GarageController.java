@@ -9,7 +9,7 @@ import com.garagefinder.repository.OfferedServiceRepository;
 import com.garagefinder.repository.ReviewRepository;
 import com.garagefinder.repository.UserRepository;
 import com.garagefinder.repository.MechanicRepository;
-import com.garagefinder.repository.CustomerRepository;
+
 import com.garagefinder.repository.NotificationRepository;
 import com.garagefinder.model.Notification;
 import jakarta.servlet.http.HttpSession;
@@ -37,7 +37,6 @@ public class GarageController {
     private final BookingRepository bookingRepository;
     private final BreakdownRequestRepository breakdownRequestRepository;
     private final MechanicRepository mechanicRepository;
-    private final CustomerRepository customerRepository;
     private final NotificationRepository notificationRepository;
 
     public GarageController(
@@ -48,7 +47,6 @@ public class GarageController {
             BookingRepository bookingRepository,
             BreakdownRequestRepository breakdownRequestRepository,
             MechanicRepository mechanicRepository,
-            CustomerRepository customerRepository,
             NotificationRepository notificationRepository) {
         this.garageRepository = garageRepository;
         this.offeredServiceRepository = offeredServiceRepository;
@@ -57,14 +55,13 @@ public class GarageController {
         this.bookingRepository = bookingRepository;
         this.breakdownRequestRepository = breakdownRequestRepository;
         this.mechanicRepository = mechanicRepository;
-        this.customerRepository = customerRepository;
         this.notificationRepository = notificationRepository;
     }
 
     @GetMapping("/stats")
     public ResponseEntity<?> getStats() {
         long verifiedGarages = garageRepository.countByStatus("APPROVED");
-        long customers = customerRepository.count();
+        long customers = userRepository.countByRole("CUSTOMER");
         long bookings = bookingRepository.count();
 
         Map<String, Object> stats = new HashMap<>();
@@ -134,7 +131,7 @@ public class GarageController {
             rMap.put("createdAt", r.getCreatedAt());
 
             Map<String, Object> uMap = new HashMap<>();
-            User u = r.getCustomer().getUser();
+            User u = r.getCustomer();
             uMap.put("username", u.getUsername());
             uMap.put("fullName", u.getFullName());
             rMap.put("user", uMap);

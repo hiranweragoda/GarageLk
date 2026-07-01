@@ -15,15 +15,12 @@ public class ShopReviewController {
 
     private final ShopReviewRepository reviewRepository;
     private final SparePartBookingRepository bookingRepository;
-    private final CustomerRepository customerRepository;
 
     public ShopReviewController(
             ShopReviewRepository reviewRepository,
-            SparePartBookingRepository bookingRepository,
-            CustomerRepository customerRepository) {
+            SparePartBookingRepository bookingRepository) {
         this.reviewRepository = reviewRepository;
         this.bookingRepository = bookingRepository;
-        this.customerRepository = customerRepository;
     }
 
     // Submit a review for a shop (Customer only, for a PICKED_UP booking)
@@ -32,11 +29,6 @@ public class ShopReviewController {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
         if (user == null || !"CUSTOMER".equals(user.getRole())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Only customers can submit shop reviews"));
-        }
-
-        Optional<Customer> customerOpt = customerRepository.findByUserId(user.getId());
-        if (customerOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Customer profile not found"));
         }
 
         if (payload.get("bookingId") == null) {
@@ -56,7 +48,7 @@ public class ShopReviewController {
         }
 
         // Ensure this customer owns this booking
-        if (!booking.getCustomer().getId().equals(customerOpt.get().getId())) {
+        if (!booking.getCustomer().getId().equals(user.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
         }
 
@@ -77,7 +69,7 @@ public class ShopReviewController {
 
         String comment = payload.get("comment") != null ? payload.get("comment").toString().trim() : "";
 
-        ShopReview review = new ShopReview(customerOpt.get(), booking.getSparePart().getShop(), booking, starRating, comment);
+        ShopReview review = new ShopReview(user, booking.getSparePart().getShop(), booking, starRating, comment);
         reviewRepository.save(review);
 
         return ResponseEntity.ok(Map.of("message", "Shop review submitted successfully!"));
@@ -96,7 +88,7 @@ public class ShopReviewController {
             item.put("rating", r.getStarRating());
             item.put("comment", r.getComment());
             item.put("createdAt", r.getCreatedAt());
-            item.put("customerName", r.getCustomer().getUser().getUsername());
+            item.put("customerName", r.getCustomer().getUsername());
             item.put("partName", r.getSparePartBooking().getSparePart().getPartName());
             result.add(item);
         }

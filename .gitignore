@@ -28,3 +28,4 @@ yarn-error.log
 
 # Uploaded Files
 /uploads/
+*.log

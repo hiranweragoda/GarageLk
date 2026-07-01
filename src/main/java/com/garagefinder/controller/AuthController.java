@@ -16,7 +16,6 @@ import java.util.*;
 public class AuthController {
 
     private final UserRepository userRepository;
-    private final CustomerRepository customerRepository;
     private final GarageRepository garageRepository;
     private final SparePartShopRepository shopRepository;
     private final SparePartRepository partRepository;
@@ -28,7 +27,6 @@ public class AuthController {
 
     public AuthController(
             UserRepository userRepository,
-            CustomerRepository customerRepository,
             GarageRepository garageRepository,
             SparePartShopRepository shopRepository,
             SparePartRepository partRepository,
@@ -38,7 +36,6 @@ public class AuthController {
             MechanicRepository mechanicRepository,
             OfferedServiceRepository offeredServiceRepository) {
         this.userRepository = userRepository;
-        this.customerRepository = customerRepository;
         this.garageRepository = garageRepository;
         this.shopRepository = shopRepository;
         this.partRepository = partRepository;
@@ -56,19 +53,13 @@ public class AuthController {
         String fullName = payload.get("fullName");
         String email = payload.get("email");
         String phone = payload.get("phone");
-        String vehicleNo = payload.get("vehicleNo");
-        String vehicleType = payload.get("vehicleType");
-        String fuelType = payload.get("fuelType");
 
         if (userRepository.findByUsername(username).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Username is already taken"));
         }
 
         User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
-        user = userRepository.save(user);
-
-        Customer customer = new Customer(user, vehicleNo, vehicleType, fuelType);
-        customerRepository.save(customer);
+        userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "Customer registered successfully"));
     }
@@ -103,9 +94,7 @@ public class AuthController {
         } else {
             // Default: customer
             User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
-            user = userRepository.save(user);
-            Customer customer = new Customer(user, null, null, null);
-            customerRepository.save(customer);
+            userRepository.save(user);
             return ResponseEntity.ok(Map.of("message", "Account created successfully!"));
         }
     }
@@ -150,7 +139,7 @@ public class AuthController {
 
         // Garage owner: active initially so they can log in and submit their garage profile
         User user = new User(username, HashUtil.hashPassword(password), email, phone, "GARAGE_OWNER", true);
-        user = userRepository.save(user);
+        userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
     }
@@ -327,26 +316,15 @@ public class AuthController {
             shopRepository.delete(s);
         }
 
-        // 3. CUSTOMER cleanup
-        Optional<Customer> customerOpt = customerRepository.findByUserId(userId);
-        if (customerOpt.isPresent()) {
-            Customer customer = customerOpt.get();
-            // Delete reviews
-            List<Review> reviews = reviewRepository.findAll();
-            for (Review r : reviews) {
-                if (r.getCustomer().getId().equals(customer.getId())) {
-                    reviewRepository.delete(r);
-                }
-            }
-            // Delete bookings
-            List<Booking> bookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(customer.getId());
-            bookingRepository.deleteAll(bookings);
-            // Delete breakdown requests
-            List<BreakdownRequest> breakdowns = breakdownRequestRepository.findByCustomerIdOrderByCreatedTimeDesc(customer.getId());
-            breakdownRequestRepository.deleteAll(breakdowns);
-            // Delete customer
-            customerRepository.delete(customer);
-        }
+        // 3. CUSTOMER cleanup — delete bookings, reviews, breakdown requests directly by user id
+        List<Review> customerReviews = reviewRepository.findByCustomerId(userId);
+        reviewRepository.deleteAll(customerReviews);
+
+        List<Booking> customerBookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(userId);
+        bookingRepository.deleteAll(customerBookings);
+
+        List<BreakdownRequest> customerBreakdowns = breakdownRequestRepository.findByCustomerIdOrderByCreatedTimeDesc(userId);
+        breakdownRequestRepository.deleteAll(customerBreakdowns);
 
         // Finally, delete the user
         userRepository.delete(user);
