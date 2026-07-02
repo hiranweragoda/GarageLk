@@ -157,7 +157,7 @@
 
             try {
                 // Call backend to fetch matching providers in this district
-                const mockQuery = `Show me ${chatState.type === 'garage' ? 'garages' : 'shops'} in ${districtVal}`;
+                const mockQuery = `List all approved ${chatState.type === 'garage' ? 'garages' : 'spare part shops'} in ${districtVal} district`;
                 const response = await fetch('/api/chatbot/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -181,8 +181,8 @@
                     
                     if (chatState.type === 'garage') {
                         chatState.step = 'await_query';
-                        appendBubble('assistant', "What specific **Service** do you need? Type it below!");
-                        textInput.placeholder = "Enter service (e.g. General Service, Wheel Alignment)";
+                        appendBubble('assistant', "Now, what **service** do you need? (e.g. Oil Change, Wheel Alignment, Brake Repair)\n\nසිංහල: ඔබට අවශ්‍ය service එකේ නම type කරන්න. (e.g. oil change, brake, service)");
+                        textInput.placeholder = "e.g. Oil Change / Wheel Alignment / Brake Repair";
                     } else {
                         chatState.step = 'await_part_name';
                         appendBubble('assistant', "What specific **Spare Part** do you need? Please enter the part name (e.g., Brake Pad, Alternator):");
