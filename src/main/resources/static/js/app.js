@@ -200,17 +200,26 @@
             const tabSignup = document.getElementById('tab-signup');
             const formLogin = document.getElementById('form-login');
             const formSignup = document.getElementById('form-signup');
+            const formForgot = document.getElementById('form-forgot');
 
             if (tab === 'login') {
                 tabLogin.classList.add('active');
                 tabSignup.classList.remove('active');
                 formLogin.style.display = 'block';
                 formSignup.style.display = 'none';
+                if (formForgot) formForgot.style.display = 'none';
+            } else if (tab === 'forgot') {
+                tabLogin.classList.remove('active');
+                tabSignup.classList.remove('active');
+                formLogin.style.display = 'none';
+                formSignup.style.display = 'none';
+                if (formForgot) formForgot.style.display = 'block';
             } else {
                 tabSignup.classList.add('active');
                 tabLogin.classList.remove('active');
                 formSignup.style.display = 'block';
                 formLogin.style.display = 'none';
+                if (formForgot) formForgot.style.display = 'none';
             }
         },
 
@@ -351,6 +360,52 @@
             } catch (err) {
                 console.error("Registration failed:", err);
                 this.showToast('Connection error', 'error');
+            }
+        },
+
+        async handleForgotPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value.trim();
+            const newPassword = document.getElementById('forgot-new-password').value;
+            const confirmPassword = document.getElementById('forgot-confirm-password').value;
+
+            if (!email) {
+                this.showToast('Please enter your email address', 'error');
+                return;
+            }
+            if (!newPassword || newPassword.length < 4) {
+                this.showToast('Password must be at least 4 characters', 'error');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                this.showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, newPassword })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    this.showToast(data.message || 'Password reset successfully!', 'success');
+                    // Clear the form
+                    document.getElementById('forgot-email').value = '';
+                    document.getElementById('forgot-new-password').value = '';
+                    document.getElementById('forgot-confirm-password').value = '';
+                    // Switch back to login after a short delay
+                    setTimeout(() => {
+                        this.switchAuthTab('login');
+                    }, 2000);
+                } else {
+                    this.showToast(data.message || 'Password reset failed', 'error');
+                }
+            } catch (err) {
+                console.error("Password reset failed:", err);
+                this.showToast('Connection error. Please try again.', 'error');
             }
         },
 

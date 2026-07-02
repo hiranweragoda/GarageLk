@@ -82,15 +82,19 @@ public class AuthController {
         }
 
         if ("OWNER".equalsIgnoreCase(role) || "GARAGE_OWNER".equalsIgnoreCase(role)) {
-            // Garage owner: active initially so they can log in and submit their garage profile
-            User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "GARAGE_OWNER", true);
+            // Garage owner: active initially so they can log in and submit their garage
+            // profile
+            User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "GARAGE_OWNER",
+                    true);
             userRepository.save(user);
-            return ResponseEntity.ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
+            return ResponseEntity
+                    .ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
         } else if ("SHOP_OWNER".equalsIgnoreCase(role)) {
             // Spare Part seller
             User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "SHOP_OWNER", true);
             userRepository.save(user);
-            return ResponseEntity.ok(Map.of("message", "Shop owner account created. Please sign in to register your spare part shop."));
+            return ResponseEntity.ok(
+                    Map.of("message", "Shop owner account created. Please sign in to register your spare part shop."));
         } else {
             // Default: customer
             User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
@@ -137,11 +141,13 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", "Username is already taken"));
         }
 
-        // Garage owner: active initially so they can log in and submit their garage profile
+        // Garage owner: active initially so they can log in and submit their garage
+        // profile
         User user = new User(username, HashUtil.hashPassword(password), email, phone, "GARAGE_OWNER", true);
         userRepository.save(user);
 
-        return ResponseEntity.ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
+        return ResponseEntity
+                .ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
     }
 
     @PostMapping("/login")
@@ -151,16 +157,19 @@ public class AuthController {
 
         Optional<User> userOpt = userRepository.findByUsername(username);
         if (userOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid username or password"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid username or password"));
         }
 
         User user = userOpt.get();
         if (!user.getPassword().equals(HashUtil.hashPassword(password))) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid username or password"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid username or password"));
         }
 
         if (!user.isActive()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Your account has been deactivated."));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Your account has been deactivated."));
         }
 
         session.setAttribute("LOGGED_IN_USER", user);
@@ -252,6 +261,36 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String newPassword = payload.get("newPassword");
+
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "New password is required"));
+        }
+        if (newPassword.length() < 4) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Password must be at least 4 characters"));
+        }
+
+        List<User> users = userRepository.findByEmail(email.trim());
+        if (users.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "No account found with that email address"));
+        }
+
+        for (User user : users) {
+            user.setPassword(HashUtil.hashPassword(newPassword));
+            userRepository.save(user);
+        }
+
+        return ResponseEntity
+                .ok(Map.of("message", "Password has been reset successfully. Please sign in with your new password."));
+    }
+
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers(HttpSession session) {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
@@ -316,14 +355,16 @@ public class AuthController {
             shopRepository.delete(s);
         }
 
-        // 3. CUSTOMER cleanup — delete bookings, reviews, breakdown requests directly by user id
+        // 3. CUSTOMER cleanup — delete bookings, reviews, breakdown requests directly
+        // by user id
         List<Review> customerReviews = reviewRepository.findByCustomerId(userId);
         reviewRepository.deleteAll(customerReviews);
 
         List<Booking> customerBookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(userId);
         bookingRepository.deleteAll(customerBookings);
 
-        List<BreakdownRequest> customerBreakdowns = breakdownRequestRepository.findByCustomerIdOrderByCreatedTimeDesc(userId);
+        List<BreakdownRequest> customerBreakdowns = breakdownRequestRepository
+                .findByCustomerIdOrderByCreatedTimeDesc(userId);
         breakdownRequestRepository.deleteAll(customerBreakdowns);
 
         // Finally, delete the user

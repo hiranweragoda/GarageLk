@@ -293,7 +293,7 @@ public class ChatbotController {
 
         // Check if greeting
         if (msgLower.matches(
-                ".*\\b(hello|hi|hey|heyy|greeting|good morning|good afternoon|good evening|wassup|yo|hello chatbot|halo)\\b.*")) {
+                ".*\\b(hello|hi|hey|heyy|greeting|good morning|good afternoon|good evening|wassup|yo|hello chatbot|halo)\\b.*")) { // cSpell:disable-line
             res.put("reply", "Hello! I am your GarageLK Assistant. How can I help you today?");
             return res;
         }
