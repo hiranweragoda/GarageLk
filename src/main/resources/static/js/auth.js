@@ -88,11 +88,11 @@ const auth = {
 
     async handleLogin(event) {
         event.preventDefault();
-        const username = document.getElementById('login-username').value;
+        const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
 
         try {
-            const data = await app.post('/api/auth/login', { username, password });
+            const data = await app.post('/api/auth/login', { username: email, password });
             if (data && data.user) {
                 app.user = data.user;
                 app.role = data.user.role;
@@ -107,10 +107,10 @@ const auth = {
     async handleRegister(event) {
         event.preventDefault();
         
-        const username = document.getElementById('reg-username').value;
         const password = document.getElementById('reg-password').value;
         const email = document.getElementById('reg-email').value;
         const phone = document.getElementById('reg-phone').value;
+        const username = email;
 
         let payload = { username, password, email, phone };
 

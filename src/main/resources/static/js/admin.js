@@ -122,7 +122,7 @@ const admin = {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${u.id}</td>
-                        <td style="font-weight: 600;">${u.username}</td>
+                        <td style="font-weight: 600;">${u.fullName || u.email}</td>
                         <td>${u.email}</td>
                         <td>${u.phone || '-'}</td>
                         <td><span style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">${u.role}</span></td>

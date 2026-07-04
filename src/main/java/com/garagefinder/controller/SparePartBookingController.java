@@ -51,7 +51,7 @@ public class SparePartBookingController {
         User cust = b.getCustomer();
         if (cust != null) {
             userMap.put("id", cust.getId());
-            userMap.put("username", cust.getUsername());
+            userMap.put("username", cust.getEmail());
             userMap.put("fullName", cust.getFullName());
             userMap.put("email", cust.getEmail());
             userMap.put("phone", cust.getPhone());

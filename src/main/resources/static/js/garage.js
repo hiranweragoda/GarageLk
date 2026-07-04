@@ -51,7 +51,7 @@ const garage = {
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="font-weight: 600;">${b.customer.user.username}</td>
+                <td style="font-weight: 600;">${b.customer.user.fullName || b.customer.user.email}</td>
                 <td>
                     <div style="font-weight: 500;">${b.customer.vehicleType}</div>
                     <div style="font-size: 0.8rem; color: var(--text-muted);">${b.customer.vehicleNo} (${b.customer.fuelType})</div>
@@ -181,7 +181,7 @@ const garage = {
                 <div style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 14px;">"${em.description}"</div>
 
                 <div style="font-size: 0.85rem; border-top: 1px solid var(--border-color); padding-top: 12px; margin-bottom: 14px;">
-                    <div>👤 Customer: <strong>${em.customer.user.username}</strong></div>
+                    <div>👤 Customer: <strong>${em.customer.user.fullName || em.customer.user.email}</strong></div>
                     <div>🚗 Vehicle: ${em.customer.vehicleType} — ${em.customer.vehicleNo} (${em.customer.fuelType})</div>
                     <div>📞 Phone: <a href="tel:${em.contactPhone}" style="color: var(--color-primary); font-weight: 600;">${em.contactPhone}</a></div>
                 </div>

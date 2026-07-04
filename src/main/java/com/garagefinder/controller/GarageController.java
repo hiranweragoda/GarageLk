@@ -132,7 +132,7 @@ public class GarageController {
 
             Map<String, Object> uMap = new HashMap<>();
             User u = r.getCustomer();
-            uMap.put("username", u.getUsername());
+            uMap.put("username", u.getEmail());
             uMap.put("fullName", u.getFullName());
             rMap.put("user", uMap);
 
@@ -436,7 +436,7 @@ public class GarageController {
                 : true;
 
         Garage garage = new Garage(managedUser, name,
-                managedUser.getFullName() != null ? managedUser.getFullName() : managedUser.getUsername(), description,
+                managedUser.getFullName() != null ? managedUser.getFullName() : managedUser.getEmail(), description,
                 address, city, district, latitude, longitude);
         garage.setImageUrl(imageUrl);
         garage.setPhone(phone);

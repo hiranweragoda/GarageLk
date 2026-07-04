@@ -88,7 +88,7 @@ public class ShopReviewController {
             item.put("rating", r.getStarRating());
             item.put("comment", r.getComment());
             item.put("createdAt", r.getCreatedAt());
-            item.put("customerName", r.getCustomer().getUsername());
+            item.put("customerName", r.getCustomer().getFullName() != null ? r.getCustomer().getFullName() : r.getCustomer().getEmail());
             item.put("partName", r.getSparePartBooking().getSparePart().getPartName());
             result.add(item);
         }

@@ -42,9 +42,10 @@ public class SearchController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Booking not found"));
             }
             Booking b = bookingOpt.get();
-            // Validate if GARAGE_OWNER owns the garage for this booking, or ADMIN
+            // Validate if GARAGE_OWNER owns the garage for this booking, or CUSTOMER who made the booking, or ADMIN
             boolean isAuthorized = "ADMIN".equals(user.getRole()) ||
-                    ("GARAGE_OWNER".equals(user.getRole()) && b.getGarage().getUser().getId().equals(user.getId()));
+                    ("GARAGE_OWNER".equals(user.getRole()) && b.getGarage().getUser().getId().equals(user.getId())) ||
+                    ("CUSTOMER".equals(user.getRole()) && b.getCustomer().getId().equals(user.getId()));
 
             if (!isAuthorized) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
@@ -68,7 +69,7 @@ public class SearchController {
             
             // Customer user details
             User customerUser = b.getCustomer();
-            details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getUsername());
+            details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getEmail());
             details.put("customerPhone", customerUser.getPhone());
             details.put("customerEmail", customerUser.getEmail());
 
@@ -80,9 +81,10 @@ public class SearchController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Spare part reservation not found"));
             }
             SparePartBooking b = spbOpt.get();
-            // Validate if SHOP_OWNER owns the shop for this part booking, or ADMIN
+            // Validate if SHOP_OWNER owns the shop for this part booking, or CUSTOMER who reserved the parts, or ADMIN
             boolean isAuthorized = "ADMIN".equals(user.getRole()) ||
-                    ("SHOP_OWNER".equals(user.getRole()) && b.getSparePart().getShop().getUser().getId().equals(user.getId()));
+                    ("SHOP_OWNER".equals(user.getRole()) && b.getSparePart().getShop().getUser().getId().equals(user.getId())) ||
+                    ("CUSTOMER".equals(user.getRole()) && b.getCustomer().getId().equals(user.getId()));
 
             if (!isAuthorized) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
@@ -104,7 +106,7 @@ public class SearchController {
 
             // Customer user details
             User customerUser = b.getCustomer();
-            details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getUsername());
+            details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getEmail());
             details.put("customerPhone", customerUser.getPhone());
             details.put("customerEmail", customerUser.getEmail());
 
@@ -122,7 +124,8 @@ public class SearchController {
                     ("GARAGE_OWNER".equals(user.getRole()) && (
                             "OPEN".equals(b.getStatus()) || 
                             (b.getAssignedGarage() != null && b.getAssignedGarage().getUser().getId().equals(user.getId()))
-                    ));
+                    )) ||
+                    ("CUSTOMER".equals(user.getRole()) && b.getCustomer().getId().equals(user.getId()));
 
             if (!isAuthorized) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
@@ -153,7 +156,7 @@ public class SearchController {
 
             // Customer user details
             User customerUser = b.getCustomer();
-            details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getUsername());
+            details.put("customerName", customerUser.getFullName() != null ? customerUser.getFullName() : customerUser.getEmail());
             details.put("customerPhone", customerUser.getPhone());
             details.put("customerEmail", customerUser.getEmail());
 

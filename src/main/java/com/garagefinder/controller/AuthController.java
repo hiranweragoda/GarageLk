@@ -48,17 +48,20 @@ public class AuthController {
 
     @PostMapping("/register/customer")
     public ResponseEntity<?> registerCustomer(@RequestBody Map<String, String> payload) {
-        String username = payload.get("username");
+        String email = payload.get("email");
         String password = payload.get("password");
         String fullName = payload.get("fullName");
-        String email = payload.get("email");
         String phone = payload.get("phone");
 
-        if (userRepository.findByUsername(username).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Username is already taken"));
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
         }
 
-        User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
+        if (userRepository.findByEmail(email.trim()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is already registered"));
+        }
+
+        User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "Customer registered successfully"));
@@ -67,37 +70,33 @@ public class AuthController {
     // Unified register endpoint used by the frontend auth form
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
-        String username = payload.get("username");
+        String email = payload.get("email");
         String password = payload.get("password");
         String fullName = payload.get("fullName");
-        String email = payload.get("email");
         String phone = payload.get("phone");
         String role = payload.get("role"); // "CUSTOMER" or "OWNER"
 
-        if (username == null || username.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Username is required"));
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
         }
-        if (userRepository.findByUsername(username).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Username is already taken"));
+
+        if (userRepository.findByEmail(email.trim()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is already registered"));
         }
 
         if ("OWNER".equalsIgnoreCase(role) || "GARAGE_OWNER".equalsIgnoreCase(role)) {
-            // Garage owner: active initially so they can log in and submit their garage
-            // profile
-            User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "GARAGE_OWNER",
-                    true);
+            // Garage owner: active initially so they can log in and submit their garage profile
+            User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "GARAGE_OWNER", true);
             userRepository.save(user);
-            return ResponseEntity
-                    .ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
+            return ResponseEntity.ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
         } else if ("SHOP_OWNER".equalsIgnoreCase(role)) {
             // Spare Part seller
-            User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "SHOP_OWNER", true);
+            User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "SHOP_OWNER", true);
             userRepository.save(user);
-            return ResponseEntity.ok(
-                    Map.of("message", "Shop owner account created. Please sign in to register your spare part shop."));
+            return ResponseEntity.ok(Map.of("message", "Shop owner account created. Please sign in to register your spare part shop."));
         } else {
             // Default: customer
-            User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
+            User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
             userRepository.save(user);
             return ResponseEntity.ok(Map.of("message", "Account created successfully!"));
         }
@@ -110,21 +109,20 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        String username = payload.get("username");
+        String email = payload.get("email");
         String password = payload.get("password");
         String fullName = payload.get("fullName");
-        String email = payload.get("email");
         String phone = payload.get("phone");
 
-        if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Username and password are required"));
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email and password are required"));
         }
 
-        if (userRepository.findByUsername(username).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Username is already taken"));
+        if (userRepository.findByEmail(email.trim()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is already registered"));
         }
 
-        User user = new User(username, HashUtil.hashPassword(password), fullName, email, phone, "ADMIN", true);
+        User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "ADMIN", true);
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "Admin registered successfully"));
@@ -132,33 +130,38 @@ public class AuthController {
 
     @PostMapping("/register/garage")
     public ResponseEntity<?> registerGarage(@RequestBody Map<String, String> payload) {
-        String username = payload.get("username");
-        String password = payload.get("password");
         String email = payload.get("email");
+        String password = payload.get("password");
         String phone = payload.get("phone");
 
-        if (userRepository.findByUsername(username).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Username is already taken"));
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email and password are required"));
         }
 
-        // Garage owner: active initially so they can log in and submit their garage
-        // profile
-        User user = new User(username, HashUtil.hashPassword(password), email, phone, "GARAGE_OWNER", true);
+        if (userRepository.findByEmail(email.trim()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is already registered"));
+        }
+
+        // Garage owner: active initially so they can log in and submit their garage profile
+        User user = new User(HashUtil.hashPassword(password), email, phone, "GARAGE_OWNER", true);
         userRepository.save(user);
 
-        return ResponseEntity
-                .ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
+        return ResponseEntity.ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload, HttpSession session) {
-        String username = payload.get("username");
+        String emailOrUsername = payload.containsKey("email") ? payload.get("email") : payload.get("username");
         String password = payload.get("password");
 
-        Optional<User> userOpt = userRepository.findByUsername(username);
+        Optional<User> userOpt = Optional.empty();
+        if (emailOrUsername != null && !emailOrUsername.isBlank()) {
+            userOpt = userRepository.findByEmail(emailOrUsername.trim());
+        }
+
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid username or password"));
+                    .body(Map.of("message", "Invalid email or password"));
         }
 
         User user = userOpt.get();
@@ -177,8 +180,8 @@ public class AuthController {
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Login successful");
         response.put("id", user.getId());
-        response.put("username", user.getUsername());
-        response.put("fullName", user.getFullName() != null ? user.getFullName() : user.getUsername());
+        response.put("username", user.getEmail());
+        response.put("fullName", user.getFullName() != null ? user.getFullName() : user.getEmail());
         response.put("email", user.getEmail());
         response.put("phone", user.getPhone());
         response.put("role", user.getRole());
@@ -204,8 +207,8 @@ public class AuthController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
-        response.put("username", user.getUsername());
-        response.put("fullName", user.getFullName() != null ? user.getFullName() : user.getUsername());
+        response.put("username", user.getEmail());
+        response.put("fullName", user.getFullName() != null ? user.getFullName() : user.getEmail());
         response.put("email", user.getEmail());
         response.put("phone", user.getPhone());
         response.put("role", user.getRole());
@@ -232,7 +235,11 @@ public class AuthController {
         String password = payload.get("password");
 
         if (email != null && !email.isBlank()) {
-            user.setEmail(email);
+            Optional<User> existing = userRepository.findByEmail(email.trim());
+            if (existing.isPresent() && !existing.get().getId().equals(user.getId())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Email is already registered by another account"));
+            }
+            user.setEmail(email.trim());
         }
         if (phone != null && !phone.isBlank()) {
             user.setPhone(phone);
@@ -251,8 +258,8 @@ public class AuthController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
-        response.put("username", user.getUsername());
-        response.put("fullName", user.getFullName() != null ? user.getFullName() : user.getUsername());
+        response.put("username", user.getEmail());
+        response.put("fullName", user.getFullName() != null ? user.getFullName() : user.getEmail());
         response.put("email", user.getEmail());
         response.put("phone", user.getPhone());
         response.put("role", user.getRole());
@@ -276,16 +283,15 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", "Password must be at least 4 characters"));
         }
 
-        List<User> users = userRepository.findByEmail(email.trim());
-        if (users.isEmpty()) {
+        Optional<User> userOpt = userRepository.findByEmail(email.trim());
+        if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("message", "No account found with that email address"));
         }
 
-        for (User user : users) {
-            user.setPassword(HashUtil.hashPassword(newPassword));
-            userRepository.save(user);
-        }
+        User user = userOpt.get();
+        user.setPassword(HashUtil.hashPassword(newPassword));
+        userRepository.save(user);
 
         return ResponseEntity
                 .ok(Map.of("message", "Password has been reset successfully. Please sign in with your new password."));

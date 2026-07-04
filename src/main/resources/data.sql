@@ -1,42 +1,184 @@
 -- Seed data for Garage Finder Sri Lanka
 
+-- Reorder table columns to match ERD diagram layout exactly (without username column and without customers table)
+ALTER TABLE users MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE users MODIFY COLUMN email varchar(255) NOT NULL AFTER id;
+ALTER TABLE users MODIFY COLUMN is_active bit(1) NOT NULL AFTER email;
+ALTER TABLE users MODIFY COLUMN password varchar(255) NOT NULL AFTER is_active;
+ALTER TABLE users MODIFY COLUMN phone varchar(255) NULL AFTER password;
+ALTER TABLE users MODIFY COLUMN role varchar(255) NOT NULL AFTER phone;
+ALTER TABLE users MODIFY COLUMN full_name varchar(255) NULL AFTER role;
+
+ALTER TABLE garages MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE garages MODIFY COLUMN address varchar(255) NOT NULL AFTER id;
+ALTER TABLE garages MODIFY COLUMN city varchar(255) NOT NULL AFTER address;
+ALTER TABLE garages MODIFY COLUMN description text NULL AFTER city;
+ALTER TABLE garages MODIFY COLUMN district varchar(255) NOT NULL AFTER description;
+ALTER TABLE garages MODIFY COLUMN engine_types varchar(255) NULL AFTER district;
+ALTER TABLE garages MODIFY COLUMN garage_name varchar(255) NOT NULL AFTER engine_types;
+ALTER TABLE garages MODIFY COLUMN latitude double NULL AFTER garage_name;
+ALTER TABLE garages MODIFY COLUMN longitude double NULL AFTER latitude;
+ALTER TABLE garages MODIFY COLUMN owner_name varchar(255) NOT NULL AFTER longitude;
+ALTER TABLE garages MODIFY COLUMN status varchar(255) NOT NULL AFTER owner_name;
+ALTER TABLE garages MODIFY COLUMN vehicle_types varchar(255) NULL AFTER status;
+ALTER TABLE garages MODIFY COLUMN user_id bigint NOT NULL AFTER vehicle_types;
+ALTER TABLE garages MODIFY COLUMN email varchar(255) NULL AFTER user_id;
+ALTER TABLE garages MODIFY COLUMN image_url varchar(255) NULL AFTER email;
+ALTER TABLE garages MODIFY COLUMN phone varchar(255) NULL AFTER image_url;
+ALTER TABLE garages MODIFY COLUMN close_time varchar(255) NULL AFTER phone;
+ALTER TABLE garages MODIFY COLUMN open_days varchar(255) NULL AFTER close_time;
+ALTER TABLE garages MODIFY COLUMN open_time varchar(255) NULL AFTER open_days;
+ALTER TABLE garages MODIFY COLUMN open_today bit(1) NULL AFTER open_time;
+ALTER TABLE garages MODIFY COLUMN business_reg_no varchar(255) NULL AFTER open_today;
+
+ALTER TABLE spare_part_shops MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE spare_part_shops MODIFY COLUMN address varchar(255) NOT NULL AFTER id;
+ALTER TABLE spare_part_shops MODIFY COLUMN city varchar(255) NOT NULL AFTER address;
+ALTER TABLE spare_part_shops MODIFY COLUMN description text NULL AFTER city;
+ALTER TABLE spare_part_shops MODIFY COLUMN district varchar(255) NOT NULL AFTER description;
+ALTER TABLE spare_part_shops MODIFY COLUMN email varchar(255) NULL AFTER district;
+ALTER TABLE spare_part_shops MODIFY COLUMN image_url varchar(255) NULL AFTER email;
+ALTER TABLE spare_part_shops MODIFY COLUMN latitude double NULL AFTER image_url;
+ALTER TABLE spare_part_shops MODIFY COLUMN longitude double NULL AFTER latitude;
+ALTER TABLE spare_part_shops MODIFY COLUMN owner_name varchar(255) NOT NULL AFTER longitude;
+ALTER TABLE spare_part_shops MODIFY COLUMN phone varchar(255) NULL AFTER owner_name;
+ALTER TABLE spare_part_shops MODIFY COLUMN shop_name varchar(255) NOT NULL AFTER phone;
+ALTER TABLE spare_part_shops MODIFY COLUMN status varchar(255) NOT NULL AFTER shop_name;
+ALTER TABLE spare_part_shops MODIFY COLUMN user_id bigint NOT NULL AFTER status;
+ALTER TABLE spare_part_shops MODIFY COLUMN close_time varchar(255) NULL AFTER user_id;
+ALTER TABLE spare_part_shops MODIFY COLUMN open_days varchar(255) NULL AFTER close_time;
+ALTER TABLE spare_part_shops MODIFY COLUMN open_time varchar(255) NULL AFTER open_days;
+ALTER TABLE spare_part_shops MODIFY COLUMN open_today bit(1) NULL AFTER open_time;
+ALTER TABLE spare_part_shops MODIFY COLUMN business_reg_no varchar(255) NULL AFTER open_today;
+
+ALTER TABLE spare_parts MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE spare_parts MODIFY COLUMN part_name varchar(255) NOT NULL AFTER id;
+ALTER TABLE spare_parts MODIFY COLUMN price double NOT NULL AFTER part_name;
+ALTER TABLE spare_parts MODIFY COLUMN quantity int NOT NULL AFTER price;
+ALTER TABLE spare_parts MODIFY COLUMN status varchar(255) NOT NULL AFTER quantity;
+ALTER TABLE spare_parts MODIFY COLUMN vehicle_model varchar(255) NOT NULL AFTER status;
+ALTER TABLE spare_parts MODIFY COLUMN vehicle_year int NOT NULL AFTER vehicle_model;
+ALTER TABLE spare_parts MODIFY COLUMN shop_id bigint NOT NULL AFTER vehicle_year;
+ALTER TABLE spare_parts MODIFY COLUMN image_url varchar(255) NULL AFTER shop_id;
+
+ALTER TABLE mechanics MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE mechanics MODIFY COLUMN name varchar(255) NOT NULL AFTER id;
+ALTER TABLE mechanics MODIFY COLUMN phone varchar(255) NOT NULL AFTER name;
+ALTER TABLE mechanics MODIFY COLUMN specialization varchar(255) NULL AFTER phone;
+ALTER TABLE mechanics MODIFY COLUMN status varchar(255) NOT NULL AFTER specialization;
+ALTER TABLE mechanics MODIFY COLUMN garage_id bigint NOT NULL AFTER status;
+ALTER TABLE mechanics MODIFY COLUMN active bit(1) NOT NULL AFTER garage_id;
+
+ALTER TABLE offered_services MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE offered_services MODIFY COLUMN price double NOT NULL AFTER id;
+ALTER TABLE offered_services MODIFY COLUMN service_type varchar(255) NOT NULL AFTER price;
+ALTER TABLE offered_services MODIFY COLUMN garage_id bigint NOT NULL AFTER service_type;
+ALTER TABLE offered_services MODIFY COLUMN description varchar(500) NULL AFTER garage_id;
+
+ALTER TABLE notifications MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE notifications MODIFY COLUMN created_at datetime(6) NOT NULL AFTER id;
+ALTER TABLE notifications MODIFY COLUMN is_read bit(1) NOT NULL AFTER created_at;
+ALTER TABLE notifications MODIFY COLUMN message varchar(500) NOT NULL AFTER is_read;
+ALTER TABLE notifications MODIFY COLUMN user_id bigint NOT NULL AFTER message;
+
+ALTER TABLE breakdown_requests MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE breakdown_requests MODIFY COLUMN contact_phone varchar(255) NOT NULL AFTER id;
+ALTER TABLE breakdown_requests MODIFY COLUMN created_time datetime(6) NOT NULL AFTER contact_phone;
+ALTER TABLE breakdown_requests MODIFY COLUMN description text NOT NULL AFTER created_time;
+ALTER TABLE breakdown_requests MODIFY COLUMN latitude double NULL AFTER description;
+ALTER TABLE breakdown_requests MODIFY COLUMN location_city varchar(255) NOT NULL AFTER latitude;
+ALTER TABLE breakdown_requests MODIFY COLUMN longitude double NULL AFTER location_city;
+ALTER TABLE breakdown_requests MODIFY COLUMN status varchar(255) NOT NULL AFTER longitude;
+ALTER TABLE breakdown_requests MODIFY COLUMN assigned_garage_id bigint NULL AFTER status;
+ALTER TABLE breakdown_requests MODIFY COLUMN assigned_mechanic_id bigint NULL AFTER assigned_garage_id;
+ALTER TABLE breakdown_requests MODIFY COLUMN customer_id bigint NOT NULL AFTER assigned_mechanic_id;
+ALTER TABLE breakdown_requests MODIFY COLUMN address varchar(255) NULL AFTER customer_id;
+ALTER TABLE breakdown_requests MODIFY COLUMN vehicle_no varchar(255) NULL AFTER address;
+ALTER TABLE breakdown_requests MODIFY COLUMN cancellation_reason varchar(255) NULL AFTER vehicle_no;
+ALTER TABLE breakdown_requests MODIFY COLUMN breakdown_code varchar(20) NULL AFTER cancellation_reason;
+
+ALTER TABLE bookings MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE bookings MODIFY COLUMN booking_date datetime(6) NOT NULL AFTER id;
+ALTER TABLE bookings MODIFY COLUMN notes text NULL AFTER booking_date;
+ALTER TABLE bookings MODIFY COLUMN price double NULL AFTER notes;
+ALTER TABLE bookings MODIFY COLUMN service_type varchar(255) NOT NULL AFTER price;
+ALTER TABLE bookings MODIFY COLUMN status varchar(255) NOT NULL AFTER service_type;
+ALTER TABLE bookings MODIFY COLUMN customer_id bigint NOT NULL AFTER status;
+ALTER TABLE bookings MODIFY COLUMN garage_id bigint NOT NULL AFTER customer_id;
+ALTER TABLE bookings MODIFY COLUMN description text NULL AFTER garage_id;
+ALTER TABLE bookings MODIFY COLUMN time_slot varchar(255) NULL AFTER description;
+ALTER TABLE bookings MODIFY COLUMN total_price double NULL AFTER time_slot;
+ALTER TABLE bookings MODIFY COLUMN vehicle_no varchar(255) NULL AFTER total_price;
+ALTER TABLE bookings MODIFY COLUMN vehicle_type varchar(255) NULL AFTER vehicle_no;
+ALTER TABLE bookings MODIFY COLUMN cancellation_reason varchar(255) NULL AFTER vehicle_type;
+ALTER TABLE bookings MODIFY COLUMN booking_code varchar(20) NULL AFTER cancellation_reason;
+
+ALTER TABLE reviews MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE reviews MODIFY COLUMN comment text NULL AFTER id;
+ALTER TABLE reviews MODIFY COLUMN created_at datetime(6) NOT NULL AFTER comment;
+ALTER TABLE reviews MODIFY COLUMN star_rating int NOT NULL AFTER created_at;
+ALTER TABLE reviews MODIFY COLUMN booking_id bigint NULL AFTER star_rating;
+ALTER TABLE reviews MODIFY COLUMN customer_id bigint NOT NULL AFTER booking_id;
+ALTER TABLE reviews MODIFY COLUMN garage_id bigint NOT NULL AFTER customer_id;
+ALTER TABLE reviews MODIFY COLUMN breakdown_request_id bigint NULL AFTER garage_id;
+
+ALTER TABLE shop_reviews MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE shop_reviews MODIFY COLUMN comment text NULL AFTER id;
+ALTER TABLE shop_reviews MODIFY COLUMN created_at datetime(6) NOT NULL AFTER comment;
+ALTER TABLE shop_reviews MODIFY COLUMN star_rating int NOT NULL AFTER created_at;
+ALTER TABLE shop_reviews MODIFY COLUMN customer_id bigint NOT NULL AFTER star_rating;
+ALTER TABLE shop_reviews MODIFY COLUMN shop_id bigint NOT NULL AFTER customer_id;
+ALTER TABLE shop_reviews MODIFY COLUMN spare_part_booking_id bigint NOT NULL AFTER shop_id;
+
+ALTER TABLE spare_part_bookings MODIFY COLUMN id bigint NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE spare_part_bookings MODIFY COLUMN booking_date datetime(6) NOT NULL AFTER id;
+ALTER TABLE spare_part_bookings MODIFY COLUMN notes text NULL AFTER booking_date;
+ALTER TABLE spare_part_bookings MODIFY COLUMN pickup_date datetime(6) NULL AFTER notes;
+ALTER TABLE spare_part_bookings MODIFY COLUMN quantity int NOT NULL AFTER pickup_date;
+ALTER TABLE spare_part_bookings MODIFY COLUMN status varchar(255) NOT NULL AFTER quantity;
+ALTER TABLE spare_part_bookings MODIFY COLUMN total_price double NOT NULL AFTER status;
+ALTER TABLE spare_part_bookings MODIFY COLUMN customer_id bigint NOT NULL AFTER total_price;
+ALTER TABLE spare_part_bookings MODIFY COLUMN spare_part_id bigint NOT NULL AFTER customer_id;
+ALTER TABLE spare_part_bookings MODIFY COLUMN cancellation_reason varchar(255) NULL AFTER spare_part_id;
+ALTER TABLE spare_part_bookings MODIFY COLUMN booking_code varchar(20) NULL AFTER cancellation_reason;
+
 -- 1. Insert Users
 -- Default Admin (password: admin)
 -- SHA-256 of 'admin': 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (1, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'System Administrator', 'admin@garagefinder.lk', '0771234567', 'ADMIN', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (1, '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'System Administrator', 'admin@garagefinder.lk', '0771234567', 'ADMIN', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 -- Customer 1: Amal Perera (password: password123)
 -- SHA-256 of 'password123': ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (2, 'amal', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Amal Perera', 'amal@gmail.com', '0711122334', 'CUSTOMER', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (2, 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Amal Perera', 'amal@gmail.com', '0711122334', 'CUSTOMER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 -- Customer 2: Nimal Silva (password: password123)
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (3, 'nimal', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Nimal Silva', 'nimal@gmail.com', '0722233445', 'CUSTOMER', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (3, 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Nimal Silva', 'nimal@gmail.com', '0722233445', 'CUSTOMER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 -- Garage Owner 1: Colombo Hybrid Motors (password: password123)
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (4, 'colombohybrid', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Colombo Hybrid Motors Owner', 'info@colombohybrid.lk', '0112233445', 'GARAGE_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (4, 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Colombo Hybrid Motors Owner', 'info@colombohybrid.lk', '0112233445', 'GARAGE_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 -- Garage Owner 2: Kandy Auto Care (password: password123)
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (5, 'kandycare', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Kandy Auto Care Owner', 'contact@kandycare.lk', '0812233445', 'GARAGE_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (5, 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Kandy Auto Care Owner', 'contact@kandycare.lk', '0812233445', 'GARAGE_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 -- Garage Owner 3: Galle Tire Shop (password: password123)
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (6, 'galletire', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Galle Tire Shop Owner', 'galletire@gmail.com', '0912233445', 'GARAGE_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (6, 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Galle Tire Shop Owner', 'galletire@gmail.com', '0912233445', 'GARAGE_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 -- Garage Owner 4: Lanka Diesel (password: password123) -- PENDING approval
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (7, 'lankadiesel', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Lanka Diesel Owner', 'lankadiesel@gmail.com', '0777665544', 'GARAGE_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (7, 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Lanka Diesel Owner', 'lankadiesel@gmail.com', '0777665544', 'GARAGE_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 
 -- 3. Insert Garages (with vehicle_types, engine_types, phone, email, and business_reg_no)
@@ -110,13 +252,13 @@ ON DUPLICATE KEY UPDATE star_rating=star_rating;
 
 
 -- 7. Insert Spare Part Shop Owners (password: password123)
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (8, 'colomboparts', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Colombo Auto Spares Owner', 'colomboparts@gmail.com', '0779988776', 'SHOP_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (8, 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Colombo Auto Spares Owner', 'colomboparts@gmail.com', '0779988776', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
-INSERT INTO users (id, username, password, full_name, email, phone, role, is_active) 
-VALUES (9, 'kandyparts', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Kandy Parts Shop Owner', 'kandyparts@gmail.com', '0778877665', 'SHOP_OWNER', true)
-ON DUPLICATE KEY UPDATE username=username, full_name=VALUES(full_name);
+INSERT INTO users (id, password, full_name, email, phone, role, is_active) 
+VALUES (9, 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Kandy Parts Shop Owner', 'kandyparts@gmail.com', '0778877665', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
 
 
 -- 8. Insert Spare Part Shops

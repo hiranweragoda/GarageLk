@@ -128,7 +128,7 @@ public class ReviewController {
             item.put("rating", r.getStarRating());
             item.put("comment", r.getComment());
             item.put("createdAt", r.getCreatedAt());
-            item.put("customerName", r.getCustomer().getUsername());
+            item.put("customerName", r.getCustomer().getFullName() != null ? r.getCustomer().getFullName() : r.getCustomer().getEmail());
             item.put("vehicleType", null); // vehicle info no longer stored in customers table
             item.put("serviceType", r.getBooking() != null ? r.getBooking().getServiceType() : "Emergency Rescue");
             result.add(item);

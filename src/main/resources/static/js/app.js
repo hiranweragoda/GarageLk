@@ -83,7 +83,7 @@
             if (this.currentUser) {
                 const initials = this.currentUser.fullName ?
                     this.currentUser.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() :
-                    this.currentUser.username.substring(0, 2).toUpperCase();
+                    (this.currentUser.email || 'U').substring(0, 2).toUpperCase();
 
                 let dropdownHtml = '';
                 if (this.currentUser.role === 'GARAGE_OWNER') {
@@ -109,7 +109,7 @@
                     <div class="user-menu" id="user-menu-badge">
                         <div class="user-badge">
                             <div class="user-avatar">${initials}</div>
-                            <span>${this.currentUser.fullName || this.currentUser.username}</span>
+                            <span>${this.currentUser.fullName || this.currentUser.email}</span>
                             <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; margin-left:0.25rem;"></i>
                         </div>
                         <div class="user-dropdown">
@@ -244,7 +244,7 @@
 
         async handleLogin(e) {
             e.preventDefault();
-            const usernameInput = document.getElementById('login-username');
+            const emailInput = document.getElementById('login-email');
             const passwordInput = document.getElementById('login-password');
 
             const executeLogin = async (latitude, longitude) => {
@@ -253,7 +253,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            username: usernameInput.value.trim(),
+                            email: emailInput.value.trim(),
                             password: passwordInput.value,
                             latitude: latitude ? latitude.toString() : null,
                             longitude: longitude ? longitude.toString() : null
@@ -273,7 +273,7 @@
                             }));
                         }
 
-                        this.showToast('Welcome back, ' + (data.fullName || data.username), 'success');
+                        this.showToast('Welcome back, ' + (data.fullName || data.email), 'success');
                         setTimeout(() => {
                             const userRole = data.role || (data.user && data.user.role);
                             if (userRole === 'CUSTOMER') {
@@ -327,13 +327,13 @@
 
         async handleSignup(e) {
             e.preventDefault();
-            const username = document.getElementById('signup-username').value.trim();
             const fullName = document.getElementById('signup-fullname').value.trim();
             const email = document.getElementById('signup-email').value.trim();
             const phone = document.getElementById('signup-phone').value.trim();
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-reenter-password').value;
             const role = document.getElementById('signup-role').value;
+            const username = email;
 
             if (password !== confirmPassword) {
                 this.showToast('Passwords do not match', 'error');
@@ -352,7 +352,7 @@
                     this.showToast('Registration successful! Please Sign In.', 'success');
                     setTimeout(() => {
                         this.switchAuthTab('login');
-                        document.getElementById('login-username').value = username;
+                        document.getElementById('login-email').value = email;
                     }, 1500);
                 } else {
                     this.showToast(data.message || 'Registration failed', 'error');
@@ -1406,7 +1406,7 @@
             if (this.isAdminView) {
                 ownerInfoHtml = `
                     <div style="margin-top: 0.5rem; font-size: 1.15rem; color: var(--accent); font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="fa-solid fa-user-tie"></i> Owner: ${g.ownerName || (g.user ? (g.user.fullName || g.user.username) : 'N/A')}
+                        <i class="fa-solid fa-user-tie"></i> Owner: ${g.ownerName || (g.user ? (g.user.fullName || g.user.email) : 'N/A')}
                     </div>
                 `;
                 
@@ -1541,7 +1541,7 @@
             if (this.isAdminView) {
                 ownerInfoHtml = `
                     <div style="margin-top: 0.5rem; font-size: 1.15rem; color: var(--accent); font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="fa-solid fa-user-tie"></i> Owner: ${s.ownerName || (s.user ? (s.user.fullName || s.user.username) : 'N/A')}
+                        <i class="fa-solid fa-user-tie"></i> Owner: ${s.ownerName || (s.user ? (s.user.fullName || s.user.email) : 'N/A')}
                     </div>
                 `;
             }
@@ -1669,7 +1669,7 @@
                 item.className = 'review-item';
                 item.innerHTML = `
                     <div class="review-header">
-                        <span class="review-user">${r.user.fullName || r.user.username}</span>
+                        <span class="review-user">${r.user.fullName || r.user.email}</span>
                         <span class="review-rating">${stars}</span>
                     </div>
                     <p class="review-comment">${r.comment || ''}</p>
@@ -1810,7 +1810,7 @@
                 item.className = 'review-item';
                 item.innerHTML = `
                     <div class="review-header">
-                        <span class="review-user">${r.user.fullName || r.user.username}</span>
+                        <span class="review-user">${r.user.fullName || r.user.email}</span>
                         <span class="review-rating">${stars}</span>
                     </div>
                     <p class="review-comment">${r.comment || ''}</p>
@@ -2256,7 +2256,7 @@
                     `;
 
                     item.innerHTML = `
-                        <div style="flex:1;">
+                        <div style="flex:1; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-customer-booking-${b.id}">
                             <h4 style="font-weight:700;">${b.garage.name} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
                             <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
                                 <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
@@ -2296,7 +2296,7 @@
                             : '';
 
                         item.innerHTML = `
-                            <div style="flex:1;">
+                            <div style="flex:1; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-customer-booking-history-${b.id}">
                                 <h4 style="font-weight:700;">${b.garage.name} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
                                 <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
                                     <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
@@ -2491,7 +2491,7 @@
             if (searchVal) {
                 bookings = bookings.filter(b => 
                     (b.bookingCode || '').toLowerCase().includes(searchVal) ||
-                    (b.user.fullName || b.user.username || '').toLowerCase().includes(searchVal) ||
+                    (b.user.fullName || b.user.email || '').toLowerCase().includes(searchVal) ||
                     (b.user.phone || '').toLowerCase().includes(searchVal) ||
                     (b.garage ? b.garage.garageName || b.garage.name || '' : '').toLowerCase().includes(searchVal) ||
                     (b.description || '').toLowerCase().includes(searchVal) ||
@@ -2537,7 +2537,7 @@
                     item.innerHTML = `
                         <div style="flex:1;">
                             <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
-                                <h4 style="font-weight:700; margin-bottom:0;">${b.user.fullName || b.user.username} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
+                                <h4 style="font-weight:700; margin-bottom:0;">${b.user.fullName || b.user.email} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
                                 <span style="font-size:0.8rem; color:var(--text-muted);">booked at <strong>${b.garage.name}</strong></span>
                             </div>
                             <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
@@ -2593,7 +2593,7 @@
                                     <i class="fa-regular fa-calendar"></i> ${b.bookingDate} &bull; <i class="fa-regular fa-clock"></i> ${b.timeSlot}
                                 </p>
                                 <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                    <strong>Customer:</strong> ${b.user.fullName || b.user.username} <br>
+                                    <strong>Customer:</strong> ${b.user.fullName || b.user.email} <br>
                                     <strong>Vehicle:</strong> ${b.vehicleType} (${b.vehicleNo}) <br>
                                     <strong>Details:</strong> ${b.description}
                                     ${reasonHtml}
@@ -2989,7 +2989,7 @@
             const bookingsSheetData = filteredBookings.map(b => ({
                 'Booking ID': b.id,
                 'Garage Name': b.garage ? b.garage.name : 'N/A',
-                'Customer Name': b.user ? (b.user.fullName || b.user.username) : 'N/A',
+                'Customer Name': b.user ? (b.user.fullName || b.user.email) : 'N/A',
                 'Customer Email': b.user ? b.user.email : 'N/A',
                 'Customer Phone': b.user ? b.user.phone : 'N/A',
                 'Service Type': b.serviceType,
@@ -3005,7 +3005,7 @@
             const rescuesSheetData = filteredBreakdowns.map(b => ({
                 'Rescue ID': b.id,
                 'Garage Name': b.assignedGarage ? b.assignedGarage.name : 'N/A',
-                'Customer Name': b.user ? (b.user.fullName || b.user.username) : 'N/A',
+                'Customer Name': b.user ? (b.user.fullName || b.user.email) : 'N/A',
                 'Contact Phone': b.phone || 'N/A',
                 'Location City': b.city || 'N/A',
                 'Address/Landmark': b.address || 'N/A',
@@ -3147,7 +3147,7 @@
                     (g.city || '').toLowerCase().includes(searchVal) ||
                     (g.address || '').toLowerCase().includes(searchVal) ||
                     (g.description || '').toLowerCase().includes(searchVal) ||
-                    (g.owner && (g.owner.fullName || g.owner.username || '').toLowerCase().includes(searchVal))
+                    (g.owner && (g.owner.fullName || g.owner.email || '').toLowerCase().includes(searchVal))
                 );
             }
 
@@ -3169,7 +3169,7 @@
                                 <div>
                                     <h4 style="font-weight:700; margin-bottom:2px;">${g.name}</h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'} &bull; <i class="fa-solid fa-id-card"></i> BRN: <strong style="color:var(--text-primary); font-family:monospace;">${g.businessRegNo || 'N/A'}</strong>
+                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.email) : 'N/A'} &bull; <i class="fa-solid fa-id-card"></i> BRN: <strong style="color:var(--text-primary); font-family:monospace;">${g.businessRegNo || 'N/A'}</strong>
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
                                 </div>
@@ -3218,7 +3218,7 @@
                                         <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem;">${statusText}</span>
                                     </h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
-                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.username) : 'N/A'} &bull; <i class="fa-solid fa-id-card"></i> BRN: <strong style="color:var(--text-primary); font-family:monospace;">${g.businessRegNo || 'N/A'}</strong>
+                                        <i class="fa-solid fa-location-dot"></i> ${g.address}, ${g.city} &bull; <i class="fa-solid fa-user"></i> Owner: ${g.owner ? (g.owner.fullName || g.owner.email) : 'N/A'} &bull; <i class="fa-solid fa-id-card"></i> BRN: <strong style="color:var(--text-primary); font-family:monospace;">${g.businessRegNo || 'N/A'}</strong>
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${g.description}</p>
                                 </div>
@@ -4437,7 +4437,7 @@
             if (searchVal) {
                 const filterFn = b => 
                     (b.breakdownCode || '').toLowerCase().includes(searchVal) ||
-                    (b.user.fullName || b.user.username || '').toLowerCase().includes(searchVal) ||
+                    (b.user.fullName || b.user.email || '').toLowerCase().includes(searchVal) ||
                     (b.contactPhone || '').toLowerCase().includes(searchVal) ||
                     (b.vehicleNo || '').toLowerCase().includes(searchVal) ||
                     (b.description || '').toLowerCase().includes(searchVal) ||
@@ -4478,7 +4478,7 @@
                             <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
                         </p>
                         <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                            <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
+                            <strong>Stranded User:</strong> ${b.user.fullName || b.user.email} <br>
                             <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
                             <strong>Problem:</strong> ${b.description}
                         </p>
@@ -4524,7 +4524,7 @@
                             <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
                         </p>
                         <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                            <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
+                            <strong>Stranded User:</strong> ${b.user.fullName || b.user.email} <br>
                             <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
                             <strong>Assigned Garage:</strong> ${b.acceptedBy ? b.acceptedBy.name : 'N/A'} <br>
                             <strong>Assigned Mechanic:</strong> ${b.assignedMechanic ? `${b.assignedMechanic.name} (${b.assignedMechanic.phone})` : 'None'} <br>
@@ -4583,7 +4583,7 @@
                                     <i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> ${b.address}, ${b.city}
                                 </p>
                                 <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                                    <strong>Stranded User:</strong> ${b.user.fullName || b.user.username} <br>
+                                    <strong>Stranded User:</strong> ${b.user.fullName || b.user.email} <br>
                                     <strong>Phone:</strong> ${b.contactPhone} &bull; <strong>Vehicle:</strong> ${b.vehicleNo} <br>
                                     ${b.assignedMechanic ? `<strong>Mechanic:</strong> ${b.assignedMechanic.name} (${b.assignedMechanic.phone}) <br>` : ''}
                                     <strong>Problem:</strong> ${b.description}
@@ -5065,7 +5065,7 @@
                 item.innerHTML = `
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
-                            <h4 style="font-weight:700;">Request ID #${b.id} &bull; ${b.user.fullName || b.user.username}</h4>
+                            <h4 style="font-weight:700;">Request ID #${b.id} &bull; ${b.user.fullName || b.user.email}</h4>
                             <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
                         </div>
                         <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:4px;">
@@ -5266,7 +5266,7 @@
             // Map breakdowns to nice rows
             const breakdownRows = filteredBreakdowns.map(b => ({
                 "Request ID": b.id,
-                "Customer Name": b.user ? (b.user.fullName || b.user.username) : "N/A",
+                "Customer Name": b.user ? (b.user.fullName || b.user.email) : "N/A",
                 "Contact Phone": b.contactPhone || "N/A",
                 "Vehicle No": b.vehicleNo || "N/A",
                 "Address": b.address || "N/A",
@@ -5281,7 +5281,7 @@
             // Map bookings to nice rows
             const bookingRows = filteredBookings.map(b => ({
                 "Booking ID": b.id,
-                "Customer Name": b.user ? (b.user.fullName || b.user.username) : "N/A",
+                "Customer Name": b.user ? (b.user.fullName || b.user.email) : "N/A",
                 "Vehicle No": b.vehicleNo || "N/A",
                 "Garage Name": b.garage ? (b.garage.garageName || b.garage.name) : "N/A",
                 "Service Type": b.serviceType || "N/A",
@@ -5296,7 +5296,7 @@
             const sparePartBookingRows = filteredSparePartBookings.map(b => ({
                 "Reservation ID": b.id,
                 "Booking Code": b.bookingCode || "N/A",
-                "Customer Name": b.customer ? (b.customer.user.fullName || b.customer.user.username) : "N/A",
+                "Customer Name": b.customer ? (b.customer.user.fullName || b.customer.user.email) : "N/A",
                 "Shop Name": b.sparePart && b.sparePart.shop ? b.sparePart.shop.shopName : "N/A",
                 "Part Name": b.sparePart ? b.sparePart.partName : "N/A",
                 "Quantity": b.quantity || 0,
@@ -5309,7 +5309,7 @@
             // Map users to nice rows
             const userRows = (this.adminRawData.users || []).map(u => ({
                 "User ID": u.id,
-                "Username": u.username || "N/A",
+
                 "Full Name": u.fullName || "N/A",
                 "Email": u.email || "N/A",
                 "Phone": u.phone || "N/A",
@@ -5321,7 +5321,7 @@
             const garageRows = (this.adminRawData.garages || []).map(g => ({
                 "Garage ID": g.id,
                 "Garage Name": g.garageName || g.name || "N/A",
-                "Owner Name": g.ownerName || (g.owner ? (g.owner.fullName || g.owner.username) : "N/A"),
+                "Owner Name": g.ownerName || (g.owner ? (g.owner.fullName || g.owner.email) : "N/A"),
                 "District": g.district || "N/A",
                 "City": g.city || "N/A",
                 "Address": g.address || "N/A",
@@ -5336,7 +5336,7 @@
             const shopRows = (this.adminRawData.shops || []).map(s => ({
                 "Shop ID": s.id,
                 "Shop Name": s.shopName || s.name || "N/A",
-                "Owner Name": s.ownerName || (s.user ? (s.user.fullName || s.user.username) : "N/A"),
+                "Owner Name": s.ownerName || (s.user ? (s.user.fullName || s.user.email) : "N/A"),
                 "District": s.district || "N/A",
                 "City": s.city || "N/A",
                 "Address": s.address || "N/A",
@@ -5451,7 +5451,7 @@
 
             // Update details
             document.getElementById('admin-garage-detail-name').textContent = garage.garageName || garage.name || '-';
-            document.getElementById('admin-garage-detail-owner').textContent = garage.ownerName || (garage.owner ? (garage.owner.fullName || garage.owner.username) : '-');
+            document.getElementById('admin-garage-detail-owner').textContent = garage.ownerName || (garage.owner ? (garage.owner.fullName || garage.owner.email) : '-');
             document.getElementById('admin-garage-detail-phone').textContent = garage.phone || '-';
             document.getElementById('admin-garage-detail-location').textContent = `${garage.address || ''}, ${garage.city || ''}`;
             document.getElementById('admin-garage-detail-specialization').textContent = `${garage.vehicleTypes || 'All'} (${garage.engineTypes || 'All'})`;
@@ -5582,7 +5582,7 @@
 
             // Update details
             document.getElementById('admin-shop-detail-name').textContent = shop.shopName || shop.name || '-';
-            document.getElementById('admin-shop-detail-owner').textContent = shop.ownerName || (shop.user ? (shop.user.fullName || shop.user.username) : '-');
+            document.getElementById('admin-shop-detail-owner').textContent = shop.ownerName || (shop.user ? (shop.user.fullName || shop.user.email) : '-');
             document.getElementById('admin-shop-detail-phone').textContent = shop.phone || '-';
             document.getElementById('admin-shop-detail-location').textContent = `${shop.address || ''}, ${shop.city || ''}`;
             document.getElementById('admin-shop-detail-desc').textContent = shop.description || '-';
@@ -6117,7 +6117,7 @@
                 users = users.filter(u => 
                     String(u.id).includes(searchVal) ||
                     (u.fullName || '').toLowerCase().includes(searchVal) ||
-                    (u.username || '').toLowerCase().includes(searchVal) ||
+                    (u.email || '').toLowerCase().includes(searchVal) ||
                     (u.email || '').toLowerCase().includes(searchVal) ||
                     (u.phone || '').toLowerCase().includes(searchVal)
                 );
@@ -6135,7 +6135,7 @@
 
                 const initials = u.fullName ?
                     u.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() :
-                    u.username.substring(0, 2).toUpperCase();
+                    (u.email || 'U').substring(0, 2).toUpperCase();
 
                 const isSelf = this.currentUser && this.currentUser.id === u.id;
 
@@ -6169,7 +6169,7 @@
                         </div>
                         <div>
                             <h4 style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:0.5rem;">
-                                ${u.fullName || u.username}
+                                ${u.fullName || u.email}
                                 <span class="badge ${statusBadgeClass}" style="font-size:0.7rem; padding:0.15rem 0.4rem; vertical-align:middle;">${statusText}</span>
                             </h4>
                             <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:2px; line-height:1.4;">
@@ -6249,7 +6249,7 @@
 
                 const initials = user.fullName ?
                     user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() :
-                    user.username.substring(0, 2).toUpperCase();
+                    (user.email || 'U').substring(0, 2).toUpperCase();
 
                 contentDiv.innerHTML = `
                     <div style="display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; margin-bottom: 1.25rem;">
@@ -6257,7 +6257,7 @@
                             ${initials}
                         </div>
                         <div>
-                            <h3 style="font-weight: 700; font-size: 1.2rem; margin: 0; color: var(--text-primary);">${user.fullName || user.username}</h3>
+                            <h3 style="font-weight: 700; font-size: 1.2rem; margin: 0; color: var(--text-primary);">${user.fullName || user.email}</h3>
                             <span class="badge ${user.active ? 'badge-approved' : 'badge-cancelled'}" style="margin-top: 0.25rem; display: inline-block;">${user.active ? 'Active' : 'Suspended'}</span>
                         </div>
                     </div>
@@ -6270,10 +6270,7 @@
                             <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary);">Full Name</td>
                             <td style="padding: 0.6rem 0; color: var(--text-primary);">${user.fullName || 'N/A'}</td>
                         </tr>
-                        <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary);">Username</td>
-                            <td style="padding: 0.6rem 0; color: var(--text-primary);">${user.username}</td>
-                        </tr>
+
                         <tr style="border-bottom: 1px solid var(--border-color);">
                             <td style="padding: 0.6rem 0; font-weight: 600; color: var(--text-secondary);">Email</td>
                             <td style="padding: 0.6rem 0; color: var(--text-primary);">${user.email}</td>
@@ -6369,7 +6366,6 @@
         },
 
         openAddAdminModal() {
-            document.getElementById('admin-reg-username').value = '';
             document.getElementById('admin-reg-password').value = '';
             document.getElementById('admin-reg-fullname').value = '';
             document.getElementById('admin-reg-email').value = '';
@@ -6379,11 +6375,11 @@
 
         async submitAdminForm(event) {
             event.preventDefault();
-            const username = document.getElementById('admin-reg-username').value;
             const password = document.getElementById('admin-reg-password').value;
             const fullName = document.getElementById('admin-reg-fullname').value;
             const email = document.getElementById('admin-reg-email').value;
             const phone = document.getElementById('admin-reg-phone').value;
+            const username = email;
 
             try {
                 const res = await fetch('/api/auth/register/admin', {
@@ -6408,7 +6404,7 @@
 
         loadUserProfile() {
             if (!this.currentUser) return;
-            document.getElementById('profile-username').value = this.currentUser.username || '';
+
             document.getElementById('profile-fullname').value = this.currentUser.fullName || '';
             document.getElementById('profile-email').value = this.currentUser.email || '';
             document.getElementById('profile-phone').value = this.currentUser.phone || '';
@@ -7644,7 +7640,7 @@
                     const formattedPickup = new Date(b.pickupDate).toLocaleString();
 
                     item.innerHTML = `
-                        <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                        <div style="flex:1; display:flex; gap:1rem; align-items:center; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-customer-reservation-${b.id}">
                             <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
                             <div>
                                 <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
@@ -7693,7 +7689,7 @@
                             : '';
 
                         item.innerHTML = `
-                            <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                            <div style="flex:1; display:flex; gap:1rem; align-items:center; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-customer-reservation-history-${b.id}">
                                 <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
                                 <div>
                                     <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
@@ -7785,7 +7781,7 @@
                     (b.bookingCode || '').toLowerCase().includes(searchVal) ||
                     (b.sparePart.partName || '').toLowerCase().includes(searchVal) ||
                     (b.sparePart.shop.shopName || '').toLowerCase().includes(searchVal) ||
-                    (b.customer.user.fullName || b.customer.user.username || '').toLowerCase().includes(searchVal) ||
+                    (b.customer.user.fullName || b.customer.user.email || '').toLowerCase().includes(searchVal) ||
                     (b.customer.user.phone || '').toLowerCase().includes(searchVal) ||
                     (b.notes || '').toLowerCase().includes(searchVal)
                 );
@@ -7839,7 +7835,7 @@
                             <div>
                                 <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
                                 <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
-                                    <strong>Customer:</strong> ${cust.fullName || cust.username} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
+                                    <strong>Customer:</strong> ${cust.fullName || cust.email} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
                                 </p>
                                 <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
                                     <strong>Requested Pickup:</strong> ${formattedPickup} <br>
@@ -7890,7 +7886,7 @@
                                 <div>
                                     <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
                                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px; margin-bottom:4px;">
-                                        <strong>Customer:</strong> ${cust.fullName || cust.username} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
+                                        <strong>Customer:</strong> ${cust.fullName || cust.email} (${cust.phone || 'N/A'}) &bull; <strong>Qty:</strong> ${b.quantity}
                                     </p>
                                     <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.35;">
                                         <strong>Requested Pickup:</strong> ${formattedPickup}
@@ -8223,7 +8219,7 @@
                 'Part Name': b.sparePart ? b.sparePart.partName : 'N/A',
                 'Vehicle Model': b.sparePart ? b.sparePart.vehicleModel : 'N/A',
                 'Vehicle Year': b.sparePart ? b.sparePart.vehicleYear : 'N/A',
-                'Customer Name': b.customer && b.customer.user ? (b.customer.user.fullName || b.customer.user.username) : 'N/A',
+                'Customer Name': b.customer && b.customer.user ? (b.customer.user.fullName || b.customer.user.email) : 'N/A',
                 'Customer Email': b.customer && b.customer.user ? b.customer.user.email : 'N/A',
                 'Customer Phone': b.customer && b.customer.user ? b.customer.user.phone : 'N/A',
                 'Quantity': b.quantity,

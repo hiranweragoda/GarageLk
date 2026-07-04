@@ -201,7 +201,7 @@ public class SparePartController {
             
             Map<String, Object> uMap = new HashMap<>();
             User u = r.getCustomer();
-            uMap.put("username", u.getUsername());
+            uMap.put("username", u.getEmail());
             uMap.put("fullName", u.getFullName());
             rMap.put("user", uMap);
             
@@ -289,7 +289,7 @@ public class SparePartController {
         String openDays = payload.get("openDays") != null ? payload.get("openDays").toString() : null;
         Boolean openToday = payload.containsKey("openToday") && payload.get("openToday") != null ? Boolean.parseBoolean(payload.get("openToday").toString()) : true;
 
-        SparePartShop shop = new SparePartShop(managedUser, name, managedUser.getFullName() != null ? managedUser.getFullName() : managedUser.getUsername(), description, address, city, district, latitude, longitude);
+        SparePartShop shop = new SparePartShop(managedUser, name, managedUser.getFullName() != null ? managedUser.getFullName() : managedUser.getEmail(), description, address, city, district, latitude, longitude);
         shop.setImageUrl(imageUrl);
         shop.setPhone(phone);
         shop.setEmail(email);

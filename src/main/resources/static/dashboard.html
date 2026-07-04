@@ -1030,10 +1030,6 @@
                     <div class="data-table-container" style="max-width: 600px; margin: 0 auto; padding: 2rem;">
                         <form onsubmit="window.GarageLK.submitUserProfileForm(event)" id="profile-form">
                             <div class="form-group">
-                                <label for="profile-username">Username</label>
-                                <input type="text" id="profile-username" class="form-control" readonly style="background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: not-allowed;" unique-id="profile-username-input">
-                            </div>
-                            <div class="form-group">
                                 <label for="profile-fullname">Full Name</label>
                                 <input type="text" id="profile-fullname" class="form-control" required unique-id="profile-fullname-input">
                             </div>
@@ -1603,10 +1599,6 @@
             <span class="modal-close" onclick="window.GarageLK.closeModal('modal-add-admin')"><i class="fa-solid fa-xmark"></i></span>
             <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-user-shield"></i> Add Administrator</h3>
             <form onsubmit="window.GarageLK.submitAdminForm(event)">
-                <div class="form-group">
-                    <label for="admin-reg-username">Username</label>
-                    <input type="text" id="admin-reg-username" class="form-control" placeholder="e.g. admin_john" required unique-id="admin-username-input">
-                </div>
                 <div class="form-group">
                     <label for="admin-reg-password">Password</label>
                     <input type="password" id="admin-reg-password" class="form-control" placeholder="••••••••" required unique-id="admin-password-input">
