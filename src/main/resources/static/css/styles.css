@@ -2047,6 +2047,62 @@ input:checked + .slider:before {
     }
 }
 
+/* Dashboard Premium Corner Layout Overrides */
+.dashboard-main {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: calc(100vh - 73px);
+}
+
+.dashboard-main .dashboard-grid {
+    display: flex !important;
+    width: 100%;
+    gap: 0 !important;
+    margin-top: 0 !important;
+}
+
+.dashboard-main .sidebar {
+    width: 260px;
+    min-width: 260px;
+    border-radius: 0 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    height: calc(100vh - 73px);
+    position: sticky;
+    top: 73px;
+    padding: 2rem 1.25rem !important;
+    background: var(--bg-card);
+    box-sizing: border-box;
+}
+
+.dashboard-main .dashboard-content {
+    flex: 1;
+    padding: 2.5rem 3rem !important;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .dashboard-main .dashboard-grid {
+        flex-direction: column !important;
+    }
+    .dashboard-main .sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: auto !important;
+        position: relative !important;
+        top: 0 !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding: 1.5rem !important;
+    }
+    .dashboard-main .dashboard-content {
+        padding: 1.5rem !important;
+    }
+}
+
 
 
 

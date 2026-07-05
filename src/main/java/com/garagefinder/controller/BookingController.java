@@ -6,7 +6,7 @@ import com.garagefinder.model.User;
 import com.garagefinder.model.Notification;
 import com.garagefinder.repository.BookingRepository;
 import com.garagefinder.repository.GarageRepository;
-import com.garagefinder.repository.NotificationRepository;
+import com.garagefinder.service.NotificationService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +24,12 @@ public class BookingController {
 
     private final BookingRepository bookingRepository;
     private final GarageRepository garageRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
-    public BookingController(BookingRepository bookingRepository, GarageRepository garageRepository, NotificationRepository notificationRepository) {
+    public BookingController(BookingRepository bookingRepository, GarageRepository garageRepository, NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
         this.garageRepository = garageRepository;
-        this.notificationRepository = notificationRepository;
+        this.notificationService = notificationService;
     }
 
     // Create a new booking (Customer only)
@@ -98,7 +98,7 @@ public class BookingController {
             Long ownerUserId = garageOpt.get().getUser().getId();
             String msg = String.format("New booking request received for %s (Code: %s)", 
                 garageOpt.get().getGarageName(), bookingCode);
-            notificationRepository.save(new Notification(ownerUserId, msg));
+            notificationService.save(new Notification(ownerUserId, msg));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -242,7 +242,7 @@ public class BookingController {
             Long customerUserId = booking.getCustomer().getId();
             String msg = String.format("Your booking request at %s has been %s. (Code: %s)",
                 booking.getGarage().getGarageName(), newStatus, booking.getBookingCode());
-            notificationRepository.save(new Notification(customerUserId, msg));
+            notificationService.save(new Notification(customerUserId, msg));
         } catch (Exception e) {
             e.printStackTrace();
         }

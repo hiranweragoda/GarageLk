@@ -2,7 +2,7 @@ package com.garagefinder.controller;
 
 import com.garagefinder.model.Notification;
 import com.garagefinder.model.User;
-import com.garagefinder.repository.NotificationRepository;
+import com.garagefinder.service.NotificationService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +17,10 @@ import java.util.Optional;
 @RequestMapping("/api/notifications")
 public class NotificationController {
 
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
-    public NotificationController(NotificationRepository notificationRepository) {
-        this.notificationRepository = notificationRepository;
+    public NotificationController(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/my")
@@ -30,8 +30,8 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
-        long unreadCount = notificationRepository.countByUserIdAndIsRead(user.getId(), false);
+        List<Notification> notifications = notificationService.findByUserIdOrderByCreatedAtDesc(user.getId());
+        long unreadCount = notificationService.countByUserIdAndIsRead(user.getId(), false);
 
         return ResponseEntity.ok(Map.of(
             "notifications", notifications,
@@ -46,7 +46,7 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        Optional<Notification> notifOpt = notificationRepository.findById(id);
+        Optional<Notification> notifOpt = notificationService.findById(id);
         if (notifOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -57,7 +57,7 @@ public class NotificationController {
         }
 
         notif.setRead(true);
-        notificationRepository.save(notif);
+        notificationService.save(notif);
 
         return ResponseEntity.ok(Map.of("message", "Notification marked as read"));
     }
@@ -70,11 +70,11 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        List<Notification> notifications = notificationService.findByUserIdOrderByCreatedAtDesc(user.getId());
         for (Notification n : notifications) {
             if (!n.isRead()) {
                 n.setRead(true);
-                notificationRepository.save(n);
+                notificationService.save(n);
             }
         }
 
@@ -89,8 +89,8 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
-        notificationRepository.deleteAll(notifications);
+        List<Notification> notifications = notificationService.findByUserIdOrderByCreatedAtDesc(user.getId());
+        notificationService.deleteAll(notifications);
 
         return ResponseEntity.ok(Map.of("message", "All notifications cleared"));
     }

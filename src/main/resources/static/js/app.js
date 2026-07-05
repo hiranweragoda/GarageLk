@@ -1081,13 +1081,15 @@
 
                         // Convert duration to minutes
                         const durationMin = Math.round(route.duration / 60);
+                        const distanceM = route.distance;
+                        const distanceStr = distanceM < 1000 ? `${Math.round(distanceM)} m` : `${(distanceM / 1000).toFixed(1)} km`;
 
                         // Create duration pill marker
                         const badgeIcon = L.divIcon({
                             className: 'route-badge-container',
-                            html: `<div class="route-badge-pill">${durationMin} min</div>`,
-                            iconSize: [60, 25],
-                            iconAnchor: [30, 25] // Anchor bottom pointer
+                            html: `<div class="route-badge-pill">${distanceStr} (${durationMin} min)</div>`,
+                            iconSize: [120, 25],
+                            iconAnchor: [60, 25] // Anchor bottom pointer
                         });
 
                         this.routeBadge = L.marker(midCoords, { icon: badgeIcon }).addTo(this.map);
@@ -1110,6 +1112,23 @@
                         opacity: 0.85
                     }
                 ).addTo(this.map);
+
+                const latLngStart = L.latLng(startLat, startLng);
+                const latLngTarget = L.latLng(targetLat, targetLng);
+                const distanceM = latLngStart.distanceTo(latLngTarget);
+                const distanceStr = distanceM < 1000 ? `${Math.round(distanceM)} m` : `${(distanceM / 1000).toFixed(1)} km`;
+                const fallbackMid = [ (startLat + targetLat) / 2, (startLng + targetLng) / 2 ];
+                const badgeIcon = L.divIcon({
+                    className: 'route-badge-container',
+                    html: `<div class="route-badge-pill">${distanceStr}</div>`,
+                    iconSize: [80, 25],
+                    iconAnchor: [40, 25]
+                });
+                
+                if (this.routeBadge) {
+                    this.map.removeLayer(this.routeBadge);
+                }
+                this.routeBadge = L.marker(fallbackMid, { icon: badgeIcon }).addTo(this.map);
 
                 this.map.fitBounds(this.routePath.getBounds(), { padding: [50, 50] });
 
@@ -2535,7 +2554,7 @@
                     }
 
                     item.innerHTML = `
-                        <div style="flex:1;">
+                        <div style="flex:1; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-owner-booking-${b.id}">
                             <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
                                 <h4 style="font-weight:700; margin-bottom:0;">${b.user.fullName || b.user.email} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span></h4>
                                 <span style="font-size:0.8rem; color:var(--text-muted);">booked at <strong>${b.garage.name}</strong></span>
@@ -2584,7 +2603,7 @@
                             : '';
 
                         item.innerHTML = `
-                            <div style="flex:1;">
+                            <div style="flex:1; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-owner-booking-history-${b.id}">
                                 <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:4px;">
                                     ${titleHtml}
                                     <span style="font-size:0.8rem; color:var(--text-muted);">at <strong>${b.garage.name}</strong></span>
@@ -4023,12 +4042,14 @@
                             const midIndex = Math.floor(coordinates.length / 2);
                             const midCoords = coordinates[midIndex];
                             const durationMin = Math.round(route.duration / 60);
+                            const distanceM = route.distance;
+                            const distanceStr = distanceM < 1000 ? `${Math.round(distanceM)} m` : `${(distanceM / 1000).toFixed(1)} km`;
                             
                             const badgeIcon = L.divIcon({
                                 className: 'route-badge-container',
-                                html: `<div class="route-badge-pill">${durationMin} min</div>`,
-                                iconSize: [60, 25],
-                                iconAnchor: [30, 25]
+                                html: `<div class="route-badge-pill">${distanceStr} (${durationMin} min)</div>`,
+                                iconSize: [120, 25],
+                                iconAnchor: [60, 25]
                             });
                             
                             this.breakdownRouteBadge = L.marker(midCoords, { icon: badgeIcon }).addTo(this.breakdownRouteMap);
@@ -4051,6 +4072,19 @@
                         }
                     ).addTo(this.breakdownRouteMap);
                     
+                    const latLngStart = L.latLng(startLat, startLng);
+                    const latLngEnd = L.latLng(endLat, endLng);
+                    const distanceM = latLngStart.distanceTo(latLngEnd);
+                    const distanceStr = distanceM < 1000 ? `${Math.round(distanceM)} m` : `${(distanceM / 1000).toFixed(1)} km`;
+                    const fallbackMid = [ (startLat + endLat) / 2, (startLng + endLng) / 2 ];
+                    const badgeIcon = L.divIcon({
+                        className: 'route-badge-container',
+                        html: `<div class="route-badge-pill">${distanceStr}</div>`,
+                        iconSize: [80, 25],
+                        iconAnchor: [40, 25]
+                    });
+                    this.breakdownRouteBadge = L.marker(fallbackMid, { icon: badgeIcon }).addTo(this.breakdownRouteMap);
+
                     this.breakdownRouteMap.fitBounds(this.breakdownRoutePath.getBounds(), { padding: [50, 50] });
                 }, 350);
                 
@@ -4250,7 +4284,7 @@
                     `;
 
                     item.innerHTML = `
-                        <div style="flex:1;">
+                        <div style="flex:1; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.breakdownCode}')" unique-id="click-customer-breakdown-${b.id}">
                             <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
                                 <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.breakdownCode || 'No ID'})</span></h4>
                                 <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
@@ -4302,7 +4336,7 @@
                               `;
 
                         item.innerHTML = `
-                            <div style="flex:1;">
+                            <div style="flex:1; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.breakdownCode}')" unique-id="click-customer-breakdown-history-${b.id}">
                                 <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
                                     <h4 style="font-weight:700; color:#f87171;">Emergency Assist Alert <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.breakdownCode || 'No ID'})</span></h4>
                                     <span style="font-size:0.8rem; color:var(--text-muted);">${new Date(b.createdAt).toLocaleString()}</span>
@@ -7830,7 +7864,7 @@
                     const cust = b.customer.user;
 
                     item.innerHTML = `
-                        <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                        <div style="flex:1; display:flex; gap:1rem; align-items:center; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-shop-reservation-${b.id}">
                             <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
                             <div>
                                 <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>
@@ -7881,7 +7915,7 @@
                             : '';
 
                         item.innerHTML = `
-                            <div style="flex:1; display:flex; gap:1rem; align-items:center;">
+                            <div style="flex:1; display:flex; gap:1rem; align-items:center; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-shop-reservation-history-${b.id}">
                                 <img src="${b.sparePart.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=150'}" style="width:85px; height:65px; object-fit:cover; border-radius:var(--radius-sm);">
                                 <div>
                                     <h4 style="font-weight:700; margin:0;">${b.sparePart.partName} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(${b.bookingCode || 'No ID'})</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">at ${b.sparePart.shop.shopName}</span></h4>

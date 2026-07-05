@@ -8,7 +8,7 @@ import com.garagefinder.model.Notification;
 import com.garagefinder.repository.BreakdownRequestRepository;
 import com.garagefinder.repository.GarageRepository;
 import com.garagefinder.repository.MechanicRepository;
-import com.garagefinder.repository.NotificationRepository;
+import com.garagefinder.service.NotificationService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,17 +27,17 @@ public class BreakdownController {
     private final BreakdownRequestRepository breakdownRequestRepository;
     private final GarageRepository garageRepository;
     private final MechanicRepository mechanicRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     public BreakdownController(
             BreakdownRequestRepository breakdownRequestRepository,
             GarageRepository garageRepository,
             MechanicRepository mechanicRepository,
-            NotificationRepository notificationRepository) {
+            NotificationService notificationService) {
         this.breakdownRequestRepository = breakdownRequestRepository;
         this.garageRepository = garageRepository;
         this.mechanicRepository = mechanicRepository;
-        this.notificationRepository = notificationRepository;
+        this.notificationService = notificationService;
     }
 
     // File an emergency breakdown request (Customer only)
@@ -83,7 +83,7 @@ public class BreakdownController {
                 if (notifiedUserIds.add(ownerUserId)) {
                     String msg = String.format("New emergency breakdown alert in city %s: %s (Code: %s)", 
                         locationCity, description != null && description.length() > 50 ? description.substring(0, 47) + "..." : description, breakdownCode);
-                    notificationRepository.save(new Notification(ownerUserId, msg));
+                    notificationService.save(new Notification(ownerUserId, msg));
                 }
             }
         } catch (Exception e) {
@@ -201,7 +201,7 @@ public class BreakdownController {
             Long customerUserId = request.getCustomer().getId();
             String msg = String.format("Emergency assist request accepted by %s. (Code: %s)",
                 garageOpt.get().getGarageName(), request.getBreakdownCode());
-            notificationRepository.save(new Notification(customerUserId, msg));
+            notificationService.save(new Notification(customerUserId, msg));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -255,7 +255,7 @@ public class BreakdownController {
             Long customerUserId = request.getCustomer().getId();
             String msg = String.format("Emergency assist request has been completed. (Code: %s)",
                 request.getBreakdownCode());
-            notificationRepository.save(new Notification(customerUserId, msg));
+            notificationService.save(new Notification(customerUserId, msg));
         } catch (Exception e) {
             e.printStackTrace();
         }

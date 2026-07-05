@@ -3,6 +3,7 @@ package com.garagefinder.controller;
 import com.garagefinder.model.*;
 import com.garagefinder.repository.*;
 import com.garagefinder.util.HashUtil;
+import com.garagefinder.service.EmailService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ public class AuthController {
     private final BreakdownRequestRepository breakdownRequestRepository;
     private final MechanicRepository mechanicRepository;
     private final OfferedServiceRepository offeredServiceRepository;
+    private final EmailService emailService;
 
     public AuthController(
             UserRepository userRepository,
@@ -34,7 +36,8 @@ public class AuthController {
             ReviewRepository reviewRepository,
             BreakdownRequestRepository breakdownRequestRepository,
             MechanicRepository mechanicRepository,
-            OfferedServiceRepository offeredServiceRepository) {
+            OfferedServiceRepository offeredServiceRepository,
+            EmailService emailService) {
         this.userRepository = userRepository;
         this.garageRepository = garageRepository;
         this.shopRepository = shopRepository;
@@ -44,6 +47,7 @@ public class AuthController {
         this.breakdownRequestRepository = breakdownRequestRepository;
         this.mechanicRepository = mechanicRepository;
         this.offeredServiceRepository = offeredServiceRepository;
+        this.emailService = emailService;
     }
 
     @PostMapping("/register/customer")
@@ -63,6 +67,13 @@ public class AuthController {
 
         User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
         userRepository.save(user);
+
+        try {
+            String welcomeHtml = emailService.buildWelcomeEmailHtml(fullName, "CUSTOMER");
+            emailService.sendEmailAsync(email, "Welcome to GarageLK!", welcomeHtml);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Customer registered successfully"));
     }
@@ -88,16 +99,28 @@ public class AuthController {
             // Garage owner: active initially so they can log in and submit their garage profile
             User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "GARAGE_OWNER", true);
             userRepository.save(user);
+            try {
+                String welcomeHtml = emailService.buildWelcomeEmailHtml(fullName, "GARAGE_OWNER");
+                emailService.sendEmailAsync(email, "Welcome to GarageLK!", welcomeHtml);
+            } catch (Exception e) { e.printStackTrace(); }
             return ResponseEntity.ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
         } else if ("SHOP_OWNER".equalsIgnoreCase(role)) {
             // Spare Part seller
             User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "SHOP_OWNER", true);
             userRepository.save(user);
+            try {
+                String welcomeHtml = emailService.buildWelcomeEmailHtml(fullName, "SHOP_OWNER");
+                emailService.sendEmailAsync(email, "Welcome to GarageLK!", welcomeHtml);
+            } catch (Exception e) { e.printStackTrace(); }
             return ResponseEntity.ok(Map.of("message", "Shop owner account created. Please sign in to register your spare part shop."));
         } else {
             // Default: customer
             User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "CUSTOMER", true);
             userRepository.save(user);
+            try {
+                String welcomeHtml = emailService.buildWelcomeEmailHtml(fullName, "CUSTOMER");
+                emailService.sendEmailAsync(email, "Welcome to GarageLK!", welcomeHtml);
+            } catch (Exception e) { e.printStackTrace(); }
             return ResponseEntity.ok(Map.of("message", "Account created successfully!"));
         }
     }
@@ -125,6 +148,13 @@ public class AuthController {
         User user = new User(HashUtil.hashPassword(password), fullName, email, phone, "ADMIN", true);
         userRepository.save(user);
 
+        try {
+            String welcomeHtml = emailService.buildWelcomeEmailHtml(fullName, "ADMIN");
+            emailService.sendEmailAsync(email, "Welcome to GarageLK!", welcomeHtml);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return ResponseEntity.ok(Map.of("message", "Admin registered successfully"));
     }
 
@@ -145,6 +175,13 @@ public class AuthController {
         // Garage owner: active initially so they can log in and submit their garage profile
         User user = new User(HashUtil.hashPassword(password), email, phone, "GARAGE_OWNER", true);
         userRepository.save(user);
+
+        try {
+            String welcomeHtml = emailService.buildWelcomeEmailHtml("", "GARAGE_OWNER");
+            emailService.sendEmailAsync(email, "Welcome to GarageLK!", welcomeHtml);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return ResponseEntity.ok(Map.of("message", "Garage owner account created. Please sign in to register your garage."));
     }

@@ -2,6 +2,7 @@ package com.garagefinder.controller;
 
 import com.garagefinder.model.*;
 import com.garagefinder.repository.*;
+import com.garagefinder.service.NotificationService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,19 +19,19 @@ public class SparePartBookingController {
     private final SparePartRepository partRepository;
     private final SparePartShopRepository shopRepository;
     private final ShopReviewRepository shopReviewRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     public SparePartBookingController(
             SparePartBookingRepository bookingRepository,
             SparePartRepository partRepository,
             SparePartShopRepository shopRepository,
             ShopReviewRepository shopReviewRepository,
-            NotificationRepository notificationRepository) {
+            NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
         this.partRepository = partRepository;
         this.shopRepository = shopRepository;
         this.shopReviewRepository = shopReviewRepository;
-        this.notificationRepository = notificationRepository;
+        this.notificationService = notificationService;
     }
 
     private Map<String, Object> buildBookingMap(SparePartBooking b) {
@@ -161,10 +162,16 @@ public class SparePartBookingController {
         bookingRepository.save(booking);
 
         try {
+            // Notify shop owner
             Long ownerUserId = part.getShop().getUser().getId();
-            String msg = String.format("New spare part reservation for %s (Code: %s)", 
+            String shopMsg = String.format("New spare part reservation for %s (Code: %s)", 
                 part.getPartName(), bookingCode);
-            notificationRepository.save(new Notification(ownerUserId, msg));
+            notificationService.save(new Notification(ownerUserId, shopMsg));
+
+            // Notify customer
+            String customerMsg = String.format("Your booking request for %s has been received. Status: PENDING (Code: %s)", 
+                part.getPartName(), bookingCode);
+            notificationService.save(new Notification(user.getId(), customerMsg));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -286,7 +293,7 @@ public class SparePartBookingController {
             Long customerUserId = booking.getCustomer().getId();
             String msg = String.format("Your reservation for %s is %s at %s. (Code: %s)",
                 booking.getSparePart().getPartName(), newStatus.replace("_", " "), booking.getSparePart().getShop().getShopName(), booking.getBookingCode());
-            notificationRepository.save(new Notification(customerUserId, msg));
+            notificationService.save(new Notification(customerUserId, msg));
         } catch (Exception e) {
             e.printStackTrace();
         }

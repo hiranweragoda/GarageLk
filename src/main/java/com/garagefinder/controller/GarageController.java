@@ -10,7 +10,7 @@ import com.garagefinder.repository.ReviewRepository;
 import com.garagefinder.repository.UserRepository;
 import com.garagefinder.repository.MechanicRepository;
 
-import com.garagefinder.repository.NotificationRepository;
+import com.garagefinder.service.NotificationService;
 import com.garagefinder.model.Notification;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
@@ -37,7 +37,7 @@ public class GarageController {
     private final BookingRepository bookingRepository;
     private final BreakdownRequestRepository breakdownRequestRepository;
     private final MechanicRepository mechanicRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     public GarageController(
             GarageRepository garageRepository,
@@ -47,7 +47,7 @@ public class GarageController {
             BookingRepository bookingRepository,
             BreakdownRequestRepository breakdownRequestRepository,
             MechanicRepository mechanicRepository,
-            NotificationRepository notificationRepository) {
+            NotificationService notificationService) {
         this.garageRepository = garageRepository;
         this.offeredServiceRepository = offeredServiceRepository;
         this.userRepository = userRepository;
@@ -55,7 +55,7 @@ public class GarageController {
         this.bookingRepository = bookingRepository;
         this.breakdownRequestRepository = breakdownRequestRepository;
         this.mechanicRepository = mechanicRepository;
-        this.notificationRepository = notificationRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/stats")
@@ -351,7 +351,7 @@ public class GarageController {
         try {
             Long ownerUserId = garage.getUser().getId();
             String msg = String.format("Your garage %s has been APPROVED.", garage.getGarageName());
-            notificationRepository.save(new Notification(ownerUserId, msg));
+            notificationService.save(new Notification(ownerUserId, msg));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -378,7 +378,7 @@ public class GarageController {
         try {
             Long ownerUserId = garage.getUser().getId();
             String msg = String.format("Your garage %s registration has been REJECTED.", garage.getGarageName());
-            notificationRepository.save(new Notification(ownerUserId, msg));
+            notificationService.save(new Notification(ownerUserId, msg));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -454,7 +454,7 @@ public class GarageController {
             List<User> admins = userRepository.findAll().stream().filter(u -> "ADMIN".equals(u.getRole())).toList();
             for (User admin : admins) {
                 String msg = String.format("New garage registration pending approval: %s", name);
-                notificationRepository.save(new Notification(admin.getId(), msg));
+                notificationService.save(new Notification(admin.getId(), msg));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -484,7 +484,7 @@ public class GarageController {
             garageRepository.save(garage);
 
             try {
-                notificationRepository.save(new Notification(garage.getUser().getId(),
+                notificationService.save(new Notification(garage.getUser().getId(),
                         String.format("Your garage %s has been APPROVED.", garage.getGarageName())));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -496,7 +496,7 @@ public class GarageController {
             garageRepository.save(garage);
 
             try {
-                notificationRepository.save(new Notification(garage.getUser().getId(),
+                notificationService.save(new Notification(garage.getUser().getId(),
                         String.format("Your garage %s registration has been REJECTED.", garage.getGarageName())));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -513,7 +513,7 @@ public class GarageController {
             garageRepository.save(garage);
 
             try {
-                notificationRepository.save(new Notification(garage.getUser().getId(), String
+                notificationService.save(new Notification(garage.getUser().getId(), String
                         .format("Your garage %s has been SUSPENDED by the administrator.", garage.getGarageName())));
             } catch (Exception e) {
                 e.printStackTrace();
