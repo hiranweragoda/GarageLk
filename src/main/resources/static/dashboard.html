@@ -1207,22 +1207,23 @@
                 </div>
                 <div class="form-group">
                     <label>Location Coordinates</label>
-                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
-                        <button type="button" class="btn btn-secondary" onclick="window.GarageLK.openMapPicker('garage-lat', 'garage-lng', 'garage-city')" style="width: 100%;" unique-id="garage-pick-map-btn">
+                    <div class="coordinates-picker-group">
+                        <div class="coordinates-display-fields">
+                            <div class="coord-input-wrapper">
+                                <span class="coord-prefix"><i class="fa-solid fa-location-crosshairs"></i> Lat</span>
+                                <input type="number" step="any" id="garage-lat" class="form-control coord-input" placeholder="Not selected" readonly required unique-id="garage-lat-input">
+                            </div>
+                            <div class="coord-input-wrapper">
+                                <span class="coord-prefix"><i class="fa-solid fa-location-crosshairs"></i> Lng</span>
+                                <input type="number" step="any" id="garage-lng" class="form-control coord-input" placeholder="Not selected" readonly required unique-id="garage-lng-input">
+                            </div>
+                        </div>
+                        <button type="button" class="btn-map-picker-trigger" onclick="window.GarageLK.openMapPicker('garage-lat', 'garage-lng', 'garage-city')" unique-id="garage-pick-map-btn">
                             <i class="fa-solid fa-map-location-dot"></i> Pick on Map
                         </button>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <label for="garage-lat" style="font-size: 0.8rem; color: var(--text-secondary);">Latitude</label>
-                            <input type="number" step="any" id="garage-lat" class="form-control" placeholder="Not selected" readonly required unique-id="garage-lat-input">
-                        </div>
-                        <div>
-                            <label for="garage-lng" style="font-size: 0.8rem; color: var(--text-secondary);">Longitude</label>
-                            <input type="number" step="any" id="garage-lng" class="form-control" placeholder="Not selected" readonly required unique-id="garage-lng-input">
-                        </div>
-                    </div>
                 </div>
+
                 <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="garage-submit-btn">Submit Request</button>
             </form>
         </div>
@@ -1308,20 +1309,20 @@
                 </div>
                 <div class="form-group">
                     <label>Location Coordinates</label>
-                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
-                        <button type="button" class="btn btn-secondary" onclick="window.GarageLK.openMapPicker('edit-garage-lat', 'edit-garage-lng', 'edit-garage-city')" style="width: 100%;" unique-id="edit-garage-pick-map-btn">
+                    <div class="coordinates-picker-group">
+                        <div class="coordinates-display-fields">
+                            <div class="coord-input-wrapper">
+                                <span class="coord-prefix"><i class="fa-solid fa-location-crosshairs"></i> Lat</span>
+                                <input type="number" step="any" id="edit-garage-lat" class="form-control coord-input" placeholder="Not selected" readonly required unique-id="edit-garage-lat-input">
+                            </div>
+                            <div class="coord-input-wrapper">
+                                <span class="coord-prefix"><i class="fa-solid fa-location-crosshairs"></i> Lng</span>
+                                <input type="number" step="any" id="edit-garage-lng" class="form-control coord-input" placeholder="Not selected" readonly required unique-id="edit-garage-lng-input">
+                            </div>
+                        </div>
+                        <button type="button" class="btn-map-picker-trigger" onclick="window.GarageLK.openMapPicker('edit-garage-lat', 'edit-garage-lng', 'edit-garage-city')" unique-id="edit-garage-pick-map-btn">
                             <i class="fa-solid fa-map-location-dot"></i> Pick on Map
                         </button>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <label for="edit-garage-lat" style="font-size: 0.8rem; color: var(--text-secondary);">Latitude</label>
-                            <input type="number" step="any" id="edit-garage-lat" class="form-control" placeholder="Not selected" readonly required unique-id="edit-garage-lat-input">
-                        </div>
-                        <div>
-                            <label for="edit-garage-lng" style="font-size: 0.8rem; color: var(--text-secondary);">Longitude</label>
-                            <input type="number" step="any" id="edit-garage-lng" class="form-control" placeholder="Not selected" readonly required unique-id="edit-garage-lng-input">
-                        </div>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="edit-garage-submit-btn">Save Changes</button>
@@ -1524,20 +1525,20 @@
                 </div>
                 <div class="form-group">
                     <label>Location Coordinates</label>
-                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
-                        <button type="button" class="btn btn-secondary" onclick="window.GarageLK.openMapPicker('shop-lat', 'shop-lng', 'shop-city')" style="width: 100%;" unique-id="shop-pick-map-btn">
+                    <div class="coordinates-picker-group">
+                        <div class="coordinates-display-fields">
+                            <div class="coord-input-wrapper">
+                                <span class="coord-prefix"><i class="fa-solid fa-location-crosshairs"></i> Lat</span>
+                                <input type="number" step="any" id="shop-lat" class="form-control coord-input" placeholder="Not selected" readonly required unique-id="shop-lat-input">
+                            </div>
+                            <div class="coord-input-wrapper">
+                                <span class="coord-prefix"><i class="fa-solid fa-location-crosshairs"></i> Lng</span>
+                                <input type="number" step="any" id="shop-lng" class="form-control coord-input" placeholder="Not selected" readonly required unique-id="shop-lng-input">
+                            </div>
+                        </div>
+                        <button type="button" class="btn-map-picker-trigger" onclick="window.GarageLK.openMapPicker('shop-lat', 'shop-lng', 'shop-city')" unique-id="shop-pick-map-btn">
                             <i class="fa-solid fa-map-location-dot"></i> Pick on Map
                         </button>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <label for="shop-lat" style="font-size: 0.8rem; color: var(--text-secondary);">Latitude</label>
-                            <input type="number" step="any" id="shop-lat" class="form-control" placeholder="Not selected" readonly required unique-id="shop-lat-input">
-                        </div>
-                        <div>
-                            <label for="shop-lng" style="font-size: 0.8rem; color: var(--text-secondary);">Longitude</label>
-                            <input type="number" step="any" id="shop-lng" class="form-control" placeholder="Not selected" readonly required unique-id="shop-lng-input">
-                        </div>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;" id="shop-submit-btn" unique-id="shop-submit-btn">Submit Request</button>
