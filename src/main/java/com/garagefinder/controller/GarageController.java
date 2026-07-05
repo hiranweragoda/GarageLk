@@ -167,6 +167,7 @@ public class GarageController {
         map.put("imageUrl", g.getImageUrl());
         map.put("phone", g.getPhone());
         map.put("email", g.getEmail());
+        map.put("businessRegNo", g.getBusinessRegNo());
         map.put("openTime", g.getOpenTime());
         map.put("closeTime", g.getCloseTime());
         map.put("openDays", g.getOpenDays());
