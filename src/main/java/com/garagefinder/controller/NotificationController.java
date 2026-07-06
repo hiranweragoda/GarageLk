@@ -94,4 +94,26 @@ public class NotificationController {
 
         return ResponseEntity.ok(Map.of("message", "All notifications cleared"));
     }
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<?> deleteNotification(@PathVariable Long id, HttpSession session) {
+        User user = (User) session.getAttribute("LOGGED_IN_USER");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        Optional<Notification> notifOpt = notificationService.findById(id);
+        if (notifOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Notification notif = notifOpt.get();
+        if (!notif.getUserId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        }
+
+        notificationService.delete(notif);
+        return ResponseEntity.ok(Map.of("message", "Notification deleted successfully"));
+    }
 }

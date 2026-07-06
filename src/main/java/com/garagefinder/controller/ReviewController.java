@@ -103,6 +103,7 @@ public class ReviewController {
         }
 
         String comment = payload.get("comment") != null ? payload.get("comment").toString().trim() : "";
+        String imageUrls = payload.get("imageUrls") != null ? payload.get("imageUrls").toString().trim() : null;
 
         Review review;
         if (booking != null) {
@@ -110,6 +111,7 @@ public class ReviewController {
         } else {
             review = new Review(user, garage, breakdownRequest, starRating, comment);
         }
+        review.setImageUrls(imageUrls);
         reviewRepository.save(review);
 
         return ResponseEntity.ok(Map.of("message", "Review submitted successfully! Thank you for your feedback."));
@@ -128,6 +130,7 @@ public class ReviewController {
             item.put("rating", r.getStarRating());
             item.put("comment", r.getComment());
             item.put("createdAt", r.getCreatedAt());
+            item.put("imageUrls", r.getImageUrls());
             item.put("customerName", r.getCustomer().getFullName() != null ? r.getCustomer().getFullName() : r.getCustomer().getEmail());
             item.put("vehicleType", null); // vehicle info no longer stored in customers table
             item.put("serviceType", r.getBooking() != null ? r.getBooking().getServiceType() : "Emergency Rescue");

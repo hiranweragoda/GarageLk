@@ -330,6 +330,12 @@ const customer = {
             }
         } catch(e) {}
 
+        if (window.GarageLK) {
+            window.GarageLK.selectedReviewImages = [];
+            const previewContainer = document.getElementById('review-images-preview');
+            if (previewContainer) previewContainer.innerHTML = '';
+        }
+
         document.getElementById('review-booking-id').value = bookingId;
         document.getElementById('review-garage-id').value = garageId;
         document.getElementById('review-garage-name').value = garageName;
@@ -355,10 +361,26 @@ const customer = {
         }
 
         const starRating = selectedStar.value;
+        const payload = { bookingId, garageId, starRating, comment };
 
         try {
-            await app.post('/api/reviews', { bookingId, garageId, starRating, comment });
+            if (window.GarageLK && window.GarageLK.selectedReviewImages && window.GarageLK.selectedReviewImages.length > 0) {
+                app.showToast('Uploading images...', 'info');
+                const uploadedUrls = [];
+                for (const file of window.GarageLK.selectedReviewImages) {
+                    const url = await window.GarageLK.uploadFile(file);
+                    uploadedUrls.push(url);
+                }
+                payload.imageUrls = uploadedUrls.join(',');
+            }
+
+            await app.post('/api/reviews', payload);
             app.closeModal('modal-review');
+            if (window.GarageLK) {
+                window.GarageLK.selectedReviewImages = [];
+                const previewContainer = document.getElementById('review-images-preview');
+                if (previewContainer) previewContainer.innerHTML = '';
+            }
             app.showToast('Review submitted! Thank you for your feedback. ⭐', 'success');
             this.loadBookings();
         } catch(e) {}

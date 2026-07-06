@@ -68,8 +68,10 @@ public class ShopReviewController {
         }
 
         String comment = payload.get("comment") != null ? payload.get("comment").toString().trim() : "";
+        String imageUrls = payload.get("imageUrls") != null ? payload.get("imageUrls").toString().trim() : null;
 
         ShopReview review = new ShopReview(user, booking.getSparePart().getShop(), booking, starRating, comment);
+        review.setImageUrls(imageUrls);
         reviewRepository.save(review);
 
         return ResponseEntity.ok(Map.of("message", "Shop review submitted successfully!"));
@@ -88,6 +90,7 @@ public class ShopReviewController {
             item.put("rating", r.getStarRating());
             item.put("comment", r.getComment());
             item.put("createdAt", r.getCreatedAt());
+            item.put("imageUrls", r.getImageUrls());
             item.put("customerName", r.getCustomer().getFullName() != null ? r.getCustomer().getFullName() : r.getCustomer().getEmail());
             item.put("partName", r.getSparePartBooking().getSparePart().getPartName());
             result.add(item);

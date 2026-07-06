@@ -1684,6 +1684,18 @@
                     stars += i <= r.rating ? '<i class="fa-solid fa-star"></i>' : '<i class="fa-regular fa-star"></i>';
                 }
 
+                let imagesHtml = '';
+                if (r.imageUrls) {
+                    const urls = r.imageUrls.split(',').filter(x => x.trim() !== '');
+                    if (urls.length > 0) {
+                        imagesHtml = `<div class="review-images" style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">`;
+                        urls.forEach(url => {
+                            imagesHtml += `<img src="${url}" class="review-img-thumbnail" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm); cursor: pointer;" onclick="window.GarageLK.openImageLightbox('${url}')">`;
+                        });
+                        imagesHtml += `</div>`;
+                    }
+                }
+
                 const item = document.createElement('div');
                 item.className = 'review-item';
                 item.innerHTML = `
@@ -1692,7 +1704,8 @@
                         <span class="review-rating">${stars}</span>
                     </div>
                     <p class="review-comment">${r.comment || ''}</p>
-                    <span class="review-date">${new Date(r.createdAt).toLocaleDateString()}</span>
+                    ${imagesHtml}
+                    <span class="review-date" style="display: block; margin-top: 0.5rem;">${new Date(r.createdAt).toLocaleDateString()}</span>
                 `;
                 container.appendChild(item);
             });
@@ -1825,6 +1838,18 @@
                     stars += i <= r.rating ? '<i class="fa-solid fa-star"></i>' : '<i class="fa-regular fa-star"></i>';
                 }
 
+                let imagesHtml = '';
+                if (r.imageUrls) {
+                    const urls = r.imageUrls.split(',').filter(x => x.trim() !== '');
+                    if (urls.length > 0) {
+                        imagesHtml = `<div class="review-images" style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">`;
+                        urls.forEach(url => {
+                            imagesHtml += `<img src="${url}" class="review-img-thumbnail" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm); cursor: pointer;" onclick="window.GarageLK.openImageLightbox('${url}')">`;
+                        });
+                        imagesHtml += `</div>`;
+                    }
+                }
+
                 const item = document.createElement('div');
                 item.className = 'review-item';
                 item.innerHTML = `
@@ -1833,7 +1858,8 @@
                         <span class="review-rating">${stars}</span>
                     </div>
                     <p class="review-comment">${r.comment || ''}</p>
-                    <span class="review-date">${new Date(r.createdAt).toLocaleDateString()}</span>
+                    ${imagesHtml}
+                    <span class="review-date" style="display: block; margin-top: 0.5rem;">${new Date(r.createdAt).toLocaleDateString()}</span>
                 `;
                 container.appendChild(item);
             });
@@ -2083,9 +2109,10 @@
                 const res = await fetch('/api/notifications/my');
                 if (res.ok) {
                     const data = await res.json();
+                    const count = data.unreadCount || 0;
+                    
                     const badge = document.getElementById('notifications-badge');
                     if (badge) {
-                        const count = data.unreadCount || 0;
                         if (count > 0) {
                             badge.textContent = count;
                             badge.style.display = 'inline-block';
@@ -2093,9 +2120,147 @@
                             badge.style.display = 'none';
                         }
                     }
+
+                    const navBadge = document.getElementById('nav-notifications-badge');
+                    if (navBadge) {
+                        if (count > 0) {
+                            navBadge.textContent = count;
+                            navBadge.style.display = 'block';
+                        } else {
+                            navBadge.style.display = 'none';
+                        }
+                    }
                 }
             } catch (err) {
                 console.error("Error updating notifications badge:", err);
+            }
+        },
+
+        async toggleNavNotificationDropdown(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const dropdown = document.getElementById('nav-notifications-dropdown');
+            if (!dropdown) return;
+
+            const isCurrentlyOpen = dropdown.style.display === 'block';
+            
+            if (isCurrentlyOpen) {
+                dropdown.style.display = 'none';
+            } else {
+                dropdown.style.display = 'block';
+                await this.loadDropdownNotifications();
+            }
+        },
+
+        async loadDropdownNotifications() {
+            const list = document.getElementById('nav-notif-dropdown-list');
+            if (!list) return;
+            
+            list.innerHTML = '<p style="text-align:center; padding: 1.5rem; font-size: 0.85rem; color:var(--text-muted);">Loading...</p>';
+            
+            try {
+                const res = await fetch('/api/notifications/my');
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                const notifications = data.notifications || [];
+                
+                if (notifications.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 2rem 1rem; font-size: 0.85rem; color:var(--text-muted);">No notifications yet.</p>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                notifications.slice(0, 10).forEach(n => {
+                    const item = document.createElement('div');
+                    item.style.padding = '0.75rem 1rem';
+                    item.style.borderBottom = '1px solid var(--border-color)';
+                    item.style.display = 'flex';
+                    item.style.alignItems = 'flex-start';
+                    item.style.gap = '0.5rem';
+                    item.style.cursor = 'pointer';
+                    item.style.transition = 'background 0.2s';
+                    
+                    const isRead = n.read !== undefined ? n.read : n.isRead;
+                    if (!isRead) {
+                        item.style.background = 'rgba(6, 182, 212, 0.02)';
+                    }
+                    
+                    item.onmouseover = () => { item.style.background = 'rgba(255, 255, 255, 0.02)'; };
+                    item.onmouseout = () => { item.style.background = !isRead ? 'rgba(6, 182, 212, 0.02)' : 'transparent'; };
+                    
+                    const dateStr = new Date(n.createdAt).toLocaleDateString() + ' ' + new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    const dotHtml = !isRead ? `<span style="width: 8px; height: 8px; border-radius: 50%; background: var(--secondary); display: inline-block; margin-top: 5px; flex-shrink: 0;"></span>` : `<span style="width: 8px; height: 8px; display: inline-block; flex-shrink: 0;"></span>`;
+                    
+                    item.innerHTML = `
+                        ${dotHtml}
+                        <div style="flex: 1; min-width: 0;">
+                            <p style="font-size: 0.85rem; margin: 0 0 2px 0; color: var(--text-primary); font-weight: ${!isRead ? '600' : '400'}; line-height: 1.3; overflow-wrap: break-word;">${n.message}</p>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">${dateStr}</span>
+                        </div>
+                        <button class="dropdown-notif-delete-btn" style="background: none; border: none; padding: 0.25rem; cursor: pointer; color: var(--text-muted); transition: color 0.2s; margin-left: 0.5rem; flex-shrink: 0; align-self: center;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    `;
+                    
+                    item.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (!isRead) {
+                            await this.markNotificationReadDropdown(n.id);
+                        }
+                    };
+
+                    const deleteBtn = item.querySelector('.dropdown-notif-delete-btn');
+                    if (deleteBtn) {
+                        deleteBtn.onclick = async (e) => {
+                            e.stopPropagation();
+                            if (confirm('Are you sure you want to delete this notification?')) {
+                                await this.deleteNotification(n.id);
+                            }
+                        };
+                    }
+                    
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                console.error("Error loading dropdown notifications:", err);
+                list.innerHTML = '<p style="text-align:center; padding: 1.5rem; font-size: 0.85rem; color:var(--danger);">Error loading notifications.</p>';
+            }
+        },
+
+        async markNotificationReadDropdown(id) {
+            try {
+                const res = await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+                if (res.ok) {
+                    await this.loadDropdownNotifications();
+                    this.updateNotificationsBadge();
+                    if (document.getElementById('notifications-list')) {
+                        this.loadNotifications();
+                    }
+                }
+            } catch (err) {
+                console.error("Error marking notification read in dropdown:", err);
+            }
+        },
+
+        async markAllNotificationsRead(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            try {
+                const res = await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+                if (res.ok) {
+                    await this.loadDropdownNotifications();
+                    this.updateNotificationsBadge();
+                    if (document.getElementById('notifications-list')) {
+                        this.loadNotifications();
+                    }
+                }
+            } catch (err) {
+                console.error("Error marking all read:", err);
             }
         },
 
@@ -2160,8 +2325,11 @@
                         <p style="font-size:0.95rem; font-weight: 500; margin:0 0 4px 0;">${n.message}</p>
                         <span style="font-size:0.8rem; color:var(--text-muted);">${dateStr}</span>
                     </div>
-                    <div style="text-align: right; min-width: 120px;">
+                    <div style="text-align: right; min-width: 120px; display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem;">
                         ${markReadBtn}
+                        <button class="btn btn-outline btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; height: auto;" onclick="window.GarageLK.handleDeleteNotification(${n.id})" unique-id="notif-delete-btn-${n.id}">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     </div>
                 `;
                 list.appendChild(item);
@@ -2178,6 +2346,29 @@
                 }
             } catch (err) {
                 console.error("Error marking notification as read:", err);
+            }
+        },
+
+        async deleteNotification(id) {
+            try {
+                const res = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    await this.loadDropdownNotifications();
+                    this.updateNotificationsBadge();
+                    if (document.getElementById('notifications-list')) {
+                        this.loadNotifications();
+                    }
+                } else {
+                    this.showToast("Failed to delete notification", "error");
+                }
+            } catch (err) {
+                console.error("Error deleting notification:", err);
+            }
+        },
+
+        async handleDeleteNotification(id) {
+            if (confirm('Are you sure you want to delete this notification?')) {
+                await this.deleteNotification(id);
             }
         },
 
@@ -3583,6 +3774,24 @@
             }
 
             try {
+                // Upload images first if present
+                const uploadedUrls = [];
+                const files = this.selectedReviewImages || [];
+                if (files.length > 0) {
+                    this.showToast('Uploading images...', 'info');
+                    for (const file of files) {
+                        try {
+                            const url = await this.uploadFile(file);
+                            uploadedUrls.push(url);
+                        } catch (err) {
+                            console.error("Image upload failed:", err);
+                            this.showToast('Failed to upload one or more review images.', 'error');
+                            return;
+                        }
+                    }
+                    payload.imageUrls = uploadedUrls.join(',');
+                }
+
                 const res = await fetch('/api/reviews', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3593,6 +3802,9 @@
                 if (res.ok) {
                     this.showToast('Review submitted successfully!', 'success');
                     this.closeModal('modal-review');
+                    this.selectedReviewImages = [];
+                    const previewContainer = document.getElementById('review-images-preview');
+                    if (previewContainer) previewContainer.innerHTML = '';
                     if (bookingIdVal) {
                         this.loadCustomerBookings();
                     } else {
@@ -6997,6 +7209,8 @@
             this.removeSelectedImage(null, 'shop-image-file', 'shop-image-placeholder', 'shop-image-preview-container', 'shop-image');
             const submitBtn = document.getElementById('shop-submit-btn');
             if (submitBtn) submitBtn.textContent = 'Submit Request';
+            const modalTitle = document.getElementById('modal-shop-title');
+            if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-store"></i> Register Spare Part Shop';
             this.openModal('modal-add-shop');
         },
 
@@ -7039,6 +7253,8 @@
 
             const submitBtn = document.getElementById('shop-submit-btn');
             if (submitBtn) submitBtn.textContent = 'Save Changes';
+            const modalTitle = document.getElementById('modal-shop-title');
+            if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-store"></i> Edit Spare Part Shop';
             this.openModal('modal-add-shop');
         },
 
@@ -8334,6 +8550,10 @@
 
         // --- SHOP RATING (BY CUSTOMERS) ---
         openShopReviewModal(bookingId, shopName) {
+            this.selectedShopReviewImages = [];
+            const previewContainer = document.getElementById('shop-review-images-preview');
+            if (previewContainer) previewContainer.innerHTML = '';
+
             document.getElementById('rate-shop-booking-id').value = bookingId;
             document.getElementById('rate-shop-name').value = shopName;
             document.getElementById('rate-shop-rating').value = '5';
@@ -8348,17 +8568,40 @@
             const starRating = parseInt(document.getElementById('rate-shop-rating').value);
             const comment = document.getElementById('rate-shop-comment').value.trim();
 
+            const payload = { bookingId, starRating, comment };
+
             try {
+                // Upload images first if present
+                const uploadedUrls = [];
+                const files = this.selectedShopReviewImages || [];
+                if (files.length > 0) {
+                    this.showToast('Uploading images...', 'info');
+                    for (const file of files) {
+                        try {
+                            const url = await this.uploadFile(file);
+                            uploadedUrls.push(url);
+                        } catch (err) {
+                            console.error("Image upload failed:", err);
+                            this.showToast('Failed to upload one or more review images.', 'error');
+                            return;
+                        }
+                    }
+                    payload.imageUrls = uploadedUrls.join(',');
+                }
+
                 const res = await fetch('/api/shop-reviews', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookingId, starRating, comment })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
                 if (res.ok) {
                     this.showToast('Shop review submitted successfully!', 'success');
                     this.closeModal('modal-shop-review');
+                    this.selectedShopReviewImages = [];
+                    const previewContainer = document.getElementById('shop-review-images-preview');
+                    if (previewContainer) previewContainer.innerHTML = '';
                     this.loadCustomerReservations();
                 } else {
                     this.showToast(data.message || 'Failed to submit review', 'error');
@@ -8812,63 +9055,165 @@
             }
         },
 
-        initLiveDateTime() {
+        initNotificationBell() {
             const toggleBtn = document.querySelector('.theme-toggle');
             if (!toggleBtn) return;
 
-            if (document.getElementById('live-datetime')) return;
+            if (document.getElementById('nav-notification-bell')) return;
 
-            const dtEl = document.createElement('div');
-            dtEl.id = 'live-datetime';
-            dtEl.style.display = 'inline-flex';
-            dtEl.style.flexDirection = 'column';
-            dtEl.style.alignItems = 'flex-end';
-            dtEl.style.justifyContent = 'center';
-            dtEl.style.gap = '2px';
-            dtEl.style.fontFamily = '"Outfit", "Inter", monospace';
-            dtEl.style.whiteSpace = 'nowrap';
-            dtEl.style.background = 'transparent';
-            dtEl.style.border = 'none';
-            dtEl.style.padding = '0';
+            // Create container wrapper for bell & dropdown
+            const wrapper = document.createElement('div');
+            wrapper.className = 'nav-bell-wrapper';
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
+            wrapper.style.marginLeft = '0.5rem';
 
-            // Create wrapper container to group toggle button and clock together in the corner
-            let wrapper = document.getElementById('theme-datetime-wrapper');
-            if (!wrapper) {
-                wrapper = document.createElement('div');
-                wrapper.id = 'theme-datetime-wrapper';
-                wrapper.style.display = 'inline-flex';
-                wrapper.style.alignItems = 'center';
-                wrapper.style.gap = '0.75rem';
-                
-                // Insert wrapper where toggleBtn is, then append toggle button first and clock second (at the very end)
-                toggleBtn.parentNode.insertBefore(wrapper, toggleBtn);
-                wrapper.appendChild(toggleBtn);
-                wrapper.appendChild(dtEl);
-            }
-
-            const updateDateTime = () => {
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const date = String(now.getDate()).padStart(2, '0');
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                const seconds = String(now.getSeconds()).padStart(2, '0');
-                
-                dtEl.innerHTML = `
-                    <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500; text-align: right; line-height: 1.1;">${year}-${month}-${date}</div>
-                    <div style="font-size: 0.82rem; color: var(--text-primary); font-weight: 700; text-align: right; line-height: 1.1; margin-top: 1px;">${hours}:${minutes}:${seconds}</div>
-                `;
-            };
+            // Create notification bell button
+            const bellBtn = document.createElement('button');
+            bellBtn.className = 'nav-icon-btn';
+            bellBtn.id = 'nav-notification-bell';
+            bellBtn.setAttribute('unique-id', 'nav-notification-bell-btn');
+            bellBtn.style.position = 'relative';
+            bellBtn.style.margin = '0';
+            bellBtn.innerHTML = `
+                <i class="fa-solid fa-bell"></i>
+                <span id="nav-notifications-badge" class="badge-count" style="display:none; position: absolute; top: -2px; right: -2px; background: var(--danger); color: white; border: 2px solid var(--bg-dark); padding: 0; min-width: 16px; height: 16px; line-height: 12px; border-radius: 50%; font-size: 0.65rem; font-weight: 700; text-align: center;"></span>
+            `;
             
-            updateDateTime();
-            setInterval(updateDateTime, 1000);
+            // Dropdown HTML
+            const dropdown = document.createElement('div');
+            dropdown.id = 'nav-notifications-dropdown';
+            dropdown.style.display = 'none';
+            dropdown.style.position = 'absolute';
+            dropdown.style.top = '48px';
+            dropdown.style.right = '0';
+            dropdown.style.width = '320px';
+            dropdown.style.background = 'var(--bg-card)';
+            dropdown.style.border = '1px solid var(--border-color)';
+            dropdown.style.borderRadius = 'var(--radius-md)';
+            dropdown.style.boxShadow = 'var(--shadow-lg)';
+            dropdown.style.zIndex = '1000';
+            dropdown.style.overflow = 'hidden';
+            dropdown.style.textAlign = 'left';
+            
+            dropdown.innerHTML = `
+                <!-- Header -->
+                <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02);">
+                    <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);"><i class="fa-solid fa-bell" style="color: var(--secondary); margin-right: 0.25rem;"></i> Notifications</span>
+                </div>
+                <!-- Content -->
+                <div id="nav-notif-dropdown-list" style="max-height: 280px; overflow-y: auto; padding: 0.5rem 0;">
+                    <!-- Dynamic items -->
+                </div>
+            `;
+            
+            bellBtn.onclick = (e) => {
+                this.toggleNavNotificationDropdown(e);
+            };
+
+            wrapper.appendChild(bellBtn);
+            wrapper.appendChild(dropdown);
+
+            // Insert after theme toggle button
+            toggleBtn.parentNode.insertBefore(wrapper, toggleBtn.nextSibling);
+
+            // Fetch and update notification badge immediately
+            this.updateNotificationsBadge();
+            
+            // Periodically poll for new notifications every 15 seconds to keep badge updated
+            setInterval(() => this.updateNotificationsBadge(), 15000);
+        },
+
+        handleReviewImagesSelect(event, previewContainerId) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+            
+            const isShop = previewContainerId.includes('shop');
+            const targetArray = isShop ? 'selectedShopReviewImages' : 'selectedReviewImages';
+            
+            if (!this[targetArray]) {
+                this[targetArray] = [];
+            }
+            
+            files.forEach(file => {
+                this[targetArray].push(file);
+            });
+            
+            this.renderReviewImagePreviews(previewContainerId);
+            
+            // Clear input value so selecting same files triggers change again
+            event.target.value = '';
+        },
+
+        renderReviewImagePreviews(previewContainerId) {
+            const container = document.getElementById(previewContainerId);
+            if (!container) return;
+            
+            const isShop = previewContainerId.includes('shop');
+            const targetArray = isShop ? 'selectedShopReviewImages' : 'selectedReviewImages';
+            const files = this[targetArray] || [];
+            
+            container.innerHTML = '';
+            
+            files.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const thumb = document.createElement('div');
+                    thumb.className = 'review-upload-thumb';
+                    thumb.innerHTML = `
+                        <img src="${e.target.result}" alt="preview">
+                        <button type="button" class="delete-btn" onclick="window.GarageLK.removeReviewImage(${index}, '${previewContainerId}')">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    `;
+                    container.appendChild(thumb);
+                };
+                reader.readAsDataURL(file);
+            });
+        },
+
+        removeReviewImage(index, previewContainerId) {
+            const isShop = previewContainerId.includes('shop');
+            const targetArray = isShop ? 'selectedShopReviewImages' : 'selectedReviewImages';
+            
+            if (this[targetArray]) {
+                this[targetArray].splice(index, 1);
+            }
+            
+            this.renderReviewImagePreviews(previewContainerId);
+        },
+
+        openImageLightbox(url) {
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.background = 'rgba(0,0,0,0.85)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = '99999';
+            overlay.style.cursor = 'zoom-out';
+            overlay.innerHTML = `<img src="${url}" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); animation: zoomIn 0.2s ease;">`;
+            overlay.onclick = () => overlay.remove();
+            document.body.appendChild(overlay);
         }
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         GarageLK.initTheme();
-        GarageLK.initLiveDateTime();
+        GarageLK.initNotificationBell();
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('nav-notifications-dropdown');
+            const bell = document.getElementById('nav-notification-bell');
+            if (dropdown && bell && !bell.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
 
         // Register enter keypress handlers for lookup inputs
         const ownerSearch = document.getElementById('owner-quick-search-id');

@@ -1093,6 +1093,16 @@
                     <label for="review-comment">Your Review Comment</label>
                     <textarea id="review-comment" class="form-control" rows="4" placeholder="Write about your experience..." required unique-id="review-comment-textarea"></textarea>
                 </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 0.5rem;">Upload Images (Optional)</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem;">
+                        <label style="width: 65px; height: 65px; border: 2px dashed var(--border-color); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--primary)'; this.style.color='var(--primary)';" onmouseout="this.style.borderColor='var(--border-color)'; this.style.color='var(--text-muted)';">
+                            <i class="fa-solid fa-plus" style="font-size: 1.2rem;"></i>
+                            <input type="file" id="review-images-input" multiple accept="image/*" style="display: none;" onchange="window.GarageLK.handleReviewImagesSelect(event, 'review-images-preview')">
+                        </label>
+                        <div id="review-images-preview" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="review-submit-btn">Submit Review</button>
             </form>
         </div>
@@ -1122,6 +1132,16 @@
                 <div class="form-group">
                     <label for="rate-shop-comment">Review Feedback / Comments</label>
                     <textarea id="rate-shop-comment" class="form-control" rows="4" placeholder="Describe the shop service, parts condition, etc..." required unique-id="rate-shop-comment-textarea"></textarea>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 0.5rem;">Upload Images (Optional)</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem;">
+                        <label style="width: 65px; height: 65px; border: 2px dashed var(--border-color); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--primary)'; this.style.color='var(--primary)';" onmouseout="this.style.borderColor='var(--border-color)'; this.style.color='var(--text-muted)';">
+                            <i class="fa-solid fa-plus" style="font-size: 1.2rem;"></i>
+                            <input type="file" id="shop-review-images-input" multiple accept="image/*" style="display: none;" onchange="window.GarageLK.handleReviewImagesSelect(event, 'shop-review-images-preview')">
+                        </label>
+                        <div id="shop-review-images-preview" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;" unique-id="rate-shop-submit-btn">Submit Shop Review</button>
             </form>
@@ -1449,7 +1469,7 @@
     <div class="modal-overlay" id="modal-add-shop">
         <div class="modal-content">
             <span class="modal-close" onclick="window.GarageLK.closeModal('modal-add-shop')"><i class="fa-solid fa-xmark"></i></span>
-            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-store"></i> Register Spare Part Shop</h3>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;" id="modal-shop-title"><i class="fa-solid fa-store"></i> Register Spare Part Shop</h3>
             <form onsubmit="window.GarageLK.handleAddShop(event)">
                 <input type="hidden" id="edit-shop-id">
                 <div class="form-group">

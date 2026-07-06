@@ -198,6 +198,7 @@ public class SparePartController {
             rMap.put("rating", r.getStarRating());
             rMap.put("comment", r.getComment());
             rMap.put("createdAt", r.getCreatedAt());
+            rMap.put("imageUrls", r.getImageUrls());
             
             Map<String, Object> uMap = new HashMap<>();
             User u = r.getCustomer();
