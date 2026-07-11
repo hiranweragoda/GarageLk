@@ -1365,15 +1365,21 @@ footer {
     font-weight: bold;
 }
 
-/* About Us Section styling */
 .about-section {
     margin-top: 5rem;
-    padding: 4rem 2rem;
+    padding: 4rem 0;
     background: radial-gradient(circle at bottom right, rgba(6, 182, 212, 0.1) 0%, transparent 60%), var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
     position: relative;
     overflow: hidden;
+
+    /* Viewport breakout to span full screen width */
+    width: 100vw;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
 }
 
 .about-grid {
@@ -1383,6 +1389,9 @@ footer {
     align-items: center;
     position: relative;
     z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
 }
 
 .about-stats-grid {
