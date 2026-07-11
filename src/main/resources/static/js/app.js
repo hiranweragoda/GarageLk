@@ -411,6 +411,7 @@
 
         // --- HOMEPAGE / SEARCH PAGE ---
         async initHomepage() {
+            this.initTypewriter();
             await this.checkAuth();
             
             // Read cached coordinates if valid (< 30 minutes)
@@ -554,6 +555,53 @@
                     }
                 }
             }
+        },
+
+        initTypewriter() {
+            const element = document.getElementById('typed-text');
+            if (!element) return;
+
+            const words = [
+                "Garages & Parts",
+                "Expert Mechanics",
+                "Genuine Spare Parts",
+                "Automotive Services"
+            ];
+            
+            let wordIndex = 0;
+            let charIndex = words[0].length;
+            let isDeleting = true;
+            let typingSpeed = 2000;
+
+            const type = () => {
+                const el = document.getElementById('typed-text');
+                if (!el) return;
+                
+                const currentWord = words[wordIndex];
+                
+                if (isDeleting) {
+                    el.textContent = currentWord.substring(0, charIndex - 1);
+                    charIndex--;
+                    typingSpeed = 50 + Math.random() * 50;
+                } else {
+                    el.textContent = currentWord.substring(0, charIndex + 1);
+                    charIndex++;
+                    typingSpeed = 100 + Math.random() * 100;
+                }
+
+                if (!isDeleting && charIndex === currentWord.length) {
+                    typingSpeed = 2000;
+                    isDeleting = true;
+                } else if (isDeleting && charIndex === 0) {
+                    isDeleting = false;
+                    wordIndex = (wordIndex + 1) % words.length;
+                    typingSpeed = 500;
+                }
+
+                setTimeout(type, typingSpeed);
+            };
+
+            setTimeout(type, typingSpeed);
         },
 
         async loadAboutStats() {

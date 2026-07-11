@@ -370,6 +370,24 @@ main {
     -webkit-text-fill-color: transparent;
 }
 
+.hero h1 span.typed-cursor {
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    background-clip: initial !important;
+    -webkit-text-fill-color: var(--primary) !important;
+    color: var(--primary) !important;
+    display: inline-block;
+    animation: typed-blink 0.7s infinite;
+    margin-left: 4px;
+    font-weight: normal;
+}
+
+@keyframes typed-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+
 .hero p {
     color: rgba(255, 255, 255, 0.85) !important;
     font-size: 1.2rem;
