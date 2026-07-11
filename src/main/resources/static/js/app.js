@@ -2738,7 +2738,7 @@
                     } else if (b.status === 'APPROVED') {
                         actionHtml = `
                             <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:var(--success);" 
-                                onclick="window.GarageLK.updateBookingStatus(${b.id}, 'COMPLETED')" unique-id="complete-btn-${b.id}">Mark Completed</button>
+                                onclick="window.GarageLK.initiatePayment(${b.id}, 'GARAGE', '${b.bookingCode}', '${(b.user.fullName || b.user.email).replace(/'/g, "\\'")}', ${b.totalPrice || b.price || 0})" unique-id="complete-btn-${b.id}">Mark Completed</button>
                             <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
                                 onclick="window.GarageLK.updateBookingStatus(${b.id}, 'CANCELLED')" unique-id="owner-cancel-btn-${b.id}">Cancel</button>
                         `;
@@ -3853,6 +3853,137 @@
         closeModal(id) {
             const modal = document.getElementById(id);
             if (modal) modal.style.display = 'none';
+        },
+
+        initiatePayment(id, type, bookingCode, customerName, amount) {
+            document.getElementById('payment-booking-id').value = id;
+            document.getElementById('payment-booking-type').value = type;
+            document.getElementById('payment-booking-code').value = bookingCode;
+            document.getElementById('payment-customer-name').value = customerName;
+            document.getElementById('payment-amount').value = parseFloat(amount).toFixed(2);
+            document.getElementById('payment-method').value = 'CASH';
+
+            // Clear card details
+            document.getElementById('payment-card-holder').value = '';
+            document.getElementById('payment-card-number').value = '';
+            document.getElementById('payment-expiry').value = '';
+            document.getElementById('payment-cvv').value = '';
+
+            this.togglePaymentFields();
+            this.openModal('modal-payment');
+        },
+
+        togglePaymentFields() {
+            const method = document.getElementById('payment-method').value;
+            const cardContainer = document.getElementById('card-details-container');
+            if (method === 'CARD') {
+                cardContainer.style.display = 'block';
+            } else {
+                cardContainer.style.display = 'none';
+            }
+        },
+
+        async submitPayment(event) {
+            event.preventDefault();
+            const id = document.getElementById('payment-booking-id').value;
+            const type = document.getElementById('payment-booking-type').value;
+            const code = document.getElementById('payment-booking-code').value;
+            const amount = parseFloat(document.getElementById('payment-amount').value);
+            const paymentMethod = document.getElementById('payment-method').value;
+
+            const payload = {
+                bookingId: parseInt(id),
+                bookingType: type,
+                amount: amount,
+                paymentMethod: paymentMethod
+            };
+
+            if (paymentMethod === 'CARD') {
+                const cardHolder = document.getElementById('payment-card-holder').value.trim();
+                const cardNumber = document.getElementById('payment-card-number').value.trim();
+                const expiry = document.getElementById('payment-expiry').value.trim();
+                const cvv = document.getElementById('payment-cvv').value.trim();
+
+                if (!cardHolder || !cardNumber || !expiry || !cvv) {
+                    this.showToast('Please fill in all card details', 'error');
+                    return;
+                }
+
+                // Mock card validation
+                const cleanCardNumber = cardNumber.replace(/\s+/g, '');
+                if (cleanCardNumber.length < 12 || cleanCardNumber.length > 19 || isNaN(cleanCardNumber)) {
+                    this.showToast('Invalid card number. Must be between 12 and 19 digits.', 'error');
+                    return;
+                }
+
+                const expiryRegex = /^(0[1-9]|1[0-2])\/?([0-9]{2})$/;
+                if (!expiryRegex.test(expiry)) {
+                    this.showToast('Invalid expiry date format. Use MM/YY.', 'error');
+                    return;
+                }
+
+                if (cvv.length < 3 || cvv.length > 4 || isNaN(cvv)) {
+                    this.showToast('Invalid CVV. Must be 3 or 4 digits.', 'error');
+                    return;
+                }
+
+                payload.cardNumber = cleanCardNumber;
+                payload.cardHolderName = cardHolder;
+                payload.expiryDate = expiry;
+                payload.cvv = cvv;
+            }
+
+            try {
+                // 1. Process payment
+                const payRes = await fetch('/api/payments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const payData = await payRes.json();
+                if (!payRes.ok) {
+                    this.showToast(payData.message || 'Payment processing failed', 'error');
+                    return;
+                }
+
+                // 2. Complete the status update on the booking/reservation
+                let statusUrl = '';
+                let statusBody = {};
+
+                if (type === 'GARAGE') {
+                    statusUrl = `/api/bookings/${id}/status`;
+                    statusBody = { status: 'COMPLETED' };
+                } else if (type === 'SPARE_PART') {
+                    statusUrl = `/api/spare-parts/bookings/${id}/status`;
+                    statusBody = { status: 'PICKED_UP' };
+                }
+
+                const statusRes = await fetch(statusUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(statusBody)
+                });
+
+                const statusData = await statusRes.json();
+                if (statusRes.ok) {
+                    this.showToast('Payment successful and status marked completed!', 'success');
+                    this.closeModal('modal-payment');
+                    
+                    // Reload data
+                    if (type === 'GARAGE') {
+                        this.loadOwnerBookings();
+                        this.loadOwnerAnalytics();
+                    } else if (type === 'SPARE_PART') {
+                        this.loadShopReservations();
+                    }
+                } else {
+                    this.showToast(statusData.message || 'Payment succeeded but status update failed', 'warning');
+                }
+            } catch (err) {
+                console.error("Error processing payment:", err);
+                this.showToast('Connection error during payment processing', 'error');
+            }
         },
 
         openMapPicker(latInputId, lngInputId, citySelectId) {
@@ -8045,6 +8176,7 @@
             } else {
                 list.innerHTML = '';
                 incomingBookings.forEach(b => {
+                    const cust = b.customer.user;
                     const item = document.createElement('div');
                     item.className = 'table-item';
 
@@ -8066,7 +8198,7 @@
                     } else if (b.status === 'READY_FOR_PICKUP') {
                         actionHtml = `
                             <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:var(--success);" 
-                                onclick="window.GarageLK.updatePartReservationStatus(${b.id}, 'PICKED_UP')" unique-id="picked-btn-${b.id}">
+                                onclick="window.GarageLK.initiatePayment(${b.id}, 'SPARE_PART', '${b.bookingCode}', '${(cust.fullName || cust.email).replace(/'/g, "\\'")}', ${b.totalPrice || b.price || 0})" unique-id="picked-btn-${b.id}">
                                 Mark Picked Up
                             </button>
                             <button class="btn btn-outline btn-danger" style="padding:0.4rem 0.8rem; font-size:0.8rem;" 
@@ -8077,7 +8209,6 @@
                     }
 
                     const formattedPickup = new Date(b.pickupDate).toLocaleString();
-                    const cust = b.customer.user;
 
                     item.innerHTML = `
                         <div style="flex:1; display:flex; gap:1rem; align-items:center; cursor:pointer;" onclick="window.GarageLK.quickLookupID('${b.bookingCode}')" unique-id="click-shop-reservation-${b.id}">

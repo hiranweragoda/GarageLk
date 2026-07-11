@@ -1748,6 +1748,66 @@
             }
         });
     </script>
+    <!-- Payment Modal (Garage / Spare Part Shop) -->
+    <div class="modal-overlay" id="modal-payment" style="display: none;">
+        <div class="modal-content" style="max-width: 480px; width: 90%;">
+            <span class="modal-close" onclick="window.GarageLK.closeModal('modal-payment')"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-credit-card"></i> Process Payment</h3>
+            <form onsubmit="window.GarageLK.submitPayment(event)">
+                <input type="hidden" id="payment-booking-id">
+                <input type="hidden" id="payment-booking-type"> <!-- "GARAGE" or "SPARE_PART" -->
+                
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Booking Code</label>
+                    <input type="text" id="payment-booking-code" class="form-control" readonly style="background: var(--bg-surface-tint);">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Customer Name</label>
+                    <input type="text" id="payment-customer-name" class="form-control" readonly style="background: var(--bg-surface-tint);">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Amount to Pay (LKR)</label>
+                    <input type="number" step="0.01" id="payment-amount" class="form-control" readonly style="background: var(--bg-surface-tint); font-weight: bold; color: var(--secondary);">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="payment-method">Payment Method</label>
+                    <select id="payment-method" class="form-control" onchange="window.GarageLK.togglePaymentFields()" required>
+                        <option value="CASH">Cash Payment</option>
+                        <option value="CARD">Card Payment</option>
+                    </select>
+                </div>
+
+                <!-- Card Details Container (Hidden by default) -->
+                <div id="card-details-container" style="display: none; border: 1px dashed var(--border-color); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; background: rgba(0,0,0,0.02);">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-primary);"><i class="fa-solid fa-lock"></i> Secure Mock Payment</h4>
+                    <div class="form-group">
+                        <label for="payment-card-holder">Cardholder Name</label>
+                        <input type="text" id="payment-card-holder" class="form-control" placeholder="e.g. John Doe" unique-id="payment-card-holder-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="payment-card-number">Card Number</label>
+                        <input type="text" id="payment-card-number" class="form-control" placeholder="1234 5678 1234 5678" maxlength="19" unique-id="payment-card-number-input">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="payment-expiry">Expiry Date</label>
+                            <input type="text" id="payment-expiry" class="form-control" placeholder="MM/YY" maxlength="5" unique-id="payment-expiry-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="payment-cvv">CVV</label>
+                            <input type="password" id="payment-cvv" class="form-control" placeholder="123" maxlength="4" unique-id="payment-cvv-input">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; height: 45px; font-weight: bold;" unique-id="payment-pay-btn">Pay & Complete</button>
+            </form>
+        </div>
+    </div>
+
     <script src="js/chatbot.js"></script>
 </body>
 </html>
