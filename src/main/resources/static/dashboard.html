@@ -1758,6 +1758,14 @@
                 <input type="hidden" id="payment-booking-type"> <!-- "GARAGE" or "SPARE_PART" -->
                 
                 <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="payment-method">Payment Method</label>
+                    <select id="payment-method" class="form-control" onchange="window.GarageLK.togglePaymentFields()" required>
+                        <option value="CASH">Cash Payment</option>
+                        <option value="CARD">Card Payment</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
                     <label>Booking Code</label>
                     <input type="text" id="payment-booking-code" class="form-control" readonly style="background: var(--bg-surface-tint);">
                 </div>
@@ -1772,12 +1780,15 @@
                     <input type="number" step="0.01" id="payment-amount" class="form-control" readonly style="background: var(--bg-surface-tint); font-weight: bold; color: var(--secondary);">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 1.25rem;">
-                    <label for="payment-method">Payment Method</label>
-                    <select id="payment-method" class="form-control" onchange="window.GarageLK.togglePaymentFields()" required>
-                        <option value="CASH">Cash Payment</option>
-                        <option value="CARD">Card Payment</option>
-                    </select>
+                <!-- Cash Payment Container -->
+                <div id="cash-details-container" style="border: 1px dashed var(--border-color); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; background: rgba(0,0,0,0.02);">
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="payment-cash-tendered">Cash Received (LKR)</label>
+                        <input type="number" step="0.01" id="payment-cash-tendered" class="form-control" placeholder="e.g. 500.00" oninput="window.GarageLK.calculateCashBalance()" unique-id="payment-cash-tendered-input">
+                    </div>
+                    <div id="payment-cash-summary" style="font-weight: 700; font-size: 0.95rem; margin-top: 0.5rem;">
+                        <!-- Updated dynamically by JS -->
+                    </div>
                 </div>
 
                 <!-- Card Details Container (Hidden by default) -->

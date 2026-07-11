@@ -3869,6 +3869,9 @@
             document.getElementById('payment-expiry').value = '';
             document.getElementById('payment-cvv').value = '';
 
+            // Clear cash details
+            document.getElementById('payment-cash-tendered').value = '';
+
             this.togglePaymentFields();
             this.openModal('modal-payment');
         },
@@ -3876,10 +3879,40 @@
         togglePaymentFields() {
             const method = document.getElementById('payment-method').value;
             const cardContainer = document.getElementById('card-details-container');
+            const cashContainer = document.getElementById('cash-details-container');
             if (method === 'CARD') {
-                cardContainer.style.display = 'block';
+                if (cardContainer) cardContainer.style.display = 'block';
+                if (cashContainer) cashContainer.style.display = 'none';
             } else {
-                cardContainer.style.display = 'none';
+                if (cardContainer) cardContainer.style.display = 'none';
+                if (cashContainer) cashContainer.style.display = 'block';
+                this.calculateCashBalance();
+            }
+        },
+
+        calculateCashBalance() {
+            const amount = parseFloat(document.getElementById('payment-amount').value || 0);
+            const cashTenderedVal = document.getElementById('payment-cash-tendered').value;
+            const summary = document.getElementById('payment-cash-summary');
+            if (!summary) return;
+
+            if (!cashTenderedVal || cashTenderedVal.trim() === '') {
+                summary.innerHTML = `<span style="color: var(--danger);">Remaining Amount: ${amount.toFixed(2)} LKR</span>`;
+                return;
+            }
+
+            const cashTendered = parseFloat(cashTenderedVal);
+            if (isNaN(cashTendered) || cashTendered < 0) {
+                summary.innerHTML = `<span style="color: var(--danger);">Invalid cash received</span>`;
+                return;
+            }
+
+            if (cashTendered >= amount) {
+                const change = cashTendered - amount;
+                summary.innerHTML = `<span style="color: #22c55e;"><i class="fa-solid fa-circle-check"></i> Change to Give: ${change.toFixed(2)} LKR</span>`;
+            } else {
+                const remaining = amount - cashTendered;
+                summary.innerHTML = `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Remaining Amount: ${remaining.toFixed(2)} LKR</span>`;
             }
         },
 
