@@ -1794,23 +1794,17 @@
                 <!-- Card Details Container (Hidden by default) -->
                 <div id="card-details-container" style="display: none; border: 1px dashed var(--border-color); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; background: rgba(0,0,0,0.02);">
                     <h4 style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-primary);"><i class="fa-solid fa-lock"></i> Secure Mock Payment</h4>
-                    <div class="form-group">
-                        <label for="payment-card-holder">Cardholder Name</label>
-                        <input type="text" id="payment-card-holder" class="form-control" placeholder="e.g. John Doe" unique-id="payment-card-holder-input">
-                    </div>
-                    <div class="form-group">
-                        <label for="payment-card-number">Card Number</label>
-                        <input type="text" id="payment-card-number" class="form-control" placeholder="1234 5678 1234 5678" maxlength="19" unique-id="payment-card-number-input">
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="payment-expiry">Expiry Date</label>
-                            <input type="text" id="payment-expiry" class="form-control" placeholder="MM/YY" maxlength="5" unique-id="payment-expiry-input">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label>Card Number</label>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <input type="text" id="payment-card-first4" class="form-control" placeholder="1234" maxlength="4" style="text-align: center; width: 85px;" unique-id="payment-card-first4-input">
+                            <span style="font-weight: bold; letter-spacing: 2px; color: var(--text-muted);">**** ****</span>
+                            <input type="text" id="payment-card-last4" class="form-control" placeholder="5678" maxlength="4" style="text-align: center; width: 85px;" unique-id="payment-card-last4-input">
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="payment-cvv">CVV</label>
-                            <input type="password" id="payment-cvv" class="form-control" placeholder="123" maxlength="4" unique-id="payment-cvv-input">
-                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="payment-expiry">Expiry Date</label>
+                        <input type="text" id="payment-expiry" class="form-control" placeholder="MM/YY" maxlength="5" unique-id="payment-expiry-input" style="width: 120px;">
                     </div>
                 </div>
 

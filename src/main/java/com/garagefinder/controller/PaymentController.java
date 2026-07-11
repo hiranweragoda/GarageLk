@@ -36,30 +36,21 @@ public class PaymentController {
         Double amount = Double.parseDouble(payload.get("amount").toString());
         String paymentMethod = payload.get("paymentMethod").toString().toUpperCase();
 
-        String cardNumber = null;
-        String cardHolderName = null;
-        String expiryDate = null;
-        String cvv = null;
-
         if ("CARD".equals(paymentMethod)) {
-            if (payload.get("cardNumber") == null || payload.get("cardHolderName") == null || payload.get("expiryDate") == null || payload.get("cvv") == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Card details (cardNumber, cardHolderName, expiryDate, cvv) are required for card payments"));
+            if (payload.get("cardFirst4") == null || payload.get("cardLast4") == null || payload.get("expiryDate") == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Card details (cardFirst4, cardLast4, expiryDate) are required for card payments"));
             }
-            cardNumber = payload.get("cardNumber").toString().replaceAll("\\s+", "");
-            cardHolderName = payload.get("cardHolderName").toString();
-            expiryDate = payload.get("expiryDate").toString();
-            cvv = payload.get("cvv").toString();
+            String cardFirst4 = payload.get("cardFirst4").toString().trim();
+            String cardLast4 = payload.get("cardLast4").toString().trim();
 
             // Mock Card Validation
-            if (cardNumber.length() < 12 || cardNumber.length() > 19) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid card number length"));
-            }
-            if (cvv.length() < 3 || cvv.length() > 4) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid CVV"));
+            if (cardFirst4.length() != 4 || cardLast4.length() != 4) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "First and last digits of card must be exactly 4 digits"));
             }
         }
 
-        Payment payment = new Payment(bookingId, bookingType, amount, paymentMethod, cardNumber, cardHolderName, expiryDate, cvv);
+        // Save only payment statistics (no card details saved)
+        Payment payment = new Payment(bookingId, bookingType, amount, paymentMethod);
         paymentRepository.save(payment);
 
         return ResponseEntity.ok(Map.of(

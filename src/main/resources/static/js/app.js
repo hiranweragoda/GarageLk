@@ -3864,10 +3864,9 @@
             document.getElementById('payment-method').value = 'CASH';
 
             // Clear card details
-            document.getElementById('payment-card-holder').value = '';
-            document.getElementById('payment-card-number').value = '';
+            document.getElementById('payment-card-first4').value = '';
+            document.getElementById('payment-card-last4').value = '';
             document.getElementById('payment-expiry').value = '';
-            document.getElementById('payment-cvv').value = '';
 
             // Clear cash details
             document.getElementById('payment-cash-tendered').value = '';
@@ -3932,20 +3931,17 @@
             };
 
             if (paymentMethod === 'CARD') {
-                const cardHolder = document.getElementById('payment-card-holder').value.trim();
-                const cardNumber = document.getElementById('payment-card-number').value.trim();
+                const cardFirst4 = document.getElementById('payment-card-first4').value.trim();
+                const cardLast4 = document.getElementById('payment-card-last4').value.trim();
                 const expiry = document.getElementById('payment-expiry').value.trim();
-                const cvv = document.getElementById('payment-cvv').value.trim();
 
-                if (!cardHolder || !cardNumber || !expiry || !cvv) {
+                if (!cardFirst4 || !cardLast4 || !expiry) {
                     this.showToast('Please fill in all card details', 'error');
                     return;
                 }
 
-                // Mock card validation
-                const cleanCardNumber = cardNumber.replace(/\s+/g, '');
-                if (cleanCardNumber.length < 12 || cleanCardNumber.length > 19 || isNaN(cleanCardNumber)) {
-                    this.showToast('Invalid card number. Must be between 12 and 19 digits.', 'error');
+                if (cardFirst4.length !== 4 || isNaN(cardFirst4) || cardLast4.length !== 4 || isNaN(cardLast4)) {
+                    this.showToast('Card digits must be exactly 4 digits long.', 'error');
                     return;
                 }
 
@@ -3955,15 +3951,9 @@
                     return;
                 }
 
-                if (cvv.length < 3 || cvv.length > 4 || isNaN(cvv)) {
-                    this.showToast('Invalid CVV. Must be 3 or 4 digits.', 'error');
-                    return;
-                }
-
-                payload.cardNumber = cleanCardNumber;
-                payload.cardHolderName = cardHolder;
+                payload.cardFirst4 = cardFirst4;
+                payload.cardLast4 = cardLast4;
                 payload.expiryDate = expiry;
-                payload.cvv = cvv;
             }
 
             try {

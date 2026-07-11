@@ -23,32 +23,16 @@ public class Payment {
     @Column(name = "payment_method", nullable = false)
     private String paymentMethod; // "CASH" or "CARD"
 
-    @Column(name = "card_number")
-    private String cardNumber;
-
-    @Column(name = "card_holder_name")
-    private String cardHolderName;
-
-    @Column(name = "expiry_date")
-    private String expiryDate;
-
-    @Column(name = "cvv")
-    private String cvv;
-
     @Column(name = "payment_date", nullable = false)
     private LocalDateTime paymentDate = LocalDateTime.now();
 
     public Payment() {}
 
-    public Payment(Long bookingId, String bookingType, Double amount, String paymentMethod, String cardNumber, String cardHolderName, String expiryDate, String cvv) {
+    public Payment(Long bookingId, String bookingType, Double amount, String paymentMethod) {
         this.bookingId = bookingId;
         this.bookingType = bookingType;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
-        this.cardNumber = cardNumber;
-        this.cardHolderName = cardHolderName;
-        this.expiryDate = expiryDate;
-        this.cvv = cvv;
         this.paymentDate = LocalDateTime.now();
     }
 
@@ -90,38 +74,6 @@ public class Payment {
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
-    }
-
-    public String getCardNumber() {
-        return cardNumber;
-    }
-
-    public void setCardNumber(String cardNumber) {
-        this.cardNumber = cardNumber;
-    }
-
-    public String getCardHolderName() {
-        return cardHolderName;
-    }
-
-    public void setCardHolderName(String cardHolderName) {
-        this.cardHolderName = cardHolderName;
-    }
-
-    public String getExpiryDate() {
-        return expiryDate;
-    }
-
-    public void setExpiryDate(String expiryDate) {
-        this.expiryDate = expiryDate;
-    }
-
-    public String getCvv() {
-        return cvv;
-    }
-
-    public void setCvv(String cvv) {
-        this.cvv = cvv;
     }
 
     public LocalDateTime getPaymentDate() {
