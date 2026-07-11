@@ -4000,6 +4000,11 @@
                     } else if (type === 'SPARE_PART') {
                         this.loadShopReservations();
                     }
+
+                    // Display invoice modal
+                    setTimeout(() => {
+                        this.showInvoice(id, type, paymentMethod, code, customerName, amount);
+                    }, 500);
                 } else {
                     this.showToast(statusData.message || 'Payment succeeded but status update failed', 'warning');
                 }
@@ -4007,6 +4012,55 @@
                 console.error("Error processing payment:", err);
                 this.showToast('Connection error during payment processing', 'error');
             }
+        },
+
+        showInvoice(id, type, method, code, customerName, amount) {
+            let customerContact = '';
+            let dateStr = new Date().toLocaleDateString();
+            let desc = 'Service Booking';
+            let qty = 1;
+            let itemPrice = amount;
+
+            if (type === 'GARAGE') {
+                const b = (this.ownerBookingsRaw || []).find(x => x.id === parseInt(id));
+                if (b) {
+                    customerContact = b.user.phone || b.user.email || '';
+                    dateStr = new Date(b.bookingDate).toLocaleDateString();
+                    desc = b.serviceType || 'General Service';
+                    itemPrice = b.totalPrice || b.price || amount;
+                }
+            } else if (type === 'SPARE_PART') {
+                const b = (this.shopReservationsRaw || []).find(x => x.id === parseInt(id));
+                if (b) {
+                    customerContact = b.customer.user.phone || b.customer.user.email || '';
+                    dateStr = new Date(b.pickupDate).toLocaleDateString();
+                    desc = `${b.sparePart.partName} - ${b.sparePart.vehicleModel}`;
+                    qty = b.quantity || 1;
+                    itemPrice = b.sparePart.price || (amount / qty);
+                }
+            }
+
+            // Populate invoice details
+            document.getElementById('invoice-customer-name').innerText = customerName;
+            document.getElementById('invoice-customer-contact').innerText = customerContact;
+            document.getElementById('invoice-no').innerText = `INV-${code}`;
+            document.getElementById('invoice-date').innerText = dateStr;
+            document.getElementById('invoice-method').innerText = method === 'CASH' ? 'Cash Payment' : 'Card Payment';
+
+            // Populate table rows
+            const tableBody = document.getElementById('invoice-items-body');
+            tableBody.innerHTML = `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; font-weight: 500; color: #334155;">${desc}</td>
+                    <td style="padding: 10px 0; text-align: center; color: #334155;">${qty}</td>
+                    <td style="padding: 10px 0; text-align: right; color: #334155;">LKR ${parseFloat(itemPrice).toFixed(2)}</td>
+                </tr>
+            `;
+
+            document.getElementById('invoice-subtotal').innerText = `LKR ${parseFloat(amount).toFixed(2)}`;
+            document.getElementById('invoice-total').innerText = `LKR ${parseFloat(amount).toFixed(2)}`;
+
+            this.openModal('modal-invoice');
         },
 
         openMapPicker(latInputId, lngInputId, citySelectId) {
