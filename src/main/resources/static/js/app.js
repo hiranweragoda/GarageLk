@@ -676,7 +676,7 @@
                         data.forEach(p => {
                             const shop = p.shop;
                             const card = document.createElement('div');
-                            card.className = 'garage-card';
+                            card.className = 'garage-card' + (shop.openToday === false ? ' closed-today' : '');
                             
                             const distText = (latitude && longitude && p.distance !== undefined)
                                 ? `<div class="garage-distance" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; margin-top: 4px;"><i class="fa-solid fa-route"></i> ${p.distance.toFixed(1)} km away</div>`
@@ -765,7 +765,7 @@
                         // Shop Marketplace rendering logic (like garages)
                         data.forEach(s => {
                             const card = document.createElement('div');
-                            card.className = 'garage-card';
+                            card.className = 'garage-card' + (s.openToday === false ? ' closed-today' : '');
                             
                             const distText = (latitude && longitude && s.distance !== undefined)
                                 ? `<div class="garage-distance" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; margin-top: 4px;"><i class="fa-solid fa-route"></i> ${s.distance.toFixed(1)} km away</div>`
@@ -1271,7 +1271,7 @@
 
                     // Create card
                     const card = document.createElement('div');
-                    card.className = 'garage-card';
+                    card.className = 'garage-card' + (g.openToday === false ? ' closed-today' : '');
                     card.innerHTML = `
                         <img src="${g.imageUrl || 'https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=400'}" class="garage-card-img" alt="${g.name}">
                         <div class="garage-card-content">

@@ -482,6 +482,45 @@ main {
     background: var(--bg-card-hover);
 }
 
+.garage-card.closed-today {
+    opacity: 0.55;
+    filter: grayscale(40%);
+    border-color: rgba(239, 68, 68, 0.25);
+    position: relative;
+}
+
+.garage-card.closed-today:hover {
+    opacity: 0.8;
+    filter: grayscale(20%);
+    transform: translateY(-2px) scale(1.005);
+    box-shadow: var(--shadow-sm);
+}
+
+.garage-card.closed-today::after {
+    content: 'CLOSED TODAY';
+    position: absolute;
+    top: 12px;
+    right: -30px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding: 4px 36px;
+    transform: rotate(30deg);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.garage-card.closed-today .btn,
+.garage-card.closed-today a.btn {
+    pointer-events: none;
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(100%);
+}
+
 .garage-card-img {
     width: 180px;
     object-fit: cover;
