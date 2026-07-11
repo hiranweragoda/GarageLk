@@ -270,7 +270,7 @@ public class BookingController {
             authorized = true;
         } else if ("GARAGE_OWNER".equals(user.getRole())) {
             List<Garage> garages = garageRepository.findByUserId(user.getId());
-            if ("COMPLETED".equals(booking.getStatus())) {
+            if ("COMPLETED".equals(booking.getStatus()) || "CANCELLED".equals(booking.getStatus())) {
                 authorized = garages.stream().anyMatch(g -> g.getId().equals(booking.getGarage().getId()));
             }
         }
@@ -306,10 +306,10 @@ public class BookingController {
         List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
         List<Booking> bookings = bookingRepository.findByGarageIdInOrderByBookingDateDesc(garageIds);
         List<Booking> completed = bookings.stream()
-                .filter(b -> "COMPLETED".equals(b.getStatus()))
+                .filter(b -> "COMPLETED".equals(b.getStatus()) || "CANCELLED".equals(b.getStatus()))
                 .toList();
 
         bookingRepository.deleteAll(completed);
-        return ResponseEntity.ok(Map.of("message", "All completed booking history cleared successfully"));
+        return ResponseEntity.ok(Map.of("message", "All completed and cancelled booking history cleared successfully"));
     }
 }
