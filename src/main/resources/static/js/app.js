@@ -1997,9 +1997,6 @@
                     <button class="sidebar-btn" id="side-customer-breakdowns" onclick="window.GarageLK.switchDashboardTab('customer-breakdowns'); window.GarageLK.loadCustomerBreakdowns();">
                         <i class="fa-solid fa-truck-medical"></i> Emergency Assist
                     </button>
-                    <button class="sidebar-btn" id="side-notifications" onclick="window.GarageLK.switchDashboardTab('notifications'); window.GarageLK.loadNotifications();">
-                        <i class="fa-solid fa-bell"></i> Notifications <span id="notifications-badge" class="badge-count" style="display:none; margin-left: 0.5rem; background: var(--danger); color: white; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); font-size: 0.75rem;"></span>
-                    </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Settings
                     </button>
@@ -2028,9 +2025,6 @@
                     <button class="sidebar-btn" id="side-owner-analytics" onclick="window.GarageLK.switchDashboardTab('owner-analytics')">
                         <i class="fa-solid fa-chart-line"></i> Analytics Overview
                     </button>
-                    <button class="sidebar-btn" id="side-notifications" onclick="window.GarageLK.switchDashboardTab('notifications'); window.GarageLK.loadNotifications();">
-                        <i class="fa-solid fa-bell"></i> Notifications <span id="notifications-badge" class="badge-count" style="display:none; margin-left: 0.5rem; background: var(--danger); color: white; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); font-size: 0.75rem;"></span>
-                    </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Settings
                     </button>
@@ -2053,9 +2047,6 @@
                     <button class="sidebar-btn" id="side-shop-analytics" onclick="window.GarageLK.switchDashboardTab('shop-analytics'); window.GarageLK.loadShopAnalytics();">
                         <i class="fa-solid fa-chart-line"></i> Analytics (Sales Reports)
                     </button>
-                    <button class="sidebar-btn" id="side-notifications" onclick="window.GarageLK.switchDashboardTab('notifications'); window.GarageLK.loadNotifications();">
-                        <i class="fa-solid fa-bell"></i> Notifications <span id="notifications-badge" class="badge-count" style="display:none; margin-left: 0.5rem; background: var(--danger); color: white; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); font-size: 0.75rem;"></span>
-                    </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Settings
                     </button>
@@ -2077,9 +2068,6 @@
                     </button>
                     <button class="sidebar-btn" id="side-admin-users" onclick="window.GarageLK.switchDashboardTab('admin-users'); window.GarageLK.resetAdminUserFilter();">
                         <i class="fa-solid fa-users"></i> User Management
-                    </button>
-                    <button class="sidebar-btn" id="side-notifications" onclick="window.GarageLK.switchDashboardTab('notifications'); window.GarageLK.loadNotifications();">
-                        <i class="fa-solid fa-bell"></i> Notifications <span id="notifications-badge" class="badge-count" style="display:none; margin-left: 0.5rem; background: var(--danger); color: white; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); font-size: 0.75rem;"></span>
                     </button>
                     <button class="sidebar-btn" id="side-profile" onclick="window.GarageLK.switchDashboardTab('profile'); window.GarageLK.loadUserProfile();">
                         <i class="fa-solid fa-user-gear"></i> Profile Management
