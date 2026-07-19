@@ -291,38 +291,33 @@
                 }
             };
 
-            // Attempt to get location, with a 4 second timeout
-            if (navigator.geolocation) {
-                let resolved = false;
-                const geoTimeout = setTimeout(() => {
+            // Attempt to get location, with a 6 second timeout
+            let resolved = false;
+            const geoTimeout = setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    console.warn("Geolocation timed out. Proceeding with login.");
+                    executeLogin(null, null);
+                }
+            }, 6000);
+
+            this.getGPSLocation(
+                (pos) => {
                     if (!resolved) {
                         resolved = true;
-                        console.warn("Geolocation timed out. Proceeding with login.");
+                        clearTimeout(geoTimeout);
+                        executeLogin(pos.coords.latitude, pos.coords.longitude);
+                    }
+                },
+                (err) => {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(geoTimeout);
+                        console.warn("Geolocation failed/denied:", err);
                         executeLogin(null, null);
                     }
-                }, 4000);
-
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        if (!resolved) {
-                            resolved = true;
-                            clearTimeout(geoTimeout);
-                            executeLogin(pos.coords.latitude, pos.coords.longitude);
-                        }
-                    },
-                    (err) => {
-                        if (!resolved) {
-                            resolved = true;
-                            clearTimeout(geoTimeout);
-                            console.warn("Geolocation failed/denied:", err);
-                            executeLogin(null, null);
-                        }
-                    },
-                    { enableHighAccuracy: true, timeout: 3500 }
-                );
-            } else {
-                executeLogin(null, null);
-            }
+                }
+            );
         },
 
         async handleSignup(e) {
@@ -480,69 +475,67 @@
                 this.loadHomepageActiveBreakdown();
                 
                 // Request customer location in background to update cache/map
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            const newLat = pos.coords.latitude;
-                            const newLng = pos.coords.longitude;
-                            
-                            const latInput = document.getElementById('breakdown-lat');
-                            const lngInput = document.getElementById('breakdown-lng');
-                            if (latInput) latInput.value = newLat;
-                            if (lngInput) lngInput.value = newLng;
-                            
-                            // Check if coordinates changed significantly (e.g. > 50 meters)
-                            let isSignificantChange = true;
-                            if (this.customerCoords) {
-                                const distanceMoved = this.calculateDistance(
-                                    this.customerCoords.lat,
-                                    this.customerCoords.lng,
-                                    newLat,
-                                    newLng
-                                );
-                                // If moved less than 50 meters (0.05 km), treat it as same location
-                                if (distanceMoved < 0.05) {
-                                    isSignificantChange = false;
-                                }
+                this.getGPSLocation(
+                    (pos) => {
+                        const newLat = pos.coords.latitude;
+                        const newLng = pos.coords.longitude;
+                        
+                        const latInput = document.getElementById('breakdown-lat');
+                        const lngInput = document.getElementById('breakdown-lng');
+                        if (latInput) latInput.value = newLat;
+                        if (lngInput) lngInput.value = newLng;
+                        
+                        // Check if coordinates changed significantly (e.g. > 50 meters)
+                        let isSignificantChange = true;
+                        if (this.customerCoords) {
+                            const distanceMoved = this.calculateDistance(
+                                this.customerCoords.lat,
+                                this.customerCoords.lng,
+                                newLat,
+                                newLng
+                            );
+                            // If moved less than 50 meters (0.05 km), treat it as same location
+                            if (distanceMoved < 0.05) {
+                                isSignificantChange = false;
                             }
-                            
-                            // Save to local storage cache
-                            try {
-                                localStorage.setItem('customer_coords', JSON.stringify({
-                                    lat: newLat,
-                                    lng: newLng,
-                                    timestamp: Date.now()
-                                }));
-                            } catch (e) {
-                                console.warn("Failed to cache customer coordinates:", e);
+                        }
+                        
+                        // Save to local storage cache
+                        try {
+                            localStorage.setItem('customer_coords', JSON.stringify({
+                                lat: newLat,
+                                lng: newLng,
+                                timestamp: Date.now()
+                            }));
+                        } catch (e) {
+                            console.warn("Failed to cache customer coordinates:", e);
+                        }
+                        
+                        if (isSignificantChange) {
+                            this.customerCoords = { lat: newLat, lng: newLng };
+                            this.showCustomerLocationOnMap();
+                            // Reload garages or spare parts with distance sorting
+                            if (urlParams.get('search') === 'parts') {
+                                this.loadSpareParts();
+                            } else {
+                                this.loadGarages();
                             }
-                            
-                            if (isSignificantChange) {
-                                this.customerCoords = { lat: newLat, lng: newLng };
-                                this.showCustomerLocationOnMap();
-                                // Reload garages or spare parts with distance sorting
-                                if (urlParams.get('search') === 'parts') {
-                                    this.loadSpareParts();
-                                } else {
-                                    this.loadGarages();
-                                }
+                        }
+                    },
+                    (err) => {
+                        console.warn("Geolocation query failed/denied:", err);
+                        // Fallback default (Colombo) if no cached coordinates are available
+                        if (!this.customerCoords) {
+                            this.customerCoords = { lat: 6.9271, lng: 79.8612 };
+                            this.showCustomerLocationOnMap();
+                            if (urlParams.get('search') === 'parts') {
+                                this.loadSpareParts();
+                            } else {
+                                this.loadGarages();
                             }
-                        },
-                        (err) => {
-                            console.warn("Geolocation query failed/denied:", err);
-                            // Fallback default (Colombo) if no cached coordinates are available
-                            if (!this.customerCoords) {
-                                this.customerCoords = { lat: 6.9271, lng: 79.8612 };
-                                this.showCustomerLocationOnMap();
-                                if (urlParams.get('search') === 'parts') {
-                                    this.loadSpareParts();
-                                } else {
-                                    this.loadGarages();
-                                }
-                            }
-                        },
-                        { timeout: 5000, enableHighAccuracy: true }
-                    );
+                        }
+                    }
+                );
                 } else {
                     if (!this.customerCoords) {
                         this.customerCoords = { lat: 6.9271, lng: 79.8612 };
@@ -554,7 +547,6 @@
                         }
                     }
                 }
-            }
         },
 
         initTypewriter() {
@@ -1087,6 +1079,35 @@
             return coords[key] || null;
         },
 
+        getGPSLocation(successCallback, errorCallback) {
+            if (!navigator.geolocation) {
+                if (errorCallback) errorCallback(new Error("Geolocation not supported"));
+                return;
+            }
+
+            // Try high accuracy first
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    successCallback(pos);
+                },
+                (err) => {
+                    console.warn("High accuracy geolocation failed, trying low accuracy fallback. Error:", err);
+                    // Fallback to low accuracy
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            successCallback(pos);
+                        },
+                        (err2) => {
+                            console.error("Low accuracy geolocation also failed:", err2);
+                            if (errorCallback) errorCallback(err2);
+                        },
+                        { enableHighAccuracy: false, timeout: 6000, maximumAge: 600000 }
+                    );
+                },
+                { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 }
+            );
+        },
+
         showCustomerLocationOnMap() {
             if (!this.map || !this.customerCoords) return;
 
@@ -1103,14 +1124,46 @@
                 iconAnchor: [10, 10]
             });
 
-            this.customerMarker = L.marker([this.customerCoords.lat, this.customerCoords.lng], { icon: customerIcon })
+            this.customerMarker = L.marker([this.customerCoords.lat, this.customerCoords.lng], { 
+                icon: customerIcon,
+                draggable: true
+            })
                 .addTo(this.map)
                 .bindPopup(`
                     <div style="font-family: var(--font-body); font-size: 0.85rem; color: var(--text-primary); text-align: center; min-width: 140px;">
                         <strong style="color: var(--success);"><i class="fa-solid fa-user-circle"></i> Your Location</strong>
-                        <p style="margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary);">Showing nearest services</p>
+                        <p style="margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary);">Drag to adjust or click map to move</p>
                     </div>
                 `);
+
+            this.customerMarker.on('dragend', (e) => {
+                const position = e.target.getLatLng();
+                this.customerCoords = { lat: position.lat, lng: position.lng };
+                try {
+                    localStorage.setItem('customer_coords', JSON.stringify({
+                        lat: position.lat,
+                        lng: position.lng,
+                        timestamp: Date.now()
+                    }));
+                } catch (err) {
+                    console.warn("Failed to cache customer coordinates from marker drag:", err);
+                }
+                
+                // Update text inputs for breakdown if they are present on screen
+                const latInput = document.getElementById('breakdown-lat');
+                const lngInput = document.getElementById('breakdown-lng');
+                if (latInput) latInput.value = position.lat;
+                if (lngInput) lngInput.value = position.lng;
+
+                // Reload garages/spare parts with new distances
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('search') === 'parts') {
+                    this.loadSpareParts();
+                } else {
+                    this.loadGarages();
+                }
+                this.showToast("Your location updated to dragged position!", "success");
+            });
 
             // Center and zoom to customer location
             this.map.setView([this.customerCoords.lat, this.customerCoords.lng], 13);
@@ -1293,6 +1346,31 @@
                 iconAnchor: [12, 41],
                 popupAnchor: [1, -34],
                 shadowSize: [41, 41]
+            });
+
+            // Let the customer click anywhere on the map to set their location
+            this.map.on('click', (e) => {
+                if (this.currentUser && this.currentUser.role === 'CUSTOMER') {
+                    this.customerCoords = { lat: e.latlng.lat, lng: e.latlng.lng };
+                    try {
+                        localStorage.setItem('customer_coords', JSON.stringify({
+                            lat: e.latlng.lat,
+                            lng: e.latlng.lng,
+                            timestamp: Date.now()
+                        }));
+                    } catch (err) {
+                        console.warn("Failed to cache customer coordinates from map click:", err);
+                    }
+                    this.showCustomerLocationOnMap();
+                    
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('search') === 'parts') {
+                        this.loadSpareParts();
+                    } else {
+                        this.loadGarages();
+                    }
+                    this.showToast("Your location updated to selected map point!", "success");
+                }
             });
         },
 
@@ -4428,55 +4506,48 @@
                 if (latInput) latInput.value = this.customerCoords.lat;
                 if (lngInput) lngInput.value = this.customerCoords.lng;
             } else {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            const newLat = pos.coords.latitude;
-                            const newLng = pos.coords.longitude;
-                            this.customerCoords = { lat: newLat, lng: newLng };
-                            const latInput = document.getElementById('breakdown-lat');
-                            const lngInput = document.getElementById('breakdown-lng');
-                            if (latInput) latInput.value = newLat;
-                            if (lngInput) lngInput.value = newLng;
-                            this.showCustomerLocationOnMap();
-                        },
-                        () => {},
-                        { timeout: 5000, enableHighAccuracy: true }
-                    );
-                }
+                this.getGPSLocation(
+                    (pos) => {
+                        const newLat = pos.coords.latitude;
+                        const newLng = pos.coords.longitude;
+                        this.customerCoords = { lat: newLat, lng: newLng };
+                        const latInput = document.getElementById('breakdown-lat');
+                        const lngInput = document.getElementById('breakdown-lng');
+                        if (latInput) latInput.value = newLat;
+                        if (lngInput) lngInput.value = newLng;
+                        this.showCustomerLocationOnMap();
+                    },
+                    () => {}
+                );
             }
             this.openModal('modal-breakdown');
         },
-
+ 
         detectLocation() {
-            if (navigator.geolocation) {
-                this.showToast("Retrieving GPS coordinates...", "success");
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const newLat = position.coords.latitude;
-                        const newLng = position.coords.longitude;
-                        document.getElementById('breakdown-lat').value = newLat;
-                        document.getElementById('breakdown-lng').value = newLng;
-                        this.showToast("GPS Location auto-detected!", "success");
-
-                        // Also cache it so the main homepage has access to it immediately
-                        try {
-                            localStorage.setItem('customer_coords', JSON.stringify({
-                                lat: newLat,
-                                lng: newLng,
-                                timestamp: Date.now()
-                            }));
-                        } catch (e) {
-                            console.warn("Failed to cache customer coordinates from emergency detection:", e);
-                        }
-                    },
-                    (error) => {
-                        this.showToast("GPS Access Denied. Please specify Nearest City and Landmark.", "error");
+            this.showToast("Retrieving GPS coordinates...", "success");
+            this.getGPSLocation(
+                (position) => {
+                    const newLat = position.coords.latitude;
+                    const newLng = position.coords.longitude;
+                    document.getElementById('breakdown-lat').value = newLat;
+                    document.getElementById('breakdown-lng').value = newLng;
+                    this.showToast("GPS Location auto-detected!", "success");
+ 
+                    // Also cache it so the main homepage has access to it immediately
+                    try {
+                        localStorage.setItem('customer_coords', JSON.stringify({
+                            lat: newLat,
+                            lng: newLng,
+                            timestamp: Date.now()
+                        }));
+                    } catch (e) {
+                        console.warn("Failed to cache customer coordinates from emergency detection:", e);
                     }
-                );
-            } else {
-                this.showToast("Browser does not support GPS Geolocation.", "error");
-            }
+                },
+                (error) => {
+                    this.showToast("GPS Access Denied. Please specify Nearest City and Landmark.", "error");
+                }
+            );
         },
 
         handleBreakdownCityChange(city) {
