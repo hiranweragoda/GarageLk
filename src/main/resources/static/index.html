@@ -326,7 +326,8 @@
                 <div class="form-group">
                     <label for="breakdown-city">Nearest City</label>
                     <input type="text" id="breakdown-city" class="form-control" placeholder="Select or type district..."
-                        required list="districts-list" unique-id="breakdown-city-select">
+                        required list="districts-list" unique-id="breakdown-city-select"
+                        onchange="window.GarageLK.handleBreakdownCityChange(this.value)">
                 </div>
                 <div class="form-group">
                     <label for="breakdown-address">Current Address / Landmark</label>

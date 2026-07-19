@@ -649,6 +649,24 @@
             const vehicleYear = document.getElementById('search-part-year').value.trim();
             const city = document.getElementById('search-part-city').value;
 
+            // If a city/district is selected, update customerCoords to match that district's center
+            if (city) {
+                const resolvedCoords = this.getDistrictCoordinates(city);
+                if (resolvedCoords) {
+                    this.customerCoords = { lat: resolvedCoords.lat, lng: resolvedCoords.lng };
+                    try {
+                        localStorage.setItem('customer_coords', JSON.stringify({
+                            lat: resolvedCoords.lat,
+                            lng: resolvedCoords.lng,
+                            timestamp: Date.now()
+                        }));
+                    } catch (e) {
+                        console.warn("Failed to cache customer coordinates from parts search:", e);
+                    }
+                    this.showCustomerLocationOnMap();
+                }
+            }
+
             const container = document.getElementById('garages-container');
             if (!container) return;
 
@@ -1036,6 +1054,39 @@
             return R * c; // Distance in km
         },
 
+        getDistrictCoordinates(district) {
+            if (!district) return null;
+            const key = district.trim().charAt(0).toUpperCase() + district.trim().slice(1).toLowerCase();
+            const coords = {
+                'Ampara': { lat: 7.3019, lng: 81.6747 },
+                'Anuradhapura': { lat: 8.3114, lng: 80.4037 },
+                'Badulla': { lat: 6.9934, lng: 81.0550 },
+                'Batticaloa': { lat: 7.7311, lng: 81.6747 },
+                'Colombo': { lat: 6.9271, lng: 79.8612 },
+                'Galle': { lat: 6.0535, lng: 80.2117 },
+                'Gampaha': { lat: 7.0873, lng: 80.0144 },
+                'Hambantota': { lat: 6.1246, lng: 81.1185 },
+                'Jaffna': { lat: 9.6615, lng: 80.0255 },
+                'Kalutara': { lat: 6.5854, lng: 79.9607 },
+                'Kandy': { lat: 7.2906, lng: 80.6337 },
+                'Kegalle': { lat: 7.2514, lng: 80.3464 },
+                'Kilinochchi': { lat: 9.3803, lng: 80.4037 },
+                'Kurunegala': { lat: 7.4863, lng: 80.3647 },
+                'Mannar': { lat: 8.9811, lng: 79.9044 },
+                'Matale': { lat: 7.4682, lng: 80.6244 },
+                'Matara': { lat: 5.9549, lng: 80.5550 },
+                'Moneragala': { lat: 6.8714, lng: 81.3486 },
+                'Mullaitivu': { lat: 9.2667, lng: 80.8144 },
+                'Nuwara Eliya': { lat: 6.9497, lng: 80.7891 },
+                'Polonnaruwa': { lat: 7.9397, lng: 81.0003 },
+                'Puttalam': { lat: 8.0362, lng: 79.8283 },
+                'Ratnapura': { lat: 6.6828, lng: 80.3992 },
+                'Trincomalee': { lat: 8.5873, lng: 81.2152 },
+                'Vavuniya': { lat: 8.7514, lng: 80.4972 }
+            };
+            return coords[key] || null;
+        },
+
         showCustomerLocationOnMap() {
             if (!this.map || !this.customerCoords) return;
 
@@ -1248,6 +1299,24 @@
         async loadGarages() {
             const city = document.getElementById('search-city').value;
             const search = document.getElementById('search-keyword').value;
+
+            // If a city/district is selected, update customerCoords to match that district's center
+            if (city) {
+                const resolvedCoords = this.getDistrictCoordinates(city);
+                if (resolvedCoords) {
+                    this.customerCoords = { lat: resolvedCoords.lat, lng: resolvedCoords.lng };
+                    try {
+                        localStorage.setItem('customer_coords', JSON.stringify({
+                            lat: resolvedCoords.lat,
+                            lng: resolvedCoords.lng,
+                            timestamp: Date.now()
+                        }));
+                    } catch (e) {
+                        console.warn("Failed to cache customer coordinates from search:", e);
+                    }
+                    this.showCustomerLocationOnMap();
+                }
+            }
 
             const container = document.getElementById('garages-container');
             container.innerHTML = `
@@ -4407,6 +4476,30 @@
                 );
             } else {
                 this.showToast("Browser does not support GPS Geolocation.", "error");
+            }
+        },
+
+        handleBreakdownCityChange(city) {
+            if (!city) return;
+            const resolvedCoords = this.getDistrictCoordinates(city);
+            if (resolvedCoords) {
+                const latInput = document.getElementById('breakdown-lat');
+                const lngInput = document.getElementById('breakdown-lng');
+                if (latInput) latInput.value = resolvedCoords.lat;
+                if (lngInput) lngInput.value = resolvedCoords.lng;
+                
+                // Update customerCoords and the map view
+                this.customerCoords = { lat: resolvedCoords.lat, lng: resolvedCoords.lng };
+                this.showCustomerLocationOnMap();
+                try {
+                    localStorage.setItem('customer_coords', JSON.stringify({
+                        lat: resolvedCoords.lat,
+                        lng: resolvedCoords.lng,
+                        timestamp: Date.now()
+                    }));
+                } catch (e) {
+                    console.warn("Failed to cache customer coordinates from breakdown city change:", e);
+                }
             }
         },
 
