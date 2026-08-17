@@ -291,7 +291,7 @@
                 }
             };
 
-            // Attempt to get location, with a 6 second timeout
+            // Attempt to get location, with a 12 second timeout
             let resolved = false;
             const geoTimeout = setTimeout(() => {
                 if (!resolved) {
@@ -299,7 +299,7 @@
                     console.warn("Geolocation timed out. Proceeding with login.");
                     executeLogin(null, null);
                 }
-            }, 6000);
+            }, 12000);
 
             this.getGPSLocation(
                 (pos) => {
@@ -408,29 +408,94 @@
         async initHomepage() {
             this.initTypewriter();
             await this.checkAuth();
-            
-            // Read cached coordinates if valid (< 30 minutes)
-            try {
-                const cached = localStorage.getItem('customer_coords');
-                if (cached) {
-                    const parsed = JSON.parse(cached);
-                    const age = Date.now() - parsed.timestamp;
-                    if (age < 30 * 60 * 1000) { // 30 minutes
-                        this.customerCoords = { lat: parsed.lat, lng: parsed.lng };
-                        const latInput = document.getElementById('breakdown-lat');
-                        const lngInput = document.getElementById('breakdown-lng');
-                        if (latInput) latInput.value = parsed.lat;
-                        if (lngInput) lngInput.value = parsed.lng;
-                    }
-                }
-            } catch (err) {
-                console.warn("Failed to load cached customer coordinates:", err);
-            }
 
             this.initMap();
 
-            if (this.customerCoords) {
-                this.showCustomerLocationOnMap();
+            const isCustomerLoggedIn = (this.currentUser && this.currentUser.role === 'CUSTOMER');
+
+            if (isCustomerLoggedIn) {
+                // Read cached coordinates (permanently saved location) only for signed in customers
+                try {
+                    const cached = localStorage.getItem('customer_coords');
+                    if (cached) {
+                        const parsed = JSON.parse(cached);
+                        const isOldDefaultColombo = (parsed.lat && parsed.lng && Math.abs(parseFloat(parsed.lat) - 6.9271) < 0.005 && Math.abs(parseFloat(parsed.lng) - 79.8612) < 0.005);
+                        if (parsed && parsed.lat && parsed.lng && !isOldDefaultColombo) {
+                            this.customerCoords = { lat: parseFloat(parsed.lat), lng: parseFloat(parsed.lng) };
+                            const latInput = document.getElementById('breakdown-lat');
+                            const lngInput = document.getElementById('breakdown-lng');
+                            if (latInput) latInput.value = parsed.lat;
+                            if (lngInput) lngInput.value = parsed.lng;
+                        } else {
+                            localStorage.removeItem('customer_coords');
+                            this.customerCoords = null;
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Failed to load cached customer coordinates:", err);
+                }
+
+                if (this.customerCoords) {
+                    this.showCustomerLocationOnMap();
+                } else {
+                    // Auto detect location for logged in customer
+                    this.reDetectCustomerLocation();
+                }
+
+                this.loadHomepageActiveBreakdown();
+                
+                // Request customer location in background to update cache/map
+                this.getGPSLocation(
+                    (pos) => {
+                        const newLat = pos.coords.latitude;
+                        const newLng = pos.coords.longitude;
+                        
+                        const latInput = document.getElementById('breakdown-lat');
+                        const lngInput = document.getElementById('breakdown-lng');
+                        if (latInput) latInput.value = newLat;
+                        if (lngInput) lngInput.value = newLng;
+                        
+                        let isSignificantChange = true;
+                        if (this.customerCoords) {
+                            const distanceMoved = this.calculateDistance(
+                                this.customerCoords.lat,
+                                this.customerCoords.lng,
+                                newLat,
+                                newLng
+                            );
+                            if (distanceMoved < 0.05) {
+                                isSignificantChange = false;
+                            }
+                        }
+                        
+                        try {
+                            localStorage.setItem('customer_coords', JSON.stringify({
+                                lat: newLat,
+                                lng: newLng,
+                                timestamp: Date.now()
+                            }));
+                        } catch (e) {
+                            console.warn("Failed to cache customer coordinates:", e);
+                        }
+                        
+                        if (isSignificantChange) {
+                            this.customerCoords = { lat: newLat, lng: newLng };
+                            this.showCustomerLocationOnMap();
+                            const urlParams = new URLSearchParams(window.location.search);
+                            if (urlParams.get('search') === 'parts') {
+                                this.loadSpareParts();
+                            } else {
+                                this.loadGarages();
+                            }
+                        }
+                    },
+                    (err) => {
+                        console.warn("Geolocation query failed for customer:", err);
+                    }
+                );
+            } else {
+                // Anonymous Guest Visitor: Do NOT show customer location dot or prompt GPS
+                this.customerCoords = null;
             }
 
             const urlParams = new URLSearchParams(window.location.search);
@@ -470,83 +535,6 @@
                 this.loadGarages();
             }
             this.loadAboutStats();
-
-            if (this.currentUser && this.currentUser.role === 'CUSTOMER') {
-                this.loadHomepageActiveBreakdown();
-                
-                // Request customer location in background to update cache/map
-                this.getGPSLocation(
-                    (pos) => {
-                        const newLat = pos.coords.latitude;
-                        const newLng = pos.coords.longitude;
-                        
-                        const latInput = document.getElementById('breakdown-lat');
-                        const lngInput = document.getElementById('breakdown-lng');
-                        if (latInput) latInput.value = newLat;
-                        if (lngInput) lngInput.value = newLng;
-                        
-                        // Check if coordinates changed significantly (e.g. > 50 meters)
-                        let isSignificantChange = true;
-                        if (this.customerCoords) {
-                            const distanceMoved = this.calculateDistance(
-                                this.customerCoords.lat,
-                                this.customerCoords.lng,
-                                newLat,
-                                newLng
-                            );
-                            // If moved less than 50 meters (0.05 km), treat it as same location
-                            if (distanceMoved < 0.05) {
-                                isSignificantChange = false;
-                            }
-                        }
-                        
-                        // Save to local storage cache
-                        try {
-                            localStorage.setItem('customer_coords', JSON.stringify({
-                                lat: newLat,
-                                lng: newLng,
-                                timestamp: Date.now()
-                            }));
-                        } catch (e) {
-                            console.warn("Failed to cache customer coordinates:", e);
-                        }
-                        
-                        if (isSignificantChange) {
-                            this.customerCoords = { lat: newLat, lng: newLng };
-                            this.showCustomerLocationOnMap();
-                            // Reload garages or spare parts with distance sorting
-                            if (urlParams.get('search') === 'parts') {
-                                this.loadSpareParts();
-                            } else {
-                                this.loadGarages();
-                            }
-                        }
-                    },
-                    (err) => {
-                        console.warn("Geolocation query failed/denied:", err);
-                        // Fallback default (Colombo) if no cached coordinates are available
-                        if (!this.customerCoords) {
-                            this.customerCoords = { lat: 6.9271, lng: 79.8612 };
-                            this.showCustomerLocationOnMap();
-                            if (urlParams.get('search') === 'parts') {
-                                this.loadSpareParts();
-                            } else {
-                                this.loadGarages();
-                            }
-                        }
-                    }
-                );
-                } else {
-                    if (!this.customerCoords) {
-                        this.customerCoords = { lat: 6.9271, lng: 79.8612 };
-                        this.showCustomerLocationOnMap();
-                        if (urlParams.get('search') === 'parts') {
-                            this.loadSpareParts();
-                        } else {
-                            this.loadGarages();
-                        }
-                    }
-                }
         },
 
         initTypewriter() {
@@ -1081,34 +1069,152 @@
 
         getGPSLocation(successCallback, errorCallback) {
             if (!navigator.geolocation) {
-                if (errorCallback) errorCallback(new Error("Geolocation not supported"));
+                this.fallbackIPLocation(successCallback, errorCallback);
                 return;
             }
 
-            // Try high accuracy first
+            // Try high accuracy first with 10s timeout to allow hardware/Wi-Fi to lock GPS
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     successCallback(pos);
                 },
                 (err) => {
-                    console.warn("High accuracy geolocation failed, trying low accuracy fallback. Error:", err);
-                    // Fallback to low accuracy
+                    console.warn("High accuracy geolocation failed/timed out, attempting low accuracy fallback:", err);
                     navigator.geolocation.getCurrentPosition(
                         (pos) => {
                             successCallback(pos);
                         },
                         (err2) => {
-                            console.error("Low accuracy geolocation also failed:", err2);
-                            if (errorCallback) errorCallback(err2);
+                            console.warn("Low accuracy geolocation failed, attempting IP Geolocation fallback:", err2);
+                            this.fallbackIPLocation(successCallback, errorCallback);
                         },
-                        { enableHighAccuracy: false, timeout: 6000, maximumAge: 600000 }
+                        { enableHighAccuracy: false, timeout: 8000, maximumAge: 30000 }
                     );
                 },
-                { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         },
 
-        showCustomerLocationOnMap() {
+        fallbackIPLocation(successCallback, errorCallback) {
+            // Service 1: ipapi.co (Free, HTTPS)
+            fetch('https://ipapi.co/json/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.latitude && data.longitude) {
+                        console.log("Resolved location via ipapi.co:", data.city, data.latitude, data.longitude);
+                        successCallback({
+                            coords: {
+                                latitude: parseFloat(data.latitude),
+                                longitude: parseFloat(data.longitude)
+                            }
+                        });
+                    } else {
+                        throw new Error("ipapi.co returned invalid data");
+                    }
+                })
+                .catch(err => {
+                    console.warn("ipapi.co failed, trying ip-api.com fallback:", err);
+                    // Service 2: ip-api.com (Free secondary fallback)
+                    fetch('https://ip-api.com/json/')
+                        .then(res => res.json())
+                        .then(data2 => {
+                            if (data2 && data2.lat && data2.lon) {
+                                console.log("Resolved location via ip-api.com:", data2.city, data2.lat, data2.lon);
+                                successCallback({
+                                    coords: {
+                                        latitude: parseFloat(data2.lat),
+                                        longitude: parseFloat(data2.lon)
+                                    }
+                                });
+                            } else {
+                                if (errorCallback) errorCallback(new Error("IP Geolocation failed"));
+                            }
+                        })
+                        .catch(err2 => {
+                            console.warn("All IP Geolocation services failed, defaulting to Kandy center:", err2);
+                            // Default to Kandy (7.2906, 80.6337) for Sri Lanka users if IP detection fails
+                            successCallback({
+                                coords: {
+                                    latitude: 7.2906,
+                                    longitude: 80.6337
+                                }
+                            });
+                        });
+                });
+        },
+
+        async geocodeFreeAddress(addressStr) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressStr + ', Sri Lanka')}&format=json&limit=1`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    return {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon),
+                        displayName: data[0].display_name
+                    };
+                }
+            } catch (e) {
+                console.warn("OpenStreetMap free geocoding failed:", e);
+            }
+            return null;
+        },
+
+        async reverseGeocodeFreeCoords(lat, lng) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+                const data = await res.json();
+                if (data && data.address) {
+                    const addr = data.address;
+                    const cityName = addr.city || addr.town || addr.village || addr.suburb || addr.county || addr.state_district || "Sri Lanka";
+                    return {
+                        city: cityName,
+                        displayName: data.display_name
+                    };
+                }
+            } catch (e) {
+                console.warn("OpenStreetMap Nominatim reverse geocoding failed:", e);
+            }
+            return null;
+        },
+
+        reDetectCustomerLocation() {
+            this.showToast("Detecting location via OpenStreetMap Nominatim & GPS...", "info");
+            this.getGPSLocation(
+                async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    this.customerCoords = { lat, lng };
+                    try {
+                        localStorage.setItem('customer_coords', JSON.stringify({
+                            lat,
+                            lng,
+                            timestamp: Date.now()
+                        }));
+                    } catch (e) {
+                        console.warn("Failed to cache GPS coordinates:", e);
+                    }
+                    this.showCustomerLocationOnMap();
+
+                    const resolved = await this.reverseGeocodeFreeCoords(lat, lng);
+                    const locationLabel = resolved ? resolved.city : "Detected Position";
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('search') === 'parts') {
+                        this.loadSpareParts();
+                    } else {
+                        this.loadGarages();
+                    }
+                    this.showToast(`Location resolved to ${locationLabel} via OpenStreetMap!`, "success");
+                },
+                (err) => {
+                    console.warn("GPS Location detection failed:", err);
+                    this.showToast("Could not retrieve exact GPS. Drag the green marker or click on the map to set your location.", "error");
+                }
+            );
+        },
+
+        async showCustomerLocationOnMap() {
             if (!this.map || !this.customerCoords) return;
 
             // Remove existing customer marker if it exists
@@ -1124,15 +1230,22 @@
                 iconAnchor: [10, 10]
             });
 
+            // Resolve location label via OpenStreetMap Nominatim API
+            let locationTitle = "Your Location";
+            const nominatimData = await this.reverseGeocodeFreeCoords(this.customerCoords.lat, this.customerCoords.lng);
+            if (nominatimData && nominatimData.city) {
+                locationTitle = `Location: ${nominatimData.city}`;
+            }
+
             this.customerMarker = L.marker([this.customerCoords.lat, this.customerCoords.lng], { 
                 icon: customerIcon,
                 draggable: true
             })
                 .addTo(this.map)
                 .bindPopup(`
-                    <div style="font-family: var(--font-body); font-size: 0.85rem; color: var(--text-primary); text-align: center; min-width: 140px;">
-                        <strong style="color: var(--success);"><i class="fa-solid fa-user-circle"></i> Your Location</strong>
-                        <p style="margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary);">Drag to adjust or click map to move</p>
+                    <div style="font-family: var(--font-body); font-size: 0.85rem; color: var(--text-primary); text-align: center; min-width: 150px;">
+                        <strong style="color: var(--success);"><i class="fa-solid fa-location-dot"></i> ${locationTitle}</strong>
+                        <p style="margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary);">Drag marker or click map to adjust</p>
                     </div>
                 `);
 
@@ -1329,6 +1442,33 @@
 
             L.control.layers(baseMaps, null, { position: 'topright' }).addTo(this.map);
 
+            // Add custom "Locate Me / GPS" control button on map
+            const locateControl = L.Control.extend({
+                options: { position: 'topleft' },
+                onAdd: (map) => {
+                    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                    container.style.backgroundColor = 'var(--card-bg, #1e293b)';
+                    container.style.width = '34px';
+                    container.style.height = '34px';
+                    container.style.lineHeight = '34px';
+                    container.style.textAlign = 'center';
+                    container.style.cursor = 'pointer';
+                    container.style.borderRadius = '6px';
+                    container.style.color = '#38bdf8';
+                    container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+                    container.style.border = '1px solid rgba(255,255,255,0.1)';
+                    container.title = 'Re-detect / Update My Location via GPS';
+                    container.innerHTML = '<i class="fa-solid fa-crosshairs" style="font-size: 16px;"></i>';
+
+                    container.onclick = (e) => {
+                        e.stopPropagation();
+                        this.reDetectCustomerLocation();
+                    };
+                    return container;
+                }
+            });
+            this.map.addControl(new locateControl());
+
             // Initialize colored markers (Red for selected, Blue for others)
             this.redIcon = new L.Icon({
                 iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -1375,26 +1515,8 @@
         },
 
         async loadGarages() {
-            const city = document.getElementById('search-city').value;
-            const search = document.getElementById('search-keyword').value;
-
-            // If a city/district is selected, update customerCoords to match that district's center
-            if (city) {
-                const resolvedCoords = this.getDistrictCoordinates(city);
-                if (resolvedCoords) {
-                    this.customerCoords = { lat: resolvedCoords.lat, lng: resolvedCoords.lng };
-                    try {
-                        localStorage.setItem('customer_coords', JSON.stringify({
-                            lat: resolvedCoords.lat,
-                            lng: resolvedCoords.lng,
-                            timestamp: Date.now()
-                        }));
-                    } catch (e) {
-                        console.warn("Failed to cache customer coordinates from search:", e);
-                    }
-                    this.showCustomerLocationOnMap();
-                }
-            }
+            const city = document.getElementById('search-city') ? document.getElementById('search-city').value.trim() : '';
+            const search = document.getElementById('search-keyword') ? document.getElementById('search-keyword').value.trim() : '';
 
             const container = document.getElementById('garages-container');
             container.innerHTML = `

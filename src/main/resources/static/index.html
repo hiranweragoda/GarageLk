@@ -8,6 +8,7 @@
     <meta name="description"
         content="Discover verified automotive services, search for garages in Sri Lanka by location and services, and book appointments instantly.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%2338bdf8'><path d='M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9 16.3-18.2 17.8c-12.4 2-25.1 3-38 3s-25.6-1-38-3c-9.2-1.5-16.2-8.7-18.2-17.8l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L83.1 425.9c-8.8 2.8-18.6 .4-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C64.6 273.1 64 264.6 64 256s.6-17.1 1.7-25.4L22.4 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9-16.3 18.2-17.8C230.4 2 243.1 1 256 1s25.6 1 38 3c9.2 1.5 16.2 8.7 18.2 17.8l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.4 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z'/></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="css/styles.css?v=2">
 </head>
@@ -17,7 +18,7 @@
     <header>
         <div class="nav-container">
             <a href="index.html" class="logo" id="header-logo">
-                <i class="fa-solid fa-gears"></i>Garage<span>LK</span>
+                <img src="images/logo.png" alt="GarageLK Logo" class="brand-logo-img">
             </a>
             <nav class="nav-links">
                 <a href="index.html" class="nav-link active" id="nav-home">Home</a>
@@ -62,10 +63,14 @@
                         unique-id="search-input">
                 </div>
                 <div class="search-input-group">
-                    <i class="fa-solid fa-location-dot"></i>
-                    <input type="text" id="search-city" placeholder="All Districts" list="districts-list"
+                    <i class="fa-solid fa-location-dot" style="color: var(--primary);"></i>
+                    <input type="text" id="search-city" placeholder="Enter City (e.g. Kandy, Kegalle)" list="districts-list"
                         unique-id="city-dropdown"
-                        style="border: none; background: transparent; width: 100%; height: 100%; color: var(--text-secondary); outline: none;">
+                        style="border: none; background: transparent; width: 100%; height: 100%; color: var(--text-secondary); outline: none;"
+                        onchange="window.GarageLK.loadGarages()">
+                    <button class="btn btn-outline btn-sm" onclick="window.GarageLK.reDetectCustomerLocation()" title="Set to My Current Location" style="border:none; color:var(--primary); padding: 0.3rem 0.6rem; margin-right: 0.2rem;" unique-id="btn-auto-gps">
+                        <i class="fa-solid fa-location-crosshairs fa-lg"></i>
+                    </button>
                 </div>
                 <button class="btn btn-primary" id="btn-search" unique-id="search-submit">
                     <i class="fa-solid fa-magnifying-glass"></i> Find
@@ -222,13 +227,51 @@
                 </div>
             </div>
         </section>
+
+        <!-- Vehicle Brands Infinite Auto-Scroll Section -->
+        <section class="brands-marquee-section">
+            <div class="brands-section-header">
+                <span class="brands-subtitle">SUPPORTED VEHICLE BRANDS</span>
+                <h3 class="brands-title">Trusted Service & Spare Parts For Top Automotive Brands</h3>
+            </div>
+            <div class="marquee-wrapper">
+                <div class="marquee-track">
+                    <!-- Set 1 -->
+                    <div class="brand-item"><img src="images/brands/toyota.svg" alt="Toyota" class="brand-logo-img-icon"> TOYOTA</div>
+                    <div class="brand-item"><img src="images/brands/honda.svg" alt="Honda" class="brand-logo-img-icon"> HONDA</div>
+                    <div class="brand-item"><img src="images/brands/nissan.svg" alt="Nissan" class="brand-logo-img-icon"> NISSAN</div>
+                    <div class="brand-item"><img src="images/brands/suzuki.svg" alt="Suzuki" class="brand-logo-img-icon"> SUZUKI</div>
+                    <div class="brand-item"><img src="images/brands/bajaj.svg" alt="Bajaj" class="brand-logo-img-icon"> BAJAJ</div>
+                    <div class="brand-item"><img src="images/brands/bmw.svg" alt="BMW" class="brand-logo-img-icon"> BMW</div>
+                    <div class="brand-item"><img src="images/brands/mercedes.svg" alt="Mercedes-Benz" class="brand-logo-img-icon"> MERCEDES-BENZ</div>
+                    <div class="brand-item"><img src="images/brands/hyundai.svg" alt="Hyundai" class="brand-logo-img-icon"> HYUNDAI</div>
+                    <div class="brand-item"><img src="images/brands/yamaha.svg" alt="Yamaha" class="brand-logo-img-icon"> YAMAHA</div>
+                    <div class="brand-item"><img src="images/brands/tvs.svg" alt="TVS" class="brand-logo-img-icon"> TVS</div>
+                    <div class="brand-item"><img src="images/brands/mitsubishi.svg" alt="Mitsubishi" class="brand-logo-img-icon"> MITSUBISHI</div>
+                    <div class="brand-item"><img src="images/brands/audi.svg" alt="Audi" class="brand-logo-img-icon"> AUDI</div>
+                    <!-- Duplicate Set 2 for Seamless Loop -->
+                    <div class="brand-item"><img src="images/brands/toyota.svg" alt="Toyota" class="brand-logo-img-icon"> TOYOTA</div>
+                    <div class="brand-item"><img src="images/brands/honda.svg" alt="Honda" class="brand-logo-img-icon"> HONDA</div>
+                    <div class="brand-item"><img src="images/brands/nissan.svg" alt="Nissan" class="brand-logo-img-icon"> NISSAN</div>
+                    <div class="brand-item"><img src="images/brands/suzuki.svg" alt="Suzuki" class="brand-logo-img-icon"> SUZUKI</div>
+                    <div class="brand-item"><img src="images/brands/bajaj.svg" alt="Bajaj" class="brand-logo-img-icon"> BAJAJ</div>
+                    <div class="brand-item"><img src="images/brands/bmw.svg" alt="BMW" class="brand-logo-img-icon"> BMW</div>
+                    <div class="brand-item"><img src="images/brands/mercedes.svg" alt="Mercedes-Benz" class="brand-logo-img-icon"> MERCEDES-BENZ</div>
+                    <div class="brand-item"><img src="images/brands/hyundai.svg" alt="Hyundai" class="brand-logo-img-icon"> HYUNDAI</div>
+                    <div class="brand-item"><img src="images/brands/yamaha.svg" alt="Yamaha" class="brand-logo-img-icon"> YAMAHA</div>
+                    <div class="brand-item"><img src="images/brands/tvs.svg" alt="TVS" class="brand-logo-img-icon"> TVS</div>
+                    <div class="brand-item"><img src="images/brands/mitsubishi.svg" alt="Mitsubishi" class="brand-logo-img-icon"> MITSUBISHI</div>
+                    <div class="brand-item"><img src="images/brands/audi.svg" alt="Audi" class="brand-logo-img-icon"> AUDI</div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer>
         <div class="footer-container">
             <div class="footer-column brand-col">
-                <a href="index.html" class="logo" style="margin-bottom: 1rem; display: inline-flex; text-decoration: none;">
-                    <i class="fa-solid fa-gears"></i>Garage<span>LK</span>
+                <a href="index.html" class="logo" style="margin-bottom: 1rem; display: inline-flex;">
+                    <img src="images/logo.png" alt="GarageLK Logo" class="footer-logo-img">
                 </a>
                 <p>Sri Lanka's premier digital gateway connecting vehicle owners with elite automotive service centers
                     and genuine spare part suppliers.</p>

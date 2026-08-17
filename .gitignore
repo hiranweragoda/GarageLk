@@ -29,3 +29,8 @@ yarn-error.log
 # Uploaded Files
 /uploads/
 *.log
+
+# Wireframes (exclude from repository)
+*_wireframe.*
+*.svg.png
+
