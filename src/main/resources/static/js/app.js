@@ -408,6 +408,7 @@
         async initHomepage() {
             this.initTypewriter();
             await this.checkAuth();
+            this.initScrollReveal();
 
             this.initMap();
 
@@ -9521,12 +9522,65 @@
             overlay.innerHTML = `<img src="${url}" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); animation: zoomIn 0.2s ease;">`;
             overlay.onclick = () => overlay.remove();
             document.body.appendChild(overlay);
+        },
+
+        initScrollReveal() {
+            if (!('IntersectionObserver' in window)) return;
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px 0px -40px 0px',
+                threshold: 0.08
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('revealed');
+                    }
+                });
+            }, observerOptions);
+
+            const attachObservers = () => {
+                const elements = document.querySelectorAll(
+                    '.reveal-on-scroll, .reveal-fade-left, .reveal-fade-right, .reveal-zoom-in, ' +
+                    '.provider-card, .garage-card, .search-container, .hero-section, .map-container, ' +
+                    '.stat-card, .feature-card, .about-card, .brand-item'
+                );
+
+                elements.forEach((el, index) => {
+                    if (!el.classList.contains('reveal-on-scroll') && 
+                        !el.classList.contains('reveal-fade-left') && 
+                        !el.classList.contains('reveal-fade-right') && 
+                        !el.classList.contains('reveal-zoom-in')) {
+                        el.classList.add('reveal-on-scroll');
+                    }
+
+                    if (!el.style.transitionDelay && el.classList.contains('provider-card')) {
+                        const staggerIndex = (index % 4) + 1;
+                        el.style.transitionDelay = `${staggerIndex * 0.12}s`;
+                    }
+
+                    observer.observe(el);
+                });
+            };
+
+            attachObservers();
+
+            const observerTarget = document.getElementById('garage-list') || document.body;
+            if (observerTarget) {
+                const mutationObserver = new MutationObserver(() => {
+                    attachObservers();
+                });
+                mutationObserver.observe(observerTarget, { childList: true, subtree: true });
+            }
         }
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         GarageLK.initTheme();
         GarageLK.initNotificationBell();
+        GarageLK.initScrollReveal();
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
