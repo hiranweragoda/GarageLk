@@ -2958,66 +2958,30 @@ body.light-mode .brand-item:hover {
 }
 
 /* -------------------------------------------------------------
- * PREMIUM SCROLL REVEAL & SMOOTH SCROLL ANIMATIONS
+ * SCROLL ANIMATIONS (DISABLED PER USER REQUEST)
  * ------------------------------------------------------------- */
-.reveal-on-scroll {
-    opacity: 0;
-    transform: translateY(35px) scale(0.98);
-    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), 
-                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, transform;
-}
-
-.reveal-on-scroll.revealed {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-}
-
-.reveal-fade-left {
-    opacity: 0;
-    transform: translateX(-40px);
-    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), 
-                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, transform;
-}
-
-.reveal-fade-left.revealed {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.reveal-fade-right {
-    opacity: 0;
-    transform: translateX(40px);
-    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), 
-                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, transform;
-}
-
-.reveal-fade-right.revealed {
-    opacity: 1;
-    transform: translateX(0);
-}
-
+.reveal-on-scroll,
+.reveal-fade-left,
+.reveal-fade-right,
 .reveal-zoom-in {
-    opacity: 0;
-    transform: scale(0.92);
-    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), 
-                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, transform;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
 }
 
+.reveal-on-scroll.revealed,
+.reveal-fade-left.revealed,
+.reveal-fade-right.revealed,
 .reveal-zoom-in.revealed {
-    opacity: 1;
-    transform: scale(1);
+    opacity: 1 !important;
+    transform: none !important;
 }
 
-/* Enhanced provider card scroll reveal & hover effect */
+/* Provider card hover effect */
 .provider-card {
-    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .provider-card:hover {

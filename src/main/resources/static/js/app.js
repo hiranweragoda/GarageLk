@@ -9580,7 +9580,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         GarageLK.initTheme();
         GarageLK.initNotificationBell();
-        GarageLK.initScrollReveal();
+        // GarageLK.initScrollReveal(); // Disabled scroll reveal animation per user request
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
