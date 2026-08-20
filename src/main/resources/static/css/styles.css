@@ -129,6 +129,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .logo {
@@ -173,6 +174,14 @@ body.dark-mode .footer-logo-img {
     display: flex;
     align-items: center;
     gap: 2rem;
+}
+
+@media (min-width: 769px) {
+    .nav-links {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
 }
 
 .nav-link {

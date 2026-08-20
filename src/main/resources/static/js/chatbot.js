@@ -522,7 +522,10 @@
         function formatMarkdown(text) {
             if (!text) return "";
             
-            let formatted = text
+            // Clean literal u200d zero-width joiner artifacts in Sinhala Unicode text
+            let formatted = text.replace(/\\u200d/gi, '\u200D').replace(/u200d/gi, '\u200D');
+            
+            formatted = formatted
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;");

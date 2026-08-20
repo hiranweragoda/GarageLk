@@ -34,3 +34,10 @@ yarn-error.log
 *_wireframe.*
 *.svg.png
 
+# Diagrams (exclude from repository)
+class_diagram.md
+sequence_diagram_*.md
+*.mermaid
+*.drawio
+*.puml
+

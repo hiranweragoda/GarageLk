@@ -256,18 +256,28 @@ public class ChatbotController {
         for (int i = startQuote + 1; i < responseJson.length(); i++) {
             char c = responseJson.charAt(i);
             if (escaped) {
-                if (c == 'n')
+                if (c == 'n') {
                     sb.append('\n');
-                else if (c == 't')
+                } else if (c == 't') {
                     sb.append('\t');
-                else if (c == 'r')
+                } else if (c == 'r') {
                     sb.append('\r');
-                else if (c == '\\')
+                } else if (c == '\\') {
                     sb.append('\\');
-                else if (c == '"')
+                } else if (c == '"') {
                     sb.append('"');
-                else
+                } else if (c == 'u' && i + 4 < responseJson.length()) {
+                    String hex = responseJson.substring(i + 1, i + 5);
+                    try {
+                        int codePoint = Integer.parseInt(hex, 16);
+                        sb.append((char) codePoint);
+                        i += 4;
+                    } catch (NumberFormatException nfe) {
+                        sb.append(c);
+                    }
+                } else {
                     sb.append(c);
+                }
                 escaped = false;
             } else if (c == '\\') {
                 escaped = true;
@@ -277,7 +287,10 @@ public class ChatbotController {
                 sb.append(c);
             }
         }
-        return sb.toString();
+        String result = sb.toString();
+        // Replace any remaining literal "u200d" or "\\u200d" string with actual Zero-Width Joiner character
+        result = result.replace("\\u200d", "\u200D").replace("u200d", "\u200D");
+        return result;
     }
 
     private Map<String, Object> getFallbackResponse(ChatRequest request) {
