@@ -86,6 +86,9 @@ public class BreakdownController {
                     notificationService.save(new Notification(ownerUserId, msg));
                 }
             }
+            // Also notify customer & trigger email confirmation to customer
+            String customerMsg = String.format("Your emergency breakdown request has been published. Nearby garages have been alerted. (Code: %s)", breakdownCode);
+            notificationService.save(new Notification(user.getId(), customerMsg));
         } catch (Exception e) {
             e.printStackTrace();
         }

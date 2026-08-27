@@ -41,3 +41,6 @@ sequence_diagram_*.md
 *.drawio
 *.puml
 
+# Report Drafts (exclude from repository)
+report_*.md
+

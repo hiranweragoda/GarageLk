@@ -95,10 +95,16 @@ public class BookingController {
         bookingRepository.save(booking);
 
         try {
+            // Notify garage owner
             Long ownerUserId = garageOpt.get().getUser().getId();
-            String msg = String.format("New booking request received for %s (Code: %s)", 
+            String ownerMsg = String.format("New booking request received for %s (Code: %s)", 
                 garageOpt.get().getGarageName(), bookingCode);
-            notificationService.save(new Notification(ownerUserId, msg));
+            notificationService.save(new Notification(ownerUserId, ownerMsg));
+
+            // Notify customer & trigger email notification to customer
+            String customerMsg = String.format("Your booking request for %s at %s has been received. Status: PENDING (Code: %s)", 
+                serviceType, garageOpt.get().getGarageName(), bookingCode);
+            notificationService.save(new Notification(user.getId(), customerMsg));
         } catch (Exception e) {
             e.printStackTrace();
         }

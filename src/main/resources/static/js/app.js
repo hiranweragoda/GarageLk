@@ -126,6 +126,10 @@
                         myGaragesLink.href = 'dashboard.html';
                         myGaragesLink.className = 'nav-link';
                         myGaragesLink.id = 'nav-my-garages';
+                        myGaragesLink.style.whiteSpace = 'nowrap';
+                        myGaragesLink.style.display = 'inline-flex';
+                        myGaragesLink.style.alignItems = 'center';
+                        myGaragesLink.style.gap = '4px';
                         myGaragesLink.innerHTML = '<i class="fa-solid fa-warehouse"></i> My Garages';
 
                         // Insert it before the "Dashboard" link
@@ -144,6 +148,10 @@
                         myShopsLink.href = 'dashboard.html';
                         myShopsLink.className = 'nav-link';
                         myShopsLink.id = 'nav-my-shops';
+                        myShopsLink.style.whiteSpace = 'nowrap';
+                        myShopsLink.style.display = 'inline-flex';
+                        myShopsLink.style.alignItems = 'center';
+                        myShopsLink.style.gap = '4px';
                         myShopsLink.innerHTML = '<i class="fa-solid fa-store"></i> My Shops';
 
                         // Insert it before the "Dashboard" link
@@ -644,7 +652,9 @@
                     } catch (e) {
                         console.warn("Failed to cache customer coordinates from parts search:", e);
                     }
-                    this.showCustomerLocationOnMap();
+                    if (this.currentUser) {
+                        this.showCustomerLocationOnMap();
+                    }
                 }
             }
 
@@ -714,7 +724,7 @@
 
                     container.innerHTML = '';
                     const mapPoints = [];
-                    if (latitude && longitude) {
+                    if (this.currentUser && latitude && longitude) {
                         mapPoints.push([latitude, longitude]);
                     }
 
@@ -967,29 +977,29 @@
                         statusBadge.innerText = 'RESCUE DISPATCHED';
                     }
                     
-                    let responseHtml = '<span style="color:var(--text-muted);">Searching for nearby service responder...</span>';
+                    let responseHtml = '<div style="margin-top: 10px; padding: 10px 14px; background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: var(--radius-md); color: #0369a1; font-weight: 700; font-size: 0.9rem;"><i class="fa-solid fa-spinner fa-spin"></i> Searching for nearby service responder...</div>';
                     if (active.status === 'ACCEPTED') {
                         responseHtml = `
-                            <div style="margin-top: 10px; padding: 10px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: var(--radius-md);">
-                                <strong style="color: var(--secondary);"><i class="fa-solid fa-truck-pickup"></i> Dispatched Garage:</strong> ${active.acceptedBy ? active.acceptedBy.name : 'Unknown Garage'} <br>
-                                ${active.assignedMechanic ? `<strong style="color: var(--secondary);"><i class="fa-solid fa-user-gear"></i> Assigned Mechanic:</strong> ${active.assignedMechanic.name} (${active.assignedMechanic.phone}) <br>` : ''}
-                                <strong style="color: var(--secondary);"><i class="fa-solid fa-phone"></i> Call Rescue:</strong> <a href="tel:${active.acceptedBy ? active.acceptedBy.phone : ''}" style="color: var(--secondary); font-weight:700; text-decoration: underline;">${active.acceptedBy ? (active.acceptedBy.phone || 'N/A') : 'N/A'}</a>
+                            <div style="margin-top: 10px; padding: 12px; background: #ecfdf5; border: 1.5px solid #6ee7b7; border-radius: var(--radius-md); color: #065f46;">
+                                <strong style="color: #047857;"><i class="fa-solid fa-truck-pickup"></i> Dispatched Garage:</strong> <span style="color: #064e3b; font-weight: 800;">${active.acceptedBy ? active.acceptedBy.name : 'Unknown Garage'}</span> <br>
+                                ${active.assignedMechanic ? `<strong style="color: #047857;"><i class="fa-solid fa-user-gear"></i> Assigned Mechanic:</strong> <span style="color: #064e3b; font-weight: 800;">${active.assignedMechanic.name} (${active.assignedMechanic.phone})</span> <br>` : ''}
+                                <strong style="color: #047857;"><i class="fa-solid fa-phone"></i> Call Rescue:</strong> <a href="tel:${active.acceptedBy ? active.acceptedBy.phone : ''}" style="color: #0284c7; font-weight:800; text-decoration: underline;">${active.acceptedBy ? (active.acceptedBy.phone || 'N/A') : 'N/A'}</a>
                             </div>
                         `;
                     }
                     
                     content.innerHTML = `
-                        <div style="margin-bottom: 8px;">
-                            <strong>📍 Location:</strong> ${active.address}, ${active.city}
+                        <div style="margin-bottom: 10px; color: #0f172a;">
+                            <strong style="color: #b91c1c; font-size: 1rem;"><i class="fa-solid fa-location-dot"></i> Location:</strong> <span style="color: #0f172a; font-weight: 700;">${active.address || ''}${active.address && active.city ? ', ' : ''}${active.city || ''}</span>
                         </div>
-                        <div style="margin-bottom: 8px;">
-                            <strong>🚗 Vehicle:</strong> ${active.vehicleNo}
+                        <div style="margin-bottom: 10px; color: #0f172a;">
+                            <strong style="color: #b91c1c; font-size: 1rem;"><i class="fa-solid fa-car"></i> Vehicle:</strong> <span style="color: #0f172a; font-weight: 700;">${active.vehicleNo || 'N/A'}</span>
                         </div>
-                        <div style="margin-bottom: 8px;">
-                            <strong>📝 Description:</strong> ${active.description}
+                        <div style="margin-bottom: 10px; color: #0f172a;">
+                            <strong style="color: #b91c1c; font-size: 1rem;"><i class="fa-solid fa-clipboard-list"></i> Description:</strong> <span style="color: #0f172a; font-weight: 700;">${active.description || 'N/A'}</span>
                         </div>
-                        <div style="margin-bottom: 8px; font-size: 0.8rem; color: var(--text-muted);">
-                            Reported at: ${new Date(active.createdAt).toLocaleString()}
+                        <div style="margin-bottom: 12px; font-size: 0.85rem; color: #475569; font-weight: 600;">
+                            <i class="fa-regular fa-clock"></i> Reported at: <span style="color: #334155; font-weight: 700;">${new Date(active.createdAt).toLocaleString()}</span>
                         </div>
                         ${responseHtml}
                     `;
@@ -1218,6 +1228,15 @@
         async showCustomerLocationOnMap() {
             if (!this.map || !this.customerCoords) return;
 
+            // If user is signed out, remove customer marker and return
+            if (!this.currentUser) {
+                if (this.customerMarker) {
+                    this.map.removeLayer(this.customerMarker);
+                    this.customerMarker = null;
+                }
+                return;
+            }
+
             // Remove existing customer marker if it exists
             if (this.customerMarker) {
                 this.map.removeLayer(this.customerMarker);
@@ -1411,9 +1430,7 @@
             }).setView([7.8731, 80.7718], 7.5);
 
             const savedTheme = localStorage.getItem('theme') || 'night';
-            const tilesUrl = savedTheme === 'day'
-                ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+            const tilesUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
 
             // Create default theme tile layer
             this.defaultTileLayer = L.tileLayer(tilesUrl, {
@@ -2321,7 +2338,7 @@
                 `;
             } else if (role === 'GARAGE_OWNER') {
                 html = `
-                    <div style="padding: 1rem; text-align: center; border-bottom:1px solid var(--border-color); margin-bottom:1rem;">
+                    <div class="sidebar-title-header" style="padding: 1rem; text-align: center; border-bottom:1px solid var(--border-color); margin-bottom:1rem;">
                         <h4 style="font-weight:700;">Owner Panel</h4>
                         <span style="font-size:0.75rem; color:var(--accent);">Garage Business</span>
                     </div>
@@ -2349,7 +2366,7 @@
                 `;
             } else if (role === 'SHOP_OWNER') {
                 html = `
-                    <div style="padding: 1rem; text-align: center; border-bottom:1px solid var(--border-color); margin-bottom:1rem;">
+                    <div class="sidebar-title-header" style="padding: 1rem; text-align: center; border-bottom:1px solid var(--border-color); margin-bottom:1rem;">
                         <h4 style="font-weight:700;">Seller Panel</h4>
                         <span style="font-size:0.75rem; color:var(--secondary);">Spare Parts Shop</span>
                     </div>
@@ -2371,7 +2388,7 @@
                 `;
             } else if (role === 'ADMIN') {
                 html = `
-                    <div style="padding: 1rem; text-align: center; border-bottom:1px solid var(--border-color); margin-bottom:1rem;">
+                    <div class="sidebar-title-header" style="padding: 1rem; text-align: center; border-bottom:1px solid var(--border-color); margin-bottom:1rem;">
                         <h4 style="font-weight:700;">Admin Panel</h4>
                         <span style="font-size:0.75rem; color:var(--danger);">System Administrator</span>
                     </div>
@@ -4218,9 +4235,7 @@
                     });
                     
                     const savedTheme = localStorage.getItem('theme') || 'night';
-                    const tilesUrl = savedTheme === 'day'
-                        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-                        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                    const tilesUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
                         
                     this.pickerDefaultTileLayer = L.tileLayer(tilesUrl, {
                         maxZoom: 20
@@ -4252,10 +4267,7 @@
                         this.handleMapClick(e.latlng);
                     });
                 } else {
-                    const savedTheme = localStorage.getItem('theme') || 'night';
-                    const tilesUrl = savedTheme === 'day'
-                        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-                        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                    const tilesUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
                     if (this.pickerDefaultTileLayer) {
                         this.pickerDefaultTileLayer.setUrl(tilesUrl);
                     }
@@ -4434,9 +4446,7 @@
                         });
                         
                         const savedTheme = localStorage.getItem('theme') || 'night';
-                        const tilesUrl = savedTheme === 'day'
-                            ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-                            : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                        const tilesUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
                             
                         this.breakdownDefaultTileLayer = L.tileLayer(tilesUrl, {
                             maxZoom: 20
@@ -4464,10 +4474,7 @@
                         
                         L.control.layers(baseMaps, null, { position: 'topright' }).addTo(this.breakdownRouteMap);
                     } else {
-                        const savedTheme = localStorage.getItem('theme') || 'night';
-                        const tilesUrl = savedTheme === 'day'
-                            ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-                            : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                        const tilesUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
                         if (this.breakdownDefaultTileLayer) {
                             this.breakdownDefaultTileLayer.setUrl(tilesUrl);
                         }
@@ -8984,9 +8991,7 @@
         },
 
         updateMapTiles(theme) {
-            const tilesUrl = theme === 'day'
-                ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+            const tilesUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
             
             if (this.defaultTileLayer) {
                 this.defaultTileLayer.setUrl(tilesUrl);

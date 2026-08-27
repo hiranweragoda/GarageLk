@@ -41,7 +41,8 @@ public class GarageFinderApplication {
 
                 // Recreate foreign key as normal relation
                 try {
-                    jdbcTemplate.execute("ALTER TABLE garages ADD CONSTRAINT FK_user_id FOREIGN KEY (user_id) REFERENCES users(id)");
+                    jdbcTemplate.execute(
+                            "ALTER TABLE garages ADD CONSTRAINT FK_user_id FOREIGN KEY (user_id) REFERENCES users(id)");
                     System.out.println("FOREIGN KEY RECREATED SUCCESSFULLY!");
                 } catch (Exception ex) {
                     System.out.println("Could not recreate foreign key: " + ex.getMessage());
