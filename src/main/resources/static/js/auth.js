@@ -88,8 +88,17 @@ const auth = {
 
     async handleLogin(event) {
         event.preventDefault();
-        const email = document.getElementById('login-email').value;
+        const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
+
+        if (/[A-Z]/.test(email)) {
+            if (typeof app !== 'undefined' && app.showToast) {
+                app.showToast('Invalid email', 'error');
+            } else {
+                alert('Invalid email');
+            }
+            return;
+        }
 
         try {
             const data = await app.post('/api/auth/login', { username: email, password });
@@ -108,9 +117,18 @@ const auth = {
         event.preventDefault();
         
         const password = document.getElementById('reg-password').value;
-        const email = document.getElementById('reg-email').value;
+        const email = document.getElementById('reg-email').value.trim();
         const phone = document.getElementById('reg-phone').value;
         const username = email;
+
+        if (/[A-Z]/.test(email)) {
+            if (typeof app !== 'undefined' && app.showToast) {
+                app.showToast('Invalid email', 'error');
+            } else {
+                alert('Invalid email');
+            }
+            return;
+        }
 
         let payload = { username, password, email, phone };
 

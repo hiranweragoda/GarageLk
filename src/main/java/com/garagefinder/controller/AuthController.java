@@ -91,6 +91,10 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
         }
 
+        if (email.matches(".*[A-Z].*")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid email"));
+        }
+
         if (userRepository.findByEmail(email.trim()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Email is already registered"));
         }
@@ -190,6 +194,10 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload, HttpSession session) {
         String emailOrUsername = payload.containsKey("email") ? payload.get("email") : payload.get("username");
         String password = payload.get("password");
+
+        if (emailOrUsername != null && emailOrUsername.matches(".*[A-Z].*")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid email"));
+        }
 
         Optional<User> userOpt = Optional.empty();
         if (emailOrUsername != null && !emailOrUsername.isBlank()) {

@@ -255,6 +255,12 @@
             const emailInput = document.getElementById('login-email');
             const passwordInput = document.getElementById('login-password');
 
+            const rawEmail = emailInput ? emailInput.value.trim() : '';
+            if (/[A-Z]/.test(rawEmail)) {
+                this.showToast('Invalid email', 'error');
+                return;
+            }
+
             const executeLogin = async (latitude, longitude) => {
                 try {
                     const res = await fetch('/api/auth/login', {
@@ -337,6 +343,11 @@
             const confirmPassword = document.getElementById('signup-reenter-password').value;
             const role = document.getElementById('signup-role').value;
             const username = email;
+
+            if (/[A-Z]/.test(email)) {
+                this.showToast('Invalid email', 'error');
+                return;
+            }
 
             if (password !== confirmPassword) {
                 this.showToast('Passwords do not match', 'error');

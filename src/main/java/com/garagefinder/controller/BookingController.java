@@ -4,8 +4,10 @@ import com.garagefinder.model.Booking;
 import com.garagefinder.model.Garage;
 import com.garagefinder.model.User;
 import com.garagefinder.model.Notification;
+import com.garagefinder.model.Review;
 import com.garagefinder.repository.BookingRepository;
 import com.garagefinder.repository.GarageRepository;
+import com.garagefinder.repository.ReviewRepository;
 import com.garagefinder.service.NotificationService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
@@ -25,11 +27,13 @@ public class BookingController {
     private final BookingRepository bookingRepository;
     private final GarageRepository garageRepository;
     private final NotificationService notificationService;
+    private final ReviewRepository reviewRepository;
 
-    public BookingController(BookingRepository bookingRepository, GarageRepository garageRepository, NotificationService notificationService) {
+    public BookingController(BookingRepository bookingRepository, GarageRepository garageRepository, NotificationService notificationService, ReviewRepository reviewRepository) {
         this.bookingRepository = bookingRepository;
         this.garageRepository = garageRepository;
         this.notificationService = notificationService;
+        this.reviewRepository = reviewRepository;
     }
 
     // Create a new booking (Customer only)
@@ -274,15 +278,26 @@ public class BookingController {
         boolean authorized = false;
         if ("ADMIN".equals(user.getRole())) {
             authorized = true;
+        } else if ("CUSTOMER".equals(user.getRole())) {
+            authorized = user.getId().equals(booking.getCustomer().getId());
         } else if ("GARAGE_OWNER".equals(user.getRole())) {
             List<Garage> garages = garageRepository.findByUserId(user.getId());
-            if ("COMPLETED".equals(booking.getStatus()) || "CANCELLED".equals(booking.getStatus())) {
-                authorized = garages.stream().anyMatch(g -> g.getId().equals(booking.getGarage().getId()));
-            }
+            authorized = garages.stream().anyMatch(g -> g.getId().equals(booking.getGarage().getId()));
         }
 
         if (!authorized) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Access denied"));
+        }
+
+        try {
+            Optional<Review> reviewOpt = reviewRepository.findByBookingId(booking.getId());
+            if (reviewOpt.isPresent()) {
+                Review review = reviewOpt.get();
+                review.setBooking(null);
+                reviewRepository.save(review);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
 
         bookingRepository.delete(booking);
@@ -296,24 +311,49 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
 
-    // Clear all completed booking history for the owner's garages
+    // Clear all completed booking history for owner's garages or customer
     @DeleteMapping("/history/clear")
     public ResponseEntity<?> clearBookingHistory(HttpSession session) {
         User user = (User) session.getAttribute("LOGGED_IN_USER");
-        if (user == null || !"GARAGE_OWNER".equals(user.getRole())) {
+        if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        List<Garage> garages = garageRepository.findByUserId(user.getId());
-        if (garages.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Garage profile not found"));
+        List<Booking> completed = java.util.Collections.emptyList();
+
+        if ("GARAGE_OWNER".equals(user.getRole())) {
+            List<Garage> garages = garageRepository.findByUserId(user.getId());
+            if (!garages.isEmpty()) {
+                List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+                List<Booking> bookings = bookingRepository.findByGarageIdInOrderByBookingDateDesc(garageIds);
+                completed = bookings.stream()
+                        .filter(b -> "COMPLETED".equals(b.getStatus()) || "CANCELLED".equals(b.getStatus()))
+                        .toList();
+            }
+        } else if ("CUSTOMER".equals(user.getRole())) {
+            List<Booking> bookings = bookingRepository.findByCustomerIdOrderByBookingDateDesc(user.getId());
+            completed = bookings.stream()
+                    .filter(b -> "COMPLETED".equals(b.getStatus()) || "CANCELLED".equals(b.getStatus()))
+                    .toList();
+        } else if ("ADMIN".equals(user.getRole())) {
+            List<Booking> bookings = bookingRepository.findAll();
+            completed = bookings.stream()
+                    .filter(b -> "COMPLETED".equals(b.getStatus()) || "CANCELLED".equals(b.getStatus()))
+                    .toList();
         }
 
-        List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
-        List<Booking> bookings = bookingRepository.findByGarageIdInOrderByBookingDateDesc(garageIds);
-        List<Booking> completed = bookings.stream()
-                .filter(b -> "COMPLETED".equals(b.getStatus()) || "CANCELLED".equals(b.getStatus()))
-                .toList();
+        for (Booking b : completed) {
+            try {
+                Optional<Review> reviewOpt = reviewRepository.findByBookingId(b.getId());
+                if (reviewOpt.isPresent()) {
+                    Review review = reviewOpt.get();
+                    review.setBooking(null);
+                    reviewRepository.save(review);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
 
         bookingRepository.deleteAll(completed);
         return ResponseEntity.ok(Map.of("message", "All completed and cancelled booking history cleared successfully"));
