@@ -324,7 +324,7 @@ public class BookingController {
         if ("GARAGE_OWNER".equals(user.getRole())) {
             List<Garage> garages = garageRepository.findByUserId(user.getId());
             if (!garages.isEmpty()) {
-                List<Long> garageIds = garages.stream().map(Garage::getId).toList();
+                List<Long> garageIds = garages.stream().map(g -> g.getId()).toList();
                 List<Booking> bookings = bookingRepository.findByGarageIdInOrderByBookingDateDesc(garageIds);
                 completed = bookings.stream()
                         .filter(b -> "COMPLETED".equals(b.getStatus()) || "CANCELLED".equals(b.getStatus()))
