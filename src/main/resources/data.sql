@@ -384,3 +384,76 @@ ON DUPLICATE KEY UPDATE message=VALUES(message);
 
 
 
+-- 14. Additional District Spare Part Shop Owners & Shops (password for all: Hiru@123)
+-- SHA-256 of 'Hiru@123': c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('kurunegalaspare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Kurunegala Royal Auto Parts Owner', '0372299888', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('monaragalaspar@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Monaragala Express Auto Spares Owner', '0552299777', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('kalutaraspare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Kalutara Coastal Auto Spares Owner', '0342299666', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('kandyspare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Kandy Hill Country Auto Spares Owner', '0812299555', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('matalespare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Matale Apex Spare Parts Owner', '0662299444', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('nuwaraeliyaspare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Nuwara Eliya Highland Auto Spares Owner', '0522299333', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('gallespare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Galle Fort Auto Spares Owner', '0912299222', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('mataraspare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Matara Southern Auto Spares Owner', '0412299111', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('hambantotaspare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Hambantota Port Auto Spares Owner', '0472299000', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+INSERT INTO users (email, password, full_name, phone, role, is_active)
+VALUES ('jaffnaspare@gmail.com', 'c6f088a96adf3c517714ca2fe58448aa7e82a8afd03d5b4c5ef63e91d2d49903', 'Jaffna Northern Auto Spares Owner', '0212299111', 'SHOP_OWNER', true)
+ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+
+
+-- 15. Additional Seed Mechanics for 10 District Garages (2 Mechanics per garage)
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (101, 'Saman Kumara', '0771122334', 'Engine & Hybrid Specialist', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (101, 'Kamal Fernando', '0772233445', 'Electrical & AC Repairs', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (102, 'Nimal Rathnayake', '0773344556', 'Emergency Breakdown & Towing', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (102, 'Bandula Weerasinghe', '0774455667', 'Suspension & Mechanical', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (103, 'Roshan Perera', '0775566778', 'Wheel Alignment & Suspension', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (103, 'Dinesha Cooray', '0776677889', 'European Engine Repairs', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (104, 'Upali Herath', '0777788990', 'Clutch & 4x4 Transmission', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (104, 'Nuwan Liyanage', '0778899001', 'Brake Overhaul & Tuning', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (105, 'Kasun Jayawardena', '0779900112', 'OBD-II Computer Diagnostics', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (105, 'Ruwan Silva', '0711122334', 'Tinkering & Body Painting', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (106, 'Selvam Kumar', '0712233445', 'Mountain Towing & Rescue', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (106, 'Pradeep Ranasinghe', '0713344556', 'Coolant & Engine Maintenance', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (107, 'Janaka Wickramasinghe', '0714455667', 'Hybrid Scan & Battery Testing', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (107, 'Tharindu De Silva', '0715566778', 'General Service & Lubes', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (108, 'Indika Abeyratne', '0716677889', 'AC Flushing & Gas Refill', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (108, 'Sanjeewa Fonseka', '0717788990', 'Auto Electricals & Starters', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (109, 'Sahan Gunatilake', '0718899001', 'Diesel Injection Pump Tuning', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (109, 'Chathura Gamage', '0719900112', 'Heavy Duty Commercial Vehicle Repair', 'AVAILABLE', true);
+
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (110, 'Kuganathan S', '0721122334', 'EFI Tune-up & Overhaul', 'AVAILABLE', true);
+INSERT INTO mechanics (garage_id, name, phone, specialization, status, active) VALUES (110, 'Ratheesan T', '0722233445', '24/7 Roadside Rescue & Towing', 'AVAILABLE', true);
